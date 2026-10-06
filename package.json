@@ -9,10 +9,10 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "start": "vite build && tsx src/server/main.ts",
-    "dev": "concurrently -k -n server,web -c cyan,magenta \"tsx watch src/server/main.ts\" \"vite\"",
-    "demo": "vite build && tsx src/server/main.ts --demo",
-    "peek": "tsx src/cli.ts",
+    "start": "vite build && tsx --disable-warning=ExperimentalWarning src/server/main.ts",
+    "dev": "concurrently -k -n server,web -c cyan,magenta \"tsx watch --disable-warning=ExperimentalWarning src/server/main.ts\" \"vite\"",
+    "demo": "vite build && tsx --disable-warning=ExperimentalWarning src/server/main.ts --demo",
+    "peek": "tsx --disable-warning=ExperimentalWarning src/cli.ts",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

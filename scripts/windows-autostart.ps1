@@ -13,7 +13,8 @@ if ($Remove) {
   exit 0
 }
 
-$command = "Set-Location '$repo'; npm start *> data\seated.log"
+# cmd's redirection writes the log line by line; PowerShell's *> would buffer it.
+$command = "Set-Location '$repo'; cmd /c 'npm start > data\seated.log 2>&1'"
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -Command `"$command`""
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)

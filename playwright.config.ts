@@ -11,7 +11,7 @@ export default defineConfig({
   use: { baseURL: `http://127.0.0.1:${PORT}`, trace: 'retain-on-failure' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npx tsx src/server/main.ts --demo',
+    command: 'npx tsx --disable-warning=ExperimentalWarning src/server/main.ts --demo',
     env: { PORT: String(PORT) },
     url: `http://127.0.0.1:${PORT}/api/state`,
     reuseExistingServer: false,

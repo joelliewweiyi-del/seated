@@ -8,4 +8,4 @@ RUN npx vite build
 ENV HOST=0.0.0.0 PORT=4310 SEATED_DB=/app/var/seated.db
 VOLUME /app/var
 EXPOSE 4310
-CMD ["npx", "tsx", "src/server/main.ts"]
+CMD ["npx", "tsx", "--disable-warning=ExperimentalWarning", "src/server/main.ts"]
