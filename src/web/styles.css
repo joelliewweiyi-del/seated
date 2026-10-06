@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-copper-50: #f0fdfa;
+  --color-copper-100: #ccfbf1;
+  --color-copper-600: #0f766e;
+  --color-copper-700: #115e59;
+  --color-copper-800: #134e4a;
+  --color-canvas: #faf9f7;
+  --color-ink: #1c1917;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Code', ui-monospace, Menlo, Consolas, monospace;
+}
+
+body {
+  @apply bg-canvas text-ink antialiased;
+}
+
+/* Status edge: a 3px bar on the left of a row that tells its state at a glance. */
+[class*='edge-'] { position: relative; }
+[class*='edge-']::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--edge);
+}
+.edge-watching { --edge: #0d9488; }
+.edge-open { --edge: #d97706; }
+.edge-booked { --edge: #22c55e; }
+.edge-urgent { --edge: #dc2626; }
+.edge-neutral { --edge: #d6d3d1; }

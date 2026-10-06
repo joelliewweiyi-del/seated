@@ -1,0 +1,353 @@
+import type { RestaurantRow, Sighting, Store, Watch } from './db.js';
+import type { Guest, Platform, Slot } from './platforms/types.js';
+import type { Notifier } from './notify.js';
+import { datesForWatch, matchingSlots } from './match.js';
+import { localDate, slotLabel } from './time.js';
+
+/** A table that closes and reopens within this window is a flicker, not news: no second push. */
+export const QUIET_REOPEN_MS = 15 * 60_000;
+
+export interface RadarOptions {
+  store: Store;
+  platforms: Record<string, Platform>;
+  notifier: Notifier;
+  horizonDays: number;
+  autoBookEnabled: boolean;
+  now?: () => Date;
+}
+
+export interface TickReport {
+  startedAt: string;
+  finishedAt: string;
+  watches: number;
+  restaurants: number;
+  requests: number;
+  failedRequests: number;
+  newTables: number;
+  bookings: number;
+}
+
+interface Fresh {
+  sighting: Sighting;
+  slot: Slot;
+}
+
+/** The fields that decide which slots match. */
+const criteria = (w: Watch) =>
+  JSON.stringify([w.partySize, w.dateFrom, w.dateTo, w.weekdays, w.timeFrom, w.timeTo, w.autoBook]);
+
+const byDateTime = (a: { date: string; time: string }, b: { date: string; time: string }) =>
+  `${a.date}|${a.time}`.localeCompare(`${b.date}|${b.time}`);
+
+/** "Wed 7 Oct 19:00–20:30 (7 times), Thu 8 Oct 19:30" for the push body. */
+export function summarize(slots: Array<{ date: string; time: string }>, maxDays = 3): string {
+  const days = new Map<string, string[]>();
+  for (const s of [...slots].sort(byDateTime)) days.set(s.date, [...(days.get(s.date) ?? []), s.time]);
+  const lines = [...days].slice(0, maxDays).map(([date, times]) =>
+    times.length === 1 ? slotLabel(date, times[0]) : `${slotLabel(date, times[0])}–${times.at(-1)} (${times.length} times)`,
+  );
+  const more = days.size > maxDays ? `\n+${days.size - maxDays} more days` : '';
+  return lines.join('\n') + more;
+}
+
+/**
+ * The radar. One `tick()` checks every active watch once:
+ *   1. read availability, once per (restaurant, date, party size)
+ *   2. keep `sightings` in step: new open tables are added, vanished ones closed
+ *   3. auto-book (if the user opted in) and push an alert for tables not yet pushed
+ */
+export class Radar {
+  lastReport: TickReport | null = null;
+  private busy: Promise<TickReport> | null = null;
+  private readonly now: () => Date;
+
+  constructor(private readonly o: RadarOptions) {
+    this.now = o.now ?? (() => new Date());
+  }
+
+  get running(): boolean {
+    return this.busy !== null;
+  }
+
+  /** Runs one check. If a check is already running, returns that one instead of starting a second. */
+  tick(): Promise<TickReport> {
+    if (!this.busy) {
+      this.busy = this.run().finally(() => {
+        this.busy = null;
+      });
+    }
+    return this.busy;
+  }
+
+  private async run(): Promise<TickReport> {
+    const { store } = this.o;
+    const startedAt = this.now().toISOString();
+    const report: TickReport = {
+      startedAt,
+      finishedAt: startedAt,
+      watches: 0,
+      restaurants: 0,
+      requests: 0,
+      failedRequests: 0,
+      newTables: 0,
+      bookings: 0,
+    };
+
+    for (const b of store.unnotifiedBookings()) await this.sendBookingNotice(b.id);
+
+    const byRestaurant = new Map<string, Watch[]>();
+    for (const w of store.listWatches('watching')) {
+      byRestaurant.set(w.restaurantId, [...(byRestaurant.get(w.restaurantId) ?? []), w]);
+    }
+
+    for (const [restaurantId, watches] of byRestaurant) {
+      const restaurant = store.getRestaurant(restaurantId);
+      const platform = restaurant ? this.o.platforms[restaurant.platform] : undefined;
+      if (!restaurant) continue;
+      if (!platform || !restaurant.platformUid) {
+        store.markChecked(restaurantId, this.now().toISOString(), 'Seated cannot read this platform yet');
+        continue;
+      }
+      report.restaurants++;
+      const errors: string[] = [];
+      const cache = new Map<string, Slot[] | Error>();
+
+      for (const watch of watches) {
+        report.watches++;
+        const today = localDate(this.now());
+
+        // Safety net: a watch that already holds a table must never book again.
+        if (store.hasLiveBooking(watch.id, today)) {
+          store.updateWatch(watch.id, { status: 'booked' });
+          continue;
+        }
+
+        const checked = new Set<string>();
+        const found: Slot[] = [];
+        for (const date of datesForWatch(watch, today, this.o.horizonDays)) {
+          const key = `${date}|${watch.partySize}`;
+          let result = cache.get(key);
+          if (!result) {
+            report.requests++;
+            try {
+              result = await platform.getSlots(restaurant, date, watch.partySize);
+            } catch (err) {
+              result = err instanceof Error ? err : new Error(String(err));
+              report.failedRequests++;
+              errors.push(`${date}: ${result.message}`);
+            }
+            cache.set(key, result);
+          }
+          if (result instanceof Error) continue; // unknown, so leave this date's sightings alone
+          checked.add(date);
+          found.push(...matchingSlots(watch, result));
+        }
+
+        // The user may have paused or removed the watch while we were reading.
+        const current = store.getWatch(watch.id);
+        if (!current || current.status !== 'watching') continue;
+        // If the user edited the watch meanwhile, `found` used the old criteria. Skip; the next check uses the new ones.
+        if (criteria(current) !== criteria(watch)) continue;
+
+        const wanted = new Set(datesForWatch(current, today, this.o.horizonDays));
+        const { fresh, created } = this.sync(current, restaurant, platform, today, wanted, checked, found);
+        report.newTables += created;
+        report.bookings += await this.act(current, restaurant, platform, fresh, found, today);
+      }
+
+      const at = this.now().toISOString();
+      store.markChecked(restaurantId, at, errors.length ? `${errors.length} failed: ${errors[0]}` : null);
+    }
+
+    report.finishedAt = this.now().toISOString();
+    this.lastReport = report;
+    return report;
+  }
+
+  /**
+   * Brings the watch's sightings in line with what we just saw.
+   * Returns the open tables that still need a push (new ones, and earlier ones whose push failed).
+   */
+  private sync(
+    watch: Watch,
+    restaurant: RestaurantRow,
+    platform: Platform,
+    today: string,
+    wanted: Set<string>,
+    checked: Set<string>,
+    found: Slot[],
+  ): { fresh: Fresh[]; created: number } {
+    const { store } = this.o;
+    const now = this.now();
+    const nowIso = now.toISOString();
+    const pending = new Map(found.map((s) => [`${s.date}|${s.time}`, s]));
+    const fresh: Fresh[] = [];
+
+    for (const s of store.openSightings(watch.id)) {
+      const key = `${s.date}|${s.time}`;
+      const slot = pending.get(key);
+      if (slot) {
+        store.touchSighting(s.id, nowIso);
+        pending.delete(key);
+        if (!s.notified) fresh.push({ sighting: s, slot });
+      } else if (s.date < today || checked.has(s.date) || !wanted.has(s.date)) {
+        // Gone, past, or no longer wanted after the user edited the watch.
+        store.closeSighting(s.id, nowIso);
+      }
+    }
+
+    let created = 0;
+    for (const slot of pending.values()) {
+      const previous = store.lastSighting(watch.id, slot.date, slot.time);
+      const url = platform.bookingUrl(restaurant, slot.date, slot.time, watch.partySize);
+      const sighting = store.addSighting(watch.id, slot.date, slot.time, url, nowIso);
+      created++;
+      const flicker =
+        previous?.goneAt && previous.notified && now.getTime() - Date.parse(previous.goneAt) < QUIET_REOPEN_MS;
+      if (flicker) store.markNotified([sighting.id]); // covered by the earlier push
+      else fresh.push({ sighting, slot });
+    }
+    return { fresh: fresh.sort((a, b) => byDateTime(a.slot, b.slot)), created };
+  }
+
+  /** Auto-books if allowed, then pushes the tables that need a push. Returns tables booked (0 or 1). */
+  private async act(
+    watch: Watch,
+    restaurant: RestaurantRow,
+    platform: Platform,
+    fresh: Fresh[],
+    found: Slot[],
+    today: string,
+  ): Promise<number> {
+    const { store, notifier } = this.o;
+    let note = '';
+
+    if (watch.autoBook && this.o.autoBookEnabled && platform.book) {
+      // Any matching table that is bookable now and that we have not tried before. This also
+      // catches a table that was already open but only now became auto-bookable.
+      const candidate = [...found]
+        .sort(byDateTime)
+        .find((s) => s.autoBookable && !store.bookingAttempted(watch.id, s.date, s.time));
+      const guest = this.guest();
+      if (candidate && !guest) {
+        note = 'Auto-book is on, but your name, email and phone are missing in Settings.';
+      } else if (candidate && guest && !store.hasLiveBooking(watch.id, today)) {
+        const outcome = await this.book(watch, restaurant, platform, candidate, guest);
+        if (outcome === 'booked') return 1;
+        if (outcome === 'uncertain') {
+          note = 'Auto-book got no clear answer, so this watch is paused. Check your email.';
+        } else {
+          if (fresh.length === 0) {
+            // The table was pushed before, so there is no alert to attach this to. Tell the user anyway.
+            await notifier.send({ title: `Auto-book failed: ${restaurant.name}`, body: outcome.error, priority: 'high', tags: ['warning'] });
+            return 0;
+          }
+          note = `Auto-book failed: ${outcome.error}`;
+        }
+      }
+    }
+
+    if (fresh.length === 0) return 0;
+    const slots = fresh.map((f) => f.slot);
+    const sent = await notifier.send({
+      title: fresh.length === 1 ? `Table open: ${restaurant.name}` : `${fresh.length} tables open: ${restaurant.name}`,
+      body: `${watch.partySize} people\n${summarize(slots)}${note ? `\n${note}` : ''}`,
+      url: fresh[0]!.sighting.bookingUrl,
+      priority: 'max',
+      tags: ['fork_and_knife'],
+    });
+    // Unsent pushes stay pending, so the next check tries again while the table is still open.
+    if (sent) store.markNotified(fresh.map((f) => f.sighting.id));
+    return 0;
+  }
+
+  /**
+   * Books one slot. 'uncertain' has already been pushed to the user as its own notice.
+   * The attempt is saved as 'uncertain' BEFORE the request goes out. If Seated dies mid-request,
+   * that row still blocks a second booking and tells the user to check their email.
+   */
+  private async book(
+    watch: Watch,
+    restaurant: RestaurantRow,
+    platform: Platform,
+    slot: Slot,
+    guest: Guest,
+  ): Promise<'booked' | 'uncertain' | { error: string }> {
+    const { store } = this.o;
+    const { date, time } = slot;
+    const attempt = store.addBooking({
+      watchId: watch.id,
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+      date,
+      time,
+      partySize: watch.partySize,
+      status: 'uncertain',
+      reference: null,
+      paymentUrl: null,
+      error: 'Seated stopped while booking',
+      createdAt: this.now().toISOString(),
+    });
+    const result = await platform.book!(restaurant, date, time, watch.partySize, guest);
+
+    if (result.ok) {
+      store.updateBooking(attempt.id, {
+        status: result.paymentUrl ? 'needs_payment' : 'booked',
+        reference: result.reference,
+        paymentUrl: result.paymentUrl,
+        error: null,
+      });
+      store.updateWatch(watch.id, { status: 'booked' });
+      store.closeAllSightings(watch.id, this.now().toISOString());
+      await this.sendBookingNotice(attempt.id);
+      return 'booked';
+    }
+    if (result.uncertain) {
+      // A booking may exist. Stop this watch so we never book twice; the user checks their email.
+      store.updateBooking(attempt.id, { error: result.error });
+      store.updateWatch(watch.id, { status: 'paused' });
+      await this.sendBookingNotice(attempt.id);
+      return 'uncertain';
+    }
+    store.updateBooking(attempt.id, { status: 'failed', error: result.error });
+    return { error: result.error };
+  }
+
+  /** Tells the user about a booking. Marks it told only when the push went out, so it is retried. */
+  private async sendBookingNotice(bookingId: number): Promise<void> {
+    const { store, notifier } = this.o;
+    const b = store.listBookings(500).find((x) => x.id === bookingId);
+    if (!b || b.notified) return;
+    const when = `${slotLabel(b.date, b.time)} · ${b.partySize} people`;
+    const email = store.getSettings().guestEmail;
+    const notice =
+      b.status === 'needs_payment'
+        ? {
+            title: `Held: ${b.restaurantName}. Pay the deposit to confirm`,
+            body: `${when}\nThe table is held until you pay. Tap to pay.`,
+            url: b.paymentUrl ?? undefined,
+            priority: 'max' as const,
+            tags: ['credit_card'],
+          }
+        : b.status === 'booked'
+          ? {
+              title: `Booked: ${b.restaurantName}`,
+              body: `${when}\nReference ${b.reference}. The confirmation goes to ${email}.`,
+              priority: 'high' as const,
+              tags: ['white_check_mark'],
+            }
+          : {
+              title: `Check your email: ${b.restaurantName}`,
+              body: `${when}\nSeated tried to book this table but got no clear answer. It may be booked. The watch is paused.`,
+              priority: 'max' as const,
+              tags: ['warning'],
+            };
+    if (await notifier.send(notice)) store.markBookingNotified(b.id);
+  }
+
+  private guest(): Guest | null {
+    const s = this.o.store.getSettings();
+    if (!s.guestFirstName || !s.guestLastName || !s.guestEmail || !s.guestPhone) return null;
+    return { firstName: s.guestFirstName, lastName: s.guestLastName, email: s.guestEmail, phone: s.guestPhone };
+  }
+}

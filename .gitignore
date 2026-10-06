@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+
+# Local data: your watches, sightings and settings live here
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Test output
+test-results/
+playwright-report/
+
+# Local agent settings
+.claude/

@@ -1,0 +1,2468 @@
+[
+  {
+    "id": "t-amsterdammertje-loenen-aan-de-vecht",
+    "name": "'t Amsterdammertje",
+    "platform": "formitable",
+    "platformUid": "58ad0e99",
+    "website": "http://www.restaurantamsterdammertje.nl",
+    "city": "Loenen aan de Vecht",
+    "address": "Rijksstraatweg 119, 3632 AB Loenen aan de Vecht"
+  },
+  {
+    "id": "t-fnidsen-alkmaar",
+    "name": "'t Fnidsen",
+    "platform": "formitable",
+    "platformUid": "c2eca064",
+    "website": "https://www.fnidsenalkmaar.nl",
+    "city": "Alkmaar",
+    "address": "Fnidsen 107, 1811 NE Alkmaar"
+  },
+  {
+    "id": "t-ganzenest-rijswijk",
+    "name": "‘T Ganzenest",
+    "platform": "formitable",
+    "platformUid": "1ed80a28",
+    "website": "https://ganzenest.nl",
+    "city": "Rijswijk",
+    "address": "Delftweg 58A, 2289 AL Rijswijk"
+  },
+  {
+    "id": "t-golfje-terschelling-midsland-noord",
+    "name": "'t Golfje",
+    "platform": "formitable",
+    "platformUid": "71f52d21",
+    "website": "http://www.restaurant-tgolfje.nl",
+    "city": "Terschelling (Midsland-Noord)",
+    "address": "Heereweg 22a, 8891 HS Terschelling (Midsland-Noord)"
+  },
+  {
+    "id": "t-weeshuys-geertruidenberg",
+    "name": "'t Weeshuys",
+    "platform": "formitable",
+    "platformUid": "c83abafe",
+    "website": "http://www.weeshuys.nl",
+    "city": "Geertruidenberg",
+    "address": "Markt 52-56, 4931 BT Geertruidenberg"
+  },
+  {
+    "id": "1487-zevenaar",
+    "name": "1487",
+    "platform": "tebi",
+    "platformUid": "426654_b02a9db3bd13c532207c146a22f3bfeca6a769d47e60171558adb1f5fa1598d3",
+    "website": "https://restaurant1487.nl",
+    "city": "Zevenaar",
+    "address": "Markt 75, 6901 AJ Zevenaar"
+  },
+  {
+    "id": "a5-yama-naarden-vesting",
+    "name": "A5 YAMA",
+    "platform": "tebi",
+    "platformUid": "730133_78e412afab95ac7c46186add2e46e3e2bbb7472b54b45d9fdc2b013244a97b9e",
+    "website": "https://www.a5yama.com",
+    "city": "Naarden-Vesting​​",
+    "address": "Cattenhagestraat 9, 1411 CR Naarden-Vesting​​"
+  },
+  {
+    "id": "affect-zwolle",
+    "name": "Affect",
+    "platform": "formitable",
+    "platformUid": "2d5dbbff",
+    "website": "https://www.restaurantaffect.com",
+    "city": "Zwolle",
+    "address": "Thorbeckegracht 41-42, 8011 VN Zwolle"
+  },
+  {
+    "id": "alba",
+    "name": "Alba",
+    "platform": "formitable",
+    "platformUid": "b1754a7d",
+    "website": "https://www.alba-amsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Wibautstraat 105, 1091 GL Amsterdam"
+  },
+  {
+    "id": "alma-bodega-oisterwijk",
+    "name": "Alma Bodega",
+    "platform": "formitable",
+    "platformUid": "ca64dd42",
+    "website": "https://www.alma.nl/bodega",
+    "city": "Oisterwijk",
+    "address": "De Lind 45A, 5061 HT Oisterwijk"
+  },
+  {
+    "id": "ami-bistro-breda",
+    "name": "Amí Bistro",
+    "platform": "formitable",
+    "platformUid": "1cf753a9",
+    "website": "https://amibistro.nl",
+    "city": "Breda",
+    "address": "Ginnekenstraat 88, 4811 JJ Breda"
+  },
+  {
+    "id": "arca",
+    "name": "Arca",
+    "platform": "formitable",
+    "platformUid": "475c853b",
+    "website": "https://arcaamsterdam.com",
+    "city": "Amsterdam",
+    "address": "Martelaarsgracht 5, 1012 TN Amsterdam"
+  },
+  {
+    "id": "asian-glories-rotterdam",
+    "name": "Asian Glories",
+    "platform": "formitable",
+    "platformUid": "6ee9bd8e",
+    "website": "http://www.asianglories.nl",
+    "city": "Rotterdam",
+    "address": "Westewagenstraat 74, 3011 AT Rotterdam"
+  },
+  {
+    "id": "avenue43-oss",
+    "name": "Avenue43",
+    "platform": "formitable",
+    "platformUid": "bc74a532",
+    "website": "https://www.avenue43.nl",
+    "city": "Oss",
+    "address": "Raadhuislaan 43, 5341 GL Oss"
+  },
+  {
+    "id": "bacalar",
+    "name": "Bacalar",
+    "platform": "tebi",
+    "platformUid": "643067_c82547a90e248d497f4b62ee18bc822033395230d66242a4b4e2518c48005c54",
+    "website": "https://bacalar.amsterdam",
+    "city": "Amsterdam",
+    "address": "Chrysantenstraat 4, 1031 HT Amsterdam"
+  },
+  {
+    "id": "badcuyp",
+    "name": "Badcuyp",
+    "platform": "formitable",
+    "platformUid": "a5e5ef73",
+    "website": "https://badcuypamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Eerste Sweelinckstraat 10 A, 1073 CM Amsterdam"
+  },
+  {
+    "id": "bak",
+    "name": "BAK",
+    "platform": "formitable",
+    "platformUid": "dadd7a3b",
+    "website": "https://www.bakrestaurant.nl",
+    "city": "Amsterdam",
+    "address": "Van Diemenstraat 408, 1013 CR Amsterdam"
+  },
+  {
+    "id": "bakboord-almere-haven",
+    "name": "Bakboord",
+    "platform": "formitable",
+    "platformUid": "ef34e1dd",
+    "website": "https://www.restaurantbakboord.nl",
+    "city": "Almere Haven",
+    "address": "Veerkade 10, 1357 PK Almere Haven"
+  },
+  {
+    "id": "bar-bet-utrecht",
+    "name": "Bar Bet",
+    "platform": "formitable",
+    "platformUid": "e3047e47",
+    "website": "https://bar-bet.nl",
+    "city": "Utrecht",
+    "address": "Wed 1, 3512 JH Utrecht"
+  },
+  {
+    "id": "bar-centraal",
+    "name": "Bar Centraal",
+    "platform": "formitable",
+    "platformUid": "3a3bccee",
+    "website": "https://barcentraal.nl",
+    "city": "Amsterdam",
+    "address": "Ten Katestraat 16, 1053 CE Amsterdam"
+  },
+  {
+    "id": "barracuda",
+    "name": "Barracuda",
+    "platform": "formitable",
+    "platformUid": "78c17161",
+    "website": "https://www.barracuda.amsterdam",
+    "city": "Amsterdam",
+    "address": "Aambeeldstaat 10, 1021 KB Amsterdam"
+  },
+  {
+    "id": "basaal-den-haag",
+    "name": "Basaal",
+    "platform": "tebi",
+    "platformUid": "753498_3821fb14f978c258ae1192cc73f97938fb5481ee6bb5fff0b03092aad26d130e",
+    "website": "https://www.restaurantbasaal.nl",
+    "city": "Den Haag",
+    "address": "Dunne Bierkade 3, 2512 BC Den Haag"
+  },
+  {
+    "id": "baut-oost",
+    "name": "BAUT Oost",
+    "platform": "formitable",
+    "platformUid": "b6328fcc",
+    "website": "https://www.baut.amsterdam/locatie/oost",
+    "city": "Amsterdam",
+    "address": "Wibautstraat 125, 1091 GL Amsterdam"
+  },
+  {
+    "id": "benjamin-s-hertogenbosch",
+    "name": "Benjamin",
+    "platform": "formitable",
+    "platformUid": "5ffafd62",
+    "website": "https://benjamin-denbosch.nl",
+    "city": "'s-Hertogenbosch",
+    "address": "Kerkstraat 77, 5211 EK 's-Hertogenbosch"
+  },
+  {
+    "id": "beulings",
+    "name": "Beulings",
+    "platform": "tebi",
+    "platformUid": "101709_37e1e90f1bff7dc9cef7350c2baf9237e30004ab0620c4cca64f16ab282a3a7d",
+    "website": "http://www.beulings.nl",
+    "city": "Amsterdam",
+    "address": "Beulingstraat 9, 1017 BA Amsterdam"
+  },
+  {
+    "id": "bij-erik-leidschendam",
+    "name": "Bij Erik",
+    "platform": "formitable",
+    "platformUid": "f75a5fb1",
+    "website": "https://www.bijerik.nl",
+    "city": "Leidschendam",
+    "address": "Sluisplein 11, 2266 AV Leidschendam"
+  },
+  {
+    "id": "bij-jef-texel-den-hoorn",
+    "name": "Bij Jef",
+    "platform": "formitable",
+    "platformUid": "fbc8ac70",
+    "website": "http://www.bijjef.nl",
+    "city": "Texel - Den Hoorn",
+    "address": "Herenstraat 34, 1797 AJ Texel - Den Hoorn"
+  },
+  {
+    "id": "bistro-feline",
+    "name": "Bistro Féline",
+    "platform": "formitable",
+    "platformUid": "2a6fe74c",
+    "website": "https://www.bistrofeline.nl",
+    "city": "Amsterdam",
+    "address": "Lindengracht 90, 1015 KK Amsterdam"
+  },
+  {
+    "id": "bistro-flores-nijmegen",
+    "name": "Bistro Flores",
+    "platform": "tebi",
+    "platformUid": "838697_e6a775ec6c677a2fbe1a7e4b2ae760feddcd3bdf8a747fb34138f86319fd6759",
+    "website": "http://www.bistroflores.nl",
+    "city": "Nijmegen",
+    "address": "Kelfkensbos 43, 6511 TB Nijmegen"
+  },
+  {
+    "id": "bistrot-chapeau-blaricum",
+    "name": "BISTRÔT CHAPEAU",
+    "platform": "formitable",
+    "platformUid": "7557f8c8",
+    "website": "https://chapeaublaricum.nl",
+    "city": "Blaricum",
+    "address": "Huizerweg 1, 1261 AR Blaricum"
+  },
+  {
+    "id": "bistrot-des-alpes",
+    "name": "Bistrot des Alpes",
+    "platform": "tebi",
+    "platformUid": "181352_be0830149f279f3793b9a98f8e00befb896e9926a4c8579d9b4d2ab2ccb10ba4",
+    "website": "https://www.bistrotdesalpesamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Hobbemakade 64, 1071 XM Amsterdam"
+  },
+  {
+    "id": "bistrot-du-bac-rotterdam",
+    "name": "Bistrot du Bac",
+    "platform": "formitable",
+    "platformUid": "21f8f4ca",
+    "website": "http://www.bistrotdubac.nl",
+    "city": "Rotterdam",
+    "address": "Sumatraweg 5b, 3072 ZP Rotterdam"
+  },
+  {
+    "id": "bistrot-neuf",
+    "name": "Bistrot Neuf",
+    "platform": "formitable",
+    "platformUid": "7c0d4ab3",
+    "website": "https://neuf.amsterdam",
+    "city": "Amsterdam",
+    "address": "Haarlemmerstraat 9, 1013 EH Amsterdam"
+  },
+  {
+    "id": "bistrot-regent-nijmegen",
+    "name": "Bistrot Regent",
+    "platform": "formitable",
+    "platformUid": "bf2253fa",
+    "website": "http://www.regent-nijmegen.nl",
+    "city": "Nijmegen",
+    "address": "Hertogstraat 71, 6511 RW Nijmegen"
+  },
+  {
+    "id": "bistrotel-t-amsterdammertje-nieuwersluis",
+    "name": "Bistrotel 't Amsterdammertje",
+    "platform": "formitable",
+    "platformUid": "e5277734",
+    "website": "https://bistrotelamsterdammertje.nl",
+    "city": "Nieuwersluis",
+    "address": "Rijksstraatweg 35-37, 3631 AA Nieuwersluis"
+  },
+  {
+    "id": "blossem-breda",
+    "name": "Blossem",
+    "platform": "formitable",
+    "platformUid": "b0dca3f3",
+    "website": "https://restaurantblossem.nl",
+    "city": "Breda",
+    "address": "Ettensebaan 10, 4814 NN Breda"
+  },
+  {
+    "id": "blume-groningen",
+    "name": "Blumé",
+    "platform": "formitable",
+    "platformUid": "5fe72fb0",
+    "website": "https://www.restaurantblume.nl",
+    "city": "Groningen",
+    "address": "Oude Boteringestraat 45, 9712 GD Groningen"
+  },
+  {
+    "id": "boompjes-overloon",
+    "name": "Boompjes",
+    "platform": "formitable",
+    "platformUid": "10438488",
+    "website": "https://boompjes-restaurant.nl",
+    "city": "Overloon",
+    "address": "Irenestraat 1, 5825 CA Overloon"
+  },
+  {
+    "id": "bottleshop",
+    "name": "Bottleshop",
+    "platform": "formitable",
+    "platformUid": "8e62f780",
+    "website": "https://www.bottleshopams.nl",
+    "city": "Amsterdam",
+    "address": "Wibautstraat 130, 1091 GP Amsterdam"
+  },
+  {
+    "id": "bouchon-d-en-face-maastricht",
+    "name": "Bouchon D'en Face",
+    "platform": "formitable",
+    "platformUid": "bad3c7d3",
+    "website": "http://www.bouchondenface.nl",
+    "city": "Maastricht",
+    "address": "Wycker Brugstraat 54, 6221 ED Maastricht"
+  },
+  {
+    "id": "brandson-maastricht",
+    "name": "Brandson",
+    "platform": "formitable",
+    "platformUid": "42d8a692",
+    "website": "https://brandsonmaastricht.nl",
+    "city": "Maastricht",
+    "address": "Het Bat 2, 6211 EX Maastricht"
+  },
+  {
+    "id": "bruis-haarlem",
+    "name": "Bruis",
+    "platform": "formitable",
+    "platformUid": "29d18ad0",
+    "website": "https://brasseriebruis.com",
+    "city": "Haarlem",
+    "address": "Lange Veerstraat 15, 2011 DA Haarlem"
+  },
+  {
+    "id": "bussia",
+    "name": "Bussia",
+    "platform": "tebi",
+    "platformUid": "743622_f519b6cfe211252119197102e6f4fc68bdbbf5a63235ef0e41958e1b3ffdb173",
+    "website": "https://www.bussia.nl",
+    "city": "Amsterdam",
+    "address": "Reestraat 28-32, 1016 DN Amsterdam"
+  },
+  {
+    "id": "c-e-o-baas-van-het-vlees-rotterdam",
+    "name": "C.E.O. baas van het vlees",
+    "platform": "formitable",
+    "platformUid": "47c55fd3",
+    "website": "http://www.ceobaasvanhetvlees.nl",
+    "city": "Rotterdam",
+    "address": "Sumatraweg 1-3, 3072 ZP Rotterdam"
+  },
+  {
+    "id": "c-est-ca-utrecht",
+    "name": "C’est ça",
+    "platform": "formitable",
+    "platformUid": "8e9b4422",
+    "website": "https://restaurant-cestca.nl",
+    "city": "Utrecht",
+    "address": "Bollenhofsestraat 142, 3572 VT Utrecht"
+  },
+  {
+    "id": "c-est-la-vie-huisduinen",
+    "name": "C'est la vie",
+    "platform": "formitable",
+    "platformUid": "085f109f",
+    "website": "https://cestlaviedenhelder.nl",
+    "city": "Huisduinen‌",
+    "address": "‌Badhuisstraat 2-10 ‌, 1789 AK Huisduinen‌"
+  },
+  {
+    "id": "cafe-beurre",
+    "name": "Café Beurre",
+    "platform": "tebi",
+    "platformUid": "591296_ff57dc704d43ce6cc0d8b11bca961fd3d7c84345de3fe0dae7c9e333924ae340",
+    "website": "https://www.cafebeurreamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Van Limburg Stirumstraat 115, 1051 BA Amsterdam"
+  },
+  {
+    "id": "cafe-binnenvisser",
+    "name": "Café Binnenvisser",
+    "platform": "tebi",
+    "platformUid": "574841_fa9b8c20c2506cb4b7bb73782c4b13df5b28a09d2e40e524e2122994c30f420d",
+    "website": "http://www.binnenvisser.nl",
+    "city": "Amsterdam",
+    "address": "Bilderdijkstraat 36, 1052 NB Amsterdam"
+  },
+  {
+    "id": "cafe-caron",
+    "name": "Café Caron",
+    "platform": "tebi",
+    "platformUid": "431123_6659f9ccc2ae88a1ba7a7a1b71c5bc9143656861bbb227460fbfc6719c8c6e8b",
+    "website": "http://www.cafecaron.nl",
+    "city": "Amsterdam",
+    "address": "Frans Halsstraat 28 H, 1072 BS Amsterdam"
+  },
+  {
+    "id": "cafe-coberco-enschede",
+    "name": "Café Coberco",
+    "platform": "formitable",
+    "platformUid": "45b6a6a4",
+    "website": "https://cafecoberco.nl",
+    "city": "Enschede",
+    "address": "De Coöperatie 15, 7514 JK Enschede"
+  },
+  {
+    "id": "cafe-de-gaper-leiden",
+    "name": "Café de Gaper",
+    "platform": "formitable",
+    "platformUid": "8dafcd98",
+    "website": "https://cafedegaper.nl",
+    "city": "Leiden",
+    "address": "Rapenburg 97, 2311 GL Leiden"
+  },
+  {
+    "id": "cafe-de-klepel",
+    "name": "Café de Klepel",
+    "platform": "formitable",
+    "platformUid": "d94c781e",
+    "website": "http://cafedeklepel.nl",
+    "city": "Amsterdam",
+    "address": "Prinsenstraat 22, 1015 DD Amsterdam"
+  },
+  {
+    "id": "cafe-maurits",
+    "name": "Café Maurits",
+    "platform": "formitable",
+    "platformUid": "aa8f00a4",
+    "website": "https://cafemaurits.nl",
+    "city": "Amsterdam",
+    "address": "Hoofddorpplein 1, 1059 CV Amsterdam"
+  },
+  {
+    "id": "cafe-parlotte",
+    "name": "Café Parlotte",
+    "platform": "tebi",
+    "platformUid": "886651_3dfebd716a9ea6ae97e21d4293bb164b95e64999aebbce25c40ab9ce6a58bb06",
+    "website": "https://www.parlotte.nl",
+    "city": "Amsterdam",
+    "address": "Westerstraat 182, 1015 MR Amsterdam"
+  },
+  {
+    "id": "cafe-restaurant-amsterdam",
+    "name": "Café Restaurant Amsterdam",
+    "platform": "tebi",
+    "platformUid": "746773_ec4c4c59e4ba5c12cbb71438714fbb281b631a2d6a832aaec20076e9b938b4dc",
+    "website": "http://www.caferestaurantamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Watertorenplein 6, 1051 PA Amsterdam"
+  },
+  {
+    "id": "cafe-visscher-leiden",
+    "name": "Café Visscher",
+    "platform": "formitable",
+    "platformUid": "ed8deec9",
+    "website": "https://cafevisscher.nl",
+    "city": "Leiden",
+    "address": "Stationsweg 7, 2312 AS Leiden"
+  },
+  {
+    "id": "cafe-wu",
+    "name": "Café Wu",
+    "platform": "formitable",
+    "platformUid": "ccf5e601",
+    "website": "https://www.cafewu.nl",
+    "city": "Amsterdam",
+    "address": "Dapperstraat 1, 1093 BK Amsterdam"
+  },
+  {
+    "id": "cellar-door-woudrichem",
+    "name": "Cellar Door",
+    "platform": "formitable",
+    "platformUid": "ddd2c4de",
+    "website": "https://www.restaurantcellardoor.com",
+    "city": "Woudrichem",
+    "address": "Hoogstraat 47, 4285 AG Woudrichem"
+  },
+  {
+    "id": "central-park-voorburg",
+    "name": "Central Park",
+    "platform": "formitable",
+    "platformUid": "685fd38e",
+    "website": "https://www.centralparkvoorburg.com",
+    "city": "Voorburg",
+    "address": "Oosteinde 14, 2271 EH Voorburg"
+  },
+  {
+    "id": "cepes-otterlo",
+    "name": "Cèpes",
+    "platform": "formitable",
+    "platformUid": "856dac48",
+    "website": "https://cepes.nl",
+    "city": "Otterlo",
+    "address": "Houtkampweg 1, 6731 AV Otterlo"
+  },
+  {
+    "id": "chocolat-breda",
+    "name": "Chocolat",
+    "platform": "formitable",
+    "platformUid": "db84427b",
+    "website": "http://www.restaurant-chocolat.nl",
+    "city": "Breda",
+    "address": "Parade 12B, 4811 DZ Breda"
+  },
+  {
+    "id": "choux",
+    "name": "Choux",
+    "platform": "formitable",
+    "platformUid": "1f199734",
+    "website": "http://choux.nl",
+    "city": "Amsterdam",
+    "address": "De Ruyterkade 128, 1011 AC Amsterdam"
+  },
+  {
+    "id": "citrus-s-hertogenbosch",
+    "name": "Citrus",
+    "platform": "formitable",
+    "platformUid": "2e951fb1",
+    "website": "http://www.restaurantcitrus.nl",
+    "city": "'s-Hertogenbosch",
+    "address": "Lange Putstraat 7A, 5211 KN 's-Hertogenbosch"
+  },
+  {
+    "id": "concours-utrecht",
+    "name": "Concours",
+    "platform": "formitable",
+    "platformUid": "df7acc15",
+    "website": "https://www.restaurantconcours.nl",
+    "city": "Utrecht",
+    "address": "Biltstraat 20, 3572 BB Utrecht"
+  },
+  {
+    "id": "cornerstore",
+    "name": "Cornerstore",
+    "platform": "formitable",
+    "platformUid": "79df0181",
+    "website": "https://csnoord.com",
+    "city": "Amsterdam",
+    "address": "Papaverweg 11, 1032 KD Amsterdam"
+  },
+  {
+    "id": "crijns-bladel",
+    "name": "Crijns",
+    "platform": "formitable",
+    "platformUid": "541a3629",
+    "website": "http://www.restaurantcrijns.nl",
+    "city": "Bladel",
+    "address": "Sniederslaan 121, 5531 EK Bladel"
+  },
+  {
+    "id": "cucina-casalinga",
+    "name": "Cucina Casalinga",
+    "platform": "formitable",
+    "platformUid": "e896c9f3",
+    "website": "https://casalinga.nl",
+    "city": "Amsterdam",
+    "address": "Stadionweg 271, 1076 NZ Amsterdam"
+  },
+  {
+    "id": "cue",
+    "name": "CUE",
+    "platform": "tebi",
+    "platformUid": "378375_41d501d1afa86a4f1cbf525860d6052ddfb99e2bd938c50c9da4ef01a3af61f5",
+    "website": "https://www.cue-amsterdam.com",
+    "city": "Amsterdam",
+    "address": "Utrechtsestraat 30A, 1017 VN Amsterdam"
+  },
+  {
+    "id": "de-belhamel",
+    "name": "De Belhamel",
+    "platform": "formitable",
+    "platformUid": "86e443e6",
+    "website": "http://www.belhamel.nl",
+    "city": "Amsterdam",
+    "address": "Brouwersgracht 60, 1013 GX Amsterdam"
+  },
+  {
+    "id": "de-bloemenbeek-de-lutte",
+    "name": "De Bloemenbeek",
+    "platform": "formitable",
+    "platformUid": "08547ee5",
+    "website": "http://www.bloemenbeek.nl",
+    "city": "De Lutte",
+    "address": "Beuningerstraat 6, 7587 LD De Lutte"
+  },
+  {
+    "id": "de-goedheyd-utrecht",
+    "name": "De Goedheyd",
+    "platform": "tebi",
+    "platformUid": "711958_9ec590e3b8b2c9d376912dcade8fd8ef55fc89e66fca6aa3c50f2bb01a7baee8",
+    "website": "http://www.degoedheyd.nl",
+    "city": "Utrecht",
+    "address": "Hamburgerstraat 17, 3512 NP Utrecht"
+  },
+  {
+    "id": "de-gouden-bock-middelburg",
+    "name": "De Gouden Bock",
+    "platform": "formitable",
+    "platformUid": "3b323e6c",
+    "website": "http://www.degoudenbock.nl",
+    "city": "Middelburg",
+    "address": "Damplein 17, 4331 GC Middelburg"
+  },
+  {
+    "id": "de-haan-groningen",
+    "name": "De Haan",
+    "platform": "formitable",
+    "platformUid": "6b12c2ae",
+    "website": "http://www.restaurantdehaan.nl",
+    "city": "Groningen",
+    "address": "Aweg 4, 9718 CS Groningen"
+  },
+  {
+    "id": "de-kas",
+    "name": "De Kas",
+    "platform": "formitable",
+    "platformUid": "643e1a93",
+    "website": "https://www.restaurantdekas.com",
+    "city": "Amsterdam",
+    "address": "Kamerlingh Onneslaan 3, 1097 DE Amsterdam"
+  },
+  {
+    "id": "de-lage-vuursche-lage-vuursche",
+    "name": "De Lage Vuursche",
+    "platform": "formitable",
+    "platformUid": "11fc39c9",
+    "website": "https://www.vuursche.nl",
+    "city": "Lage Vuursche",
+    "address": "Dorpsstraat 2, 3749 AD Lage Vuursche"
+  },
+  {
+    "id": "de-lepelaar-jisp",
+    "name": "De Lepelaar",
+    "platform": "formitable",
+    "platformUid": "3e5e4e2f",
+    "website": "https://www.delepelaarjisp.nl",
+    "city": "Jisp",
+    "address": "Molenpad 2, 1546 LC Jisp"
+  },
+  {
+    "id": "de-librije-zwolle",
+    "name": "De Librije",
+    "platform": "formitable",
+    "platformUid": "bc6319d9",
+    "website": "https://www.librije.com",
+    "city": "Zwolle",
+    "address": "Spinhuisplein 1, 8011 ZZ Zwolle"
+  },
+  {
+    "id": "de-mark",
+    "name": "De Mark",
+    "platform": "formitable",
+    "platformUid": "7a76db4a",
+    "website": "https://www.restaurantdemark.com",
+    "city": "Amsterdam",
+    "address": "Durgerdammerdijk 73, 1026 CB Amsterdam"
+  },
+  {
+    "id": "de-nederlanden-vreeland-aan-de-vecht",
+    "name": "De Nederlanden",
+    "platform": "formitable",
+    "platformUid": "d270169e",
+    "website": "http://www.nederlanden.nl",
+    "city": "Vreeland aan de Vecht",
+    "address": "Duinkerken 3, 3633 EM Vreeland aan de Vecht"
+  },
+  {
+    "id": "de-plantage",
+    "name": "De Plantage",
+    "platform": "formitable",
+    "platformUid": "ea8e63ae",
+    "website": "http://www.caferestaurantdeplantage.nl",
+    "city": "Amsterdam",
+    "address": "Plantage Kerklaan 36, 1018 CZ Amsterdam"
+  },
+  {
+    "id": "de-silveren-spiegel",
+    "name": "De Silveren Spiegel",
+    "platform": "formitable",
+    "platformUid": "fe76dba0",
+    "website": "http://www.desilverenspiegel.com",
+    "city": "Amsterdam",
+    "address": "Kattengat 4-6, 1012 SZ Amsterdam"
+  },
+  {
+    "id": "de-stroper-dordrecht",
+    "name": "De Stroper",
+    "platform": "formitable",
+    "platformUid": "d87ded06",
+    "website": "https://www.destroper.nl",
+    "city": "Dordrecht",
+    "address": "Wijnbrug 1, 3311 EV Dordrecht"
+  },
+  {
+    "id": "de-tapperij-den-haag",
+    "name": "De Tapperij",
+    "platform": "formitable",
+    "platformUid": "bcab90c7",
+    "website": "https://www.restaurantdetapperij.nl",
+    "city": "Den Haag",
+    "address": "Atjehstraat 66, 2585 VL Den Haag"
+  },
+  {
+    "id": "de-vrijstad-vianen",
+    "name": "De Vrijstad",
+    "platform": "formitable",
+    "platformUid": "9f53f8b8",
+    "website": "http://devrijstad.nl",
+    "city": "Vianen",
+    "address": "Voorstraat 101, 4132 AP Vianen"
+  },
+  {
+    "id": "de-watertoren-utrecht",
+    "name": "De Watertoren",
+    "platform": "formitable",
+    "platformUid": "4df2a53e",
+    "website": "https://watertorenutrecht.nl",
+    "city": "Utrecht",
+    "address": "Heuveloord 25A, 3523 CK Utrecht"
+  },
+  {
+    "id": "de-witte-dame-abcoude",
+    "name": "De Witte Dame",
+    "platform": "formitable",
+    "platformUid": "2a96ae61",
+    "website": "https://www.hoteldwd.nl/restaurant",
+    "city": "Abcoude",
+    "address": "Stationsplein 3, 1391 GS Abcoude"
+  },
+  {
+    "id": "dekxels-den-haag",
+    "name": "Dekxels",
+    "platform": "formitable",
+    "platformUid": "6917acbb",
+    "website": "http://www.dekxels.nl",
+    "city": "Den Haag",
+    "address": "Denneweg 130, 2514 CL Den Haag"
+  },
+  {
+    "id": "deplanu-haarlem",
+    "name": "Deplanu",
+    "platform": "formitable",
+    "platformUid": "21729a13",
+    "website": "https://deplanu.nl",
+    "city": "Haarlem",
+    "address": "Santpoorterplein 1, 2023 DM Haarlem"
+  },
+  {
+    "id": "diels-wageningen",
+    "name": "Diels",
+    "platform": "formitable",
+    "platformUid": "34b98277",
+    "website": "http://www.dielsrestobar.nl",
+    "city": "Wageningen",
+    "address": "Vijzelstraat 2, 6701 DC Wageningen"
+  },
+  {
+    "id": "domenica",
+    "name": "Domenica",
+    "platform": "tebi",
+    "platformUid": "608035_7d59c9cf25555669cfdf7c122029778c2d79c96c279ec2020ade2ca07b0f668e",
+    "website": "https://www.restaurantdomenica.com",
+    "city": "Amsterdam",
+    "address": "Noordermarkt 7, 1015 MV Amsterdam"
+  },
+  {
+    "id": "don-dining-kounosuke-utrecht",
+    "name": "Don Dining Kounosuke",
+    "platform": "formitable",
+    "platformUid": "ecb080b9",
+    "website": "https://www.don-kounosuke.com",
+    "city": "Utrecht",
+    "address": "Westerkade 27, 3511 HC Utrecht"
+  },
+  {
+    "id": "dorset-borne",
+    "name": "Dorset",
+    "platform": "formitable",
+    "platformUid": "2856bb27",
+    "website": "http://www.dorset.nl",
+    "city": "Borne",
+    "address": "Grotestraat 167, 7622 GE Borne"
+  },
+  {
+    "id": "eetlokaal-klinkers-oosterhout",
+    "name": "Eetlokaal Klinkers",
+    "platform": "formitable",
+    "platformUid": "a0dd84d8",
+    "website": "https://www.eetlokaalklinkers.nl",
+    "city": "Oosterhout",
+    "address": "Sint Janstraat 28, 4901 LT Oosterhout"
+  },
+  {
+    "id": "el-bar-den-haag",
+    "name": "El Bar",
+    "platform": "formitable",
+    "platformUid": "893ecc79",
+    "website": "https://www.el-bar.nl",
+    "city": "Den Haag",
+    "address": "Noordeinde 165, 2514 GG Den Haag"
+  },
+  {
+    "id": "elea-den-haag",
+    "name": "Elea",
+    "platform": "formitable",
+    "platformUid": "a846539a",
+    "website": "https://restaurantelea.nl",
+    "city": "Den Haag",
+    "address": "Noordeinde 142, 2514 GP Den Haag"
+  },
+  {
+    "id": "element-meppel",
+    "name": "Element",
+    "platform": "tebi",
+    "platformUid": "642621_f2bf2a115f9bf2dce28002c230ced5e206fa283df1c6cbb81727096a30e61b59",
+    "website": "https://restaurantelement.nl",
+    "city": "Meppel",
+    "address": "Gasgracht 4a, 7941 KE Meppel"
+  },
+  {
+    "id": "entrepot",
+    "name": "Entrepot",
+    "platform": "formitable",
+    "platformUid": "c818fc0f",
+    "website": "http://www.restaurantentrepot.nl",
+    "city": "Amsterdam",
+    "address": "Entrepotdok 7-8, 1018 AD Amsterdam"
+  },
+  {
+    "id": "esra",
+    "name": "Esra",
+    "platform": "tebi",
+    "platformUid": "967051_159a2cf8aa419dae59ae7357420c09e514426dcf621b567dc37f001b746d6127",
+    "website": "https://www.esra.amsterdam",
+    "city": "Amsterdam",
+    "address": "C van Eesterenlaan 35, 1019 JK Amsterdam"
+  },
+  {
+    "id": "euro-pizza",
+    "name": "Euro Pizza",
+    "platform": "tebi",
+    "platformUid": "643456_7ddea887081e70c86cc5d336bb6a48e5af4fcd8d54c894752112466adf736d19",
+    "website": "https://www.europizza.rest",
+    "city": "Amsterdam",
+    "address": "Gedempt Hamerkanaal 79, 1021 KP Amsterdam"
+  },
+  {
+    "id": "europa",
+    "name": "Europa",
+    "platform": "tebi",
+    "platformUid": "976290_86f81133641fc63a25c2e9a6f13eb6658fbd4a7e9470e56cea93030412ea5670",
+    "website": "https://www.europa.rest",
+    "city": "Amsterdam",
+    "address": "Gedempt Hamerkanaal 81, 1021 KP Amsterdam"
+  },
+  {
+    "id": "fa-pekelhaaring",
+    "name": "Fa. Pekelhaaring",
+    "platform": "tebi",
+    "platformUid": "700571_2920219a6c2f3625e76fce19f26456472ac924ea6b5f19b9de641224df2427e4",
+    "website": "http://www.pekelhaaring.nl",
+    "city": "Amsterdam",
+    "address": "Van Woustraat 127-129, 1074AH Amsterdam"
+  },
+  {
+    "id": "faran-s-hertogenbosch",
+    "name": "Faran",
+    "platform": "formitable",
+    "platformUid": "fd98e261",
+    "website": "https://www.restaurantfaran.nl",
+    "city": "'s-Hertogenbosch",
+    "address": "Kruisstraat 17, 5211 DT 's-Hertogenbosch"
+  },
+  {
+    "id": "fico-utrecht",
+    "name": "Fico",
+    "platform": "formitable",
+    "platformUid": "aef3866e",
+    "website": "https://www.ficoutrecht.nl",
+    "city": "Utrecht",
+    "address": "Veilinghavenkade 14, 3521 AK Utrecht"
+  },
+  {
+    "id": "flore",
+    "name": "Flore",
+    "platform": "formitable",
+    "platformUid": "b5a899c1",
+    "website": "https://restaurantflore.com",
+    "city": "Amsterdam",
+    "address": "Nieuwe Doelenstraat 2-14, 1012 CP Amsterdam"
+  },
+  {
+    "id": "florent-le-bistro-utrecht",
+    "name": "Florent le Bistro",
+    "platform": "formitable",
+    "platformUid": "0355d0b0",
+    "website": "https://restaurant-florent.nl",
+    "city": "Utrecht",
+    "address": "Visschersplein 75, 3511 LX Utrecht"
+  },
+  {
+    "id": "fortvier-arnhem",
+    "name": "FortVier",
+    "platform": "formitable",
+    "platformUid": "e5e9d172",
+    "website": "https://www.fortvier.nl",
+    "city": "Arnhem",
+    "address": "Laakoever 401, 6846 MX Arnhem"
+  },
+  {
+    "id": "fred-rotterdam",
+    "name": "Fred",
+    "platform": "formitable",
+    "platformUid": "fc51b41a",
+    "website": "https://www.restaurantfred.nl",
+    "city": "Rotterdam",
+    "address": "Boompjes 41, 3011 XB Rotterdam"
+  },
+  {
+    "id": "frunk-simpelveld",
+    "name": "Frunk",
+    "platform": "tebi",
+    "platformUid": "187800_64422939508ed642428d0f2bcbdd891c90ddb82fa84255c978de9a7fb795bd8f",
+    "website": "https://www.restaurantfrunk.nl",
+    "city": "Simpelveld",
+    "address": "Irmstraat 3, 6369 VL Simpelveld"
+  },
+  {
+    "id": "fuku-ramen",
+    "name": "Fuku Ramen",
+    "platform": "formitable",
+    "platformUid": "b68cc129",
+    "website": "https://www.fukuramenamsterdam.com",
+    "city": "Amsterdam",
+    "address": "Ingogostraat 14A, 1092 HZ Amsterdam"
+  },
+  {
+    "id": "gaar-rothem-meerssen",
+    "name": "GAAR",
+    "platform": "formitable",
+    "platformUid": "42846dee",
+    "website": "https://www.restaurantgaar.nl",
+    "city": "Rothem-Meerssen",
+    "address": "Klinkenberg 173, 6231 BC Rothem-Meerssen"
+  },
+  {
+    "id": "gebr-hartering",
+    "name": "Gebr. Hartering",
+    "platform": "formitable",
+    "platformUid": "2dfdc18a",
+    "website": "http://www.gebr-hartering.nl",
+    "city": "Amsterdam",
+    "address": "Peperstraat 10hs, 1011 TL Amsterdam"
+  },
+  {
+    "id": "george-s-sittard",
+    "name": "George's",
+    "platform": "formitable",
+    "platformUid": "d35dd3cd",
+    "website": "https://restaurant-georges.nl",
+    "city": "Sittard",
+    "address": "Kerkepad 2, 6131 EZ Sittard"
+  },
+  {
+    "id": "gertrude",
+    "name": "Gertrude",
+    "platform": "formitable",
+    "platformUid": "d0bf4c73",
+    "website": "https://www.gertrudeamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Bosboom Toussaintstraat 28 H, 1054 AS Amsterdam"
+  },
+  {
+    "id": "gist-tilburg",
+    "name": "GIST",
+    "platform": "formitable",
+    "platformUid": "742ae117",
+    "website": "https://gisttilburg.nl",
+    "city": "Tilburg",
+    "address": "Langestraat 65, 5038 SC Tilburg"
+  },
+  {
+    "id": "glaswerk-den-haag",
+    "name": "Glaswerk",
+    "platform": "formitable",
+    "platformUid": "1cfd6634",
+    "website": "https://www.glaswerkdenhaag.nl",
+    "city": "Den Haag",
+    "address": "Fokkerkade 14, 2516 CC Den Haag"
+  },
+  {
+    "id": "goyvaerts-eindhoven",
+    "name": "Goyvaerts",
+    "platform": "formitable",
+    "platformUid": "54dac3f4",
+    "website": "https://www.goyvaerts.nl",
+    "city": "Eindhoven",
+    "address": "Kanaalstraat 6, 5611 CT Eindhoven"
+  },
+  {
+    "id": "graham-s-kitchen",
+    "name": "Graham's Kitchen",
+    "platform": "formitable",
+    "platformUid": "cd2a5e50",
+    "website": "https://www.grahamskitchen.amsterdam",
+    "city": "Amsterdam",
+    "address": "Hemonystraat 38, 1074 BS Amsterdam"
+  },
+  {
+    "id": "grand-cafe-bourgogne-schoorl",
+    "name": "Grand Café Bourgogne",
+    "platform": "formitable",
+    "platformUid": "4c411623",
+    "website": "https://merlet.nl/grand-cafe",
+    "city": "Schoorl",
+    "address": "Duinweg 15, 1871 AC Schoorl"
+  },
+  {
+    "id": "groenland-driebergen",
+    "name": "Groenland",
+    "platform": "formitable",
+    "platformUid": "df3161c9",
+    "website": "https://www.restaurantgroenland.nl",
+    "city": "Driebergen",
+    "address": "Hoofdstraat 155, 3971 KJ Driebergen"
+  },
+  {
+    "id": "heimat-utrecht",
+    "name": "Heimat",
+    "platform": "formitable",
+    "platformUid": "3e66233b",
+    "website": "http://restaurantheimat.nl",
+    "city": "Utrecht",
+    "address": "Biltstraat 48, 3572 BC Utrecht"
+  },
+  {
+    "id": "helling-7",
+    "name": "Helling 7",
+    "platform": "formitable",
+    "platformUid": "3f8e1139",
+    "website": "https://www.helling7.nl",
+    "city": "Amsterdam",
+    "address": "T.T. Melissaweg 57, 1033 SP Amsterdam"
+  },
+  {
+    "id": "herberg-de-aelderstroom-zweeloo",
+    "name": "Herberg de Aelderstroom",
+    "platform": "formitable",
+    "platformUid": "39e4db9d",
+    "website": "https://www.aelderstroom.nl",
+    "city": "Zweeloo",
+    "address": "Kruisstraat 21, 7851 AE Zweeloo"
+  },
+  {
+    "id": "herberg-onder-de-linden-aduard",
+    "name": "Herberg Onder de Linden",
+    "platform": "formitable",
+    "platformUid": "fcb8f1d1",
+    "website": "https://www.herbergonderdelinden.com",
+    "city": "Aduard",
+    "address": "Burgemeester van Barneveldweg 3, 9831 RD Aduard"
+  },
+  {
+    "id": "hermitage-zeist",
+    "name": "Hermitage",
+    "platform": "formitable",
+    "platformUid": "88859ebb",
+    "website": "https://www.hermitage-zeist.nl",
+    "city": "Zeist",
+    "address": "Het Rond 7, 3701 HS Zeist"
+  },
+  {
+    "id": "heron-utrecht",
+    "name": "Héron",
+    "platform": "formitable",
+    "platformUid": "41d6d845",
+    "website": "http://www.heronrestaurant.nl",
+    "city": "Utrecht",
+    "address": "Schalkwijkstraat 28, 3512 KS Utrecht"
+  },
+  {
+    "id": "het-bosch-waterfront-kitchen",
+    "name": "Het Bosch ‘Waterfront Kitchen'",
+    "platform": "formitable",
+    "platformUid": "254d56e1",
+    "website": "http://www.hetbosch.com",
+    "city": "Amsterdam",
+    "address": "Jollenpad 10, 1081 KC Amsterdam"
+  },
+  {
+    "id": "het-broeker-huis-broek-in-waterland",
+    "name": "Het Broeker Huis",
+    "platform": "tebi",
+    "platformUid": "282764_0a523a1d3711c0523566f753f2cb25e5f14ed781117e8ef82016152d6ff5c2c2",
+    "website": "https://broekerhuis.nl",
+    "city": "Broek in Waterland",
+    "address": "Leeteinde 16, 1151 AK Broek in Waterland"
+  },
+  {
+    "id": "het-spijshuys-boornbergum",
+    "name": "Het Spijshuys",
+    "platform": "formitable",
+    "platformUid": "9c5c8225",
+    "website": "https://het-spijshuys.nl",
+    "city": "Boornbergum",
+    "address": "Westerbuorren 2, 9212 PL Boornbergum"
+  },
+  {
+    "id": "het-wolthuis-bergen-op-zoom",
+    "name": "Het Wolthuis",
+    "platform": "formitable",
+    "platformUid": "c8e0603e",
+    "website": "https://www.restauranthetwolthuis.nl/",
+    "city": "Bergen op Zoom",
+    "address": "Wouwsestraatweg 146, 4623 AS Bergen op Zoom"
+  },
+  {
+    "id": "hex-by-paul-inge-oudewater",
+    "name": "Hex by Paul & Inge",
+    "platform": "formitable",
+    "platformUid": "d82f1c2a",
+    "website": "https://www.hexbypauleninge.nl",
+    "city": "Oudewater",
+    "address": "Markt Oostzijde 14, 3421 AE Oudewater"
+  },
+  {
+    "id": "hokkai-kitchen-ijmuiden",
+    "name": "Hokkai Kitchen",
+    "platform": "formitable",
+    "platformUid": "2a47a913",
+    "website": "https://www.hokkaikitchen.nl",
+    "city": "IJmuiden",
+    "address": "Egmondstraat 2, 1976 BR IJmuiden"
+  },
+  {
+    "id": "houbolt-den-haag",
+    "name": "Houbolt",
+    "platform": "tebi",
+    "platformUid": "457120_e25f9e1d95b8bd461a1f1d27080b501388ca9ebd09ab95fa3192b74817dbe7b4",
+    "website": "https://www.restauranthoubolt.nl",
+    "city": "Den Haag",
+    "address": "Daal en Bergselaan 11, 2565 AB Den Haag"
+  },
+  {
+    "id": "ijssel-restobar-deventer",
+    "name": "IJssel Restobar",
+    "platform": "formitable",
+    "platformUid": "8163f249",
+    "website": "https://www.ijsselrestobar.com",
+    "city": "Deventer",
+    "address": "Worp 2, 7419 AD Deventer"
+  },
+  {
+    "id": "ikaria-park",
+    "name": "Ikaria Park",
+    "platform": "formitable",
+    "platformUid": "2ec6fdc1",
+    "website": "https://www.ikariapark.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "incanto",
+    "name": "Incanto",
+    "platform": "formitable",
+    "platformUid": "c5dd261d",
+    "website": "http://www.restaurant-incanto.nl",
+    "city": "Amsterdam",
+    "address": "Amstel 2, 1017AA Amsterdam"
+  },
+  {
+    "id": "inter-scaldes-kruiningen",
+    "name": "Inter Scaldes",
+    "platform": "formitable",
+    "platformUid": "0809d920",
+    "website": "http://www.interscaldes.nl",
+    "city": "Kruiningen",
+    "address": "Zandweg 2, 4416 NA Kruiningen"
+  },
+  {
+    "id": "ja",
+    "name": "JA",
+    "platform": "tebi",
+    "platformUid": "186014_9e9eb5cd9cffb8ae361835bae87652051174352c4422259e54d31c01e0304934",
+    "website": "https://www.restaurantja.nl",
+    "city": "Amsterdam",
+    "address": "Tweede Jan Steenstraat 3H, 1073 VK Amsterdam"
+  },
+  {
+    "id": "jan-ellen-bistro-moergestel",
+    "name": "Jan & Ellen bistro",
+    "platform": "formitable",
+    "platformUid": "1d6d0fd0",
+    "website": "https://janellenbistro.nl",
+    "city": "Moergestel",
+    "address": "Zandstraat 1, 5066 CA Moergestel"
+  },
+  {
+    "id": "jaspers",
+    "name": "Jaspers",
+    "platform": "formitable",
+    "platformUid": "85a8e72f",
+    "website": "http://www.restaurantjaspers.nl",
+    "city": "Amsterdam",
+    "address": "Ceintuurbaan 196, 1072 GC Amsterdam"
+  },
+  {
+    "id": "joann-enschede",
+    "name": "Joann",
+    "platform": "formitable",
+    "platformUid": "c5581086",
+    "website": "https://restaurantjoann.nl",
+    "city": "Enschede",
+    "address": "Nijverheidsstraat 2, 7511 JM Enschede"
+  },
+  {
+    "id": "joelia-rotterdam",
+    "name": "Joelia",
+    "platform": "formitable",
+    "platformUid": "97093648",
+    "website": "https://joelia.eu",
+    "city": "Rotterdam",
+    "address": "Coolsingel 5, 3012 AA Rotterdam"
+  },
+  {
+    "id": "johannes",
+    "name": "Johannes",
+    "platform": "formitable",
+    "platformUid": "278aaf9f",
+    "website": "http://www.restaurantjohannes.nl",
+    "city": "Amsterdam",
+    "address": "Herengracht 413 h, 1017 BP Amsterdam"
+  },
+  {
+    "id": "john-dory",
+    "name": "John Dory",
+    "platform": "formitable",
+    "platformUid": "6d58ede1",
+    "website": "https://johndory.nl",
+    "city": "Amsterdam",
+    "address": "Prinsengracht 999, 1017 KM Amsterdam"
+  },
+  {
+    "id": "kaagman-kortekaas",
+    "name": "Kaagman & Kortekaas",
+    "platform": "formitable",
+    "platformUid": "00e5b489",
+    "website": "https://www.kaagmanenkortekaas.nl",
+    "city": "Amsterdam",
+    "address": "Sint Nicolaasstraat 43, 1012 NJ Amsterdam"
+  },
+  {
+    "id": "ken-sushi",
+    "name": "Ken Sushi",
+    "platform": "formitable",
+    "platformUid": "7d7fdf68",
+    "website": "https://www.kensushi.nl",
+    "city": "Amsterdam",
+    "address": "Geldersekade 19, 1011 EJ Amsterdam"
+  },
+  {
+    "id": "kien",
+    "name": "Kien",
+    "platform": "formitable",
+    "platformUid": "a132427a",
+    "website": "https://www.restaurantkien.nl",
+    "city": "Amsterdam",
+    "address": "Witte de Withplein 43, 1057 XN Amsterdam"
+  },
+  {
+    "id": "klaproos",
+    "name": "Klaproos",
+    "platform": "formitable",
+    "platformUid": "d41d756a",
+    "website": "https://klaproosamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Papaverweg 39, 1032 JZ Amsterdam"
+  },
+  {
+    "id": "kok-verhoeven-restaurant-tilburg",
+    "name": "Kok Verhoeven Restaurant",
+    "platform": "formitable",
+    "platformUid": "ae412fad",
+    "website": "https://www.kokverhoeven.nl/restaurant",
+    "city": "Tilburg",
+    "address": "NS Plein 32, 5014 DC Tilburg"
+  },
+  {
+    "id": "konijnenvoer-arnhem",
+    "name": "Konijnenvoer",
+    "platform": "formitable",
+    "platformUid": "21e939e4",
+    "website": "https://www.konijnenvoer.com",
+    "city": "Arnhem",
+    "address": "Weverstraat 40, 6811 EM Arnhem"
+  },
+  {
+    "id": "kook-atelier-op-oost-texel-oosterend",
+    "name": "Kook Atelier op Oost",
+    "platform": "formitable",
+    "platformUid": "8ee5daf9",
+    "website": "https://www.opoost.nl/",
+    "city": "Texel - Oosterend",
+    "address": "Oost 76, 1794 GR Texel - Oosterend"
+  },
+  {
+    "id": "l-eglise-zwolle",
+    "name": "L’église",
+    "platform": "formitable",
+    "platformUid": "0f64680b",
+    "website": "https://restaurantleglise.nl",
+    "city": "Zwolle",
+    "address": "Bethlehemkerkplein 42, 8011 PH Zwolle"
+  },
+  {
+    "id": "l-oree-slenaken",
+    "name": "L'ORÉE",
+    "platform": "formitable",
+    "platformUid": "5cbc8e0b",
+    "website": "https://slenakervallei.nl",
+    "city": "Slenaken",
+    "address": "Dorpsstraat 1, 6277 NC Slenaken"
+  },
+  {
+    "id": "la-belle-source-arnhem",
+    "name": "La Belle Source",
+    "platform": "formitable",
+    "platformUid": "2d5682f9",
+    "website": "https://www.grootwarnsborn.nl",
+    "city": "Arnhem",
+    "address": "Bakenbergseweg 277, 6816 VP Arnhem"
+  },
+  {
+    "id": "la-fiorita",
+    "name": "La Fiorita",
+    "platform": "formitable",
+    "platformUid": "1038ed32",
+    "website": "https://lafiorita.nl",
+    "city": "Amsterdam",
+    "address": "Tweede Tuindwarsstraat 12H, 1015 RZ Amsterdam"
+  },
+  {
+    "id": "la-vallade",
+    "name": "La Vallade",
+    "platform": "formitable",
+    "platformUid": "e823f8ab",
+    "website": "https://www.lavallade.nl",
+    "city": "Amsterdam",
+    "address": "Ringdijk 23, 1097 AB Amsterdam"
+  },
+  {
+    "id": "lagrange-buren",
+    "name": "LaGrange",
+    "platform": "formitable",
+    "platformUid": "40ceac5c",
+    "website": "https://www.restaurantlagrange.nl",
+    "city": "Buren",
+    "address": "Buitenhuizenpoort 11, 4116 CA Buren"
+  },
+  {
+    "id": "lars",
+    "name": "Lars",
+    "platform": "tebi",
+    "platformUid": "831753_f0042538a931514acd32923a8f244071d3706f52a0c971cb6b744a5aa3f466c1",
+    "website": "https://www.larsamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Danzigerkade 179, 1013 AP Amsterdam"
+  },
+  {
+    "id": "lastage",
+    "name": "Lastage",
+    "platform": "tebi",
+    "platformUid": "896640_ae82d8c763dc5ba3b1ff96e99ebb22c3dd46a50eca0adfc44ac79ebcbe4f06ce",
+    "website": "http://restaurantlastage.nl",
+    "city": "Amsterdam",
+    "address": "Geldersekade 29, 1011 EJ Amsterdam"
+  },
+  {
+    "id": "lime-restaurant-malden",
+    "name": "Lime Restaurant",
+    "platform": "formitable",
+    "platformUid": "6695b392",
+    "website": "http://www.restaurantlime.nl",
+    "city": "Malden",
+    "address": "Kerkplein 2, 6581 AC Malden"
+  },
+  {
+    "id": "lux-rotterdam",
+    "name": "Lux",
+    "platform": "tebi",
+    "platformUid": "346268_821f82df05c847be55d9ef66b779e967205bb229c193e11c8e13b823e345bd5c",
+    "website": "https://www.restaurantlux.nl",
+    "city": "Rotterdam",
+    "address": "s Gravendijkwal 133, 3021 EK Rotterdam"
+  },
+  {
+    "id": "lyf-s-beetsterzwaag",
+    "name": "Lyf's",
+    "platform": "formitable",
+    "platformUid": "bce4243c",
+    "website": "http://www.lyfs.nl",
+    "city": "Beetsterzwaag",
+    "address": "Hoofdstraat 73, 9244 CM Beetsterzwaag"
+  },
+  {
+    "id": "macadamia-stein",
+    "name": "Macadamia",
+    "platform": "formitable",
+    "platformUid": "c5f6bd8d",
+    "website": "https://macadamiafood.com",
+    "city": "Stein",
+    "address": "Ganzenweide 15, 6171 DA Stein"
+  },
+  {
+    "id": "madeleine-utrecht",
+    "name": "Madeleine",
+    "platform": "formitable",
+    "platformUid": "4504c746",
+    "website": "https://www.madeleine-utrecht.nl",
+    "city": "Utrecht",
+    "address": "'t Wed 3a, 3512 JH Utrecht"
+  },
+  {
+    "id": "maeve-utrecht",
+    "name": "Maeve",
+    "platform": "formitable",
+    "platformUid": "476bb65f",
+    "website": "https://www.restaurantmaeve.nl",
+    "city": "Utrecht",
+    "address": "Kromme Nieuwegracht 18, 3512 HH Utrecht"
+  },
+  {
+    "id": "maita-haarlem",
+    "name": "Maita",
+    "platform": "formitable",
+    "platformUid": "04e1eeb9",
+    "website": "https://www.maitarestaurant.com",
+    "city": "Haarlem",
+    "address": "Lange Veerstraat 45, 2011 DA Haarlem"
+  },
+  {
+    "id": "mano-haarlem",
+    "name": "Mano",
+    "platform": "formitable",
+    "platformUid": "2f67696a",
+    "website": "https://mano-restaurant.nl",
+    "city": "Haarlem",
+    "address": "Bakenessergracht 109, 2011 JV Haarlem"
+  },
+  {
+    "id": "marie",
+    "name": "Marie",
+    "platform": "formitable",
+    "platformUid": "7a69a9ce",
+    "website": "https://marieamsterdam.com",
+    "city": "Amsterdam",
+    "address": "Nieuwe Doelenstraat 2-14, 1012 CP Amsterdam"
+  },
+  {
+    "id": "mario-wijdewormer",
+    "name": "MARIO",
+    "platform": "formitable",
+    "platformUid": "764da435",
+    "website": "https://www.restaurantmario.nl",
+    "city": "Wijdewormer",
+    "address": "Neck 15, 1456 AA Wijdewormer"
+  },
+  {
+    "id": "maris-piper",
+    "name": "Maris Piper",
+    "platform": "formitable",
+    "platformUid": "433f160f",
+    "website": "http://www.maris-piper.com",
+    "city": "Amsterdam",
+    "address": "Frans Halsstraat 76HS, 1072 BV Amsterdam"
+  },
+  {
+    "id": "mei-amersfoort",
+    "name": "Mei",
+    "platform": "formitable",
+    "platformUid": "beba1a18",
+    "website": "https://mei-amersfoort.nl",
+    "city": "Amersfoort",
+    "address": "Krommestraat 49, 3811 CB Amersfoort"
+  },
+  {
+    "id": "meneer-de-wit-heeft-honger",
+    "name": "Meneer de Wit Heeft Honger",
+    "platform": "formitable",
+    "platformUid": "61c4eeae",
+    "website": "http://www.meneerdewitheefthonger.nl",
+    "city": "Amsterdam",
+    "address": "Witte de Withstraat 10, 1057 XV Amsterdam"
+  },
+  {
+    "id": "mont-blanc",
+    "name": "Mont Blanc",
+    "platform": "tebi",
+    "platformUid": "579267_501b9497c43b70988557219cf31f87a3f416c8e929d209d4dd6b7b97eff35beb",
+    "website": "https://www.restaurantmontblanc.nl",
+    "city": "Amsterdam",
+    "address": "Govert Flinckstraat 308 H, 1073 CJ Amsterdam"
+  },
+  {
+    "id": "mos-amsterdam",
+    "name": "MOS Amsterdam",
+    "platform": "formitable",
+    "platformUid": "321bb04b",
+    "website": "http://www.mosamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "IJdok 185, 1013 MM Amsterdam"
+  },
+  {
+    "id": "moyo",
+    "name": "MOYŌ",
+    "platform": "formitable",
+    "platformUid": "1be8e600",
+    "website": "https://www.paindemie-amsterdam.com/",
+    "city": "Amsterdam",
+    "address": "Kinkerstraat 122, 1053 EC Amsterdam"
+  },
+  {
+    "id": "nazka",
+    "name": "Nazka",
+    "platform": "formitable",
+    "platformUid": "9424c1b2",
+    "website": "https://www.nazka.nu",
+    "city": "Amsterdam",
+    "address": "Van Ostadestraat 352-354, 1073 TZ Amsterdam"
+  },
+  {
+    "id": "neder-alkmaar",
+    "name": "Neder",
+    "platform": "formitable",
+    "platformUid": "6640ee46",
+    "website": "https://www.nederrestaurant.nl",
+    "city": "Alkmaar",
+    "address": "Laat 85, 1811 EC Alkmaar"
+  },
+  {
+    "id": "neni",
+    "name": "NENI",
+    "platform": "formitable",
+    "platformUid": "6d3ee093",
+    "website": "https://neni-amsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Stadionplein 8, 1076 CM Amsterdam"
+  },
+  {
+    "id": "nev-eindhoven",
+    "name": "Nev",
+    "platform": "tebi",
+    "platformUid": "800596_221075f56819397636707973dd93aaca9e6a0a59cf773e714faeeb9bc878cbb5",
+    "website": "https://nevrestaurant.nl",
+    "city": "Eindhoven",
+    "address": "Stratumseind 87, 5611 ER Eindhoven"
+  },
+  {
+    "id": "niemeijer-groningen",
+    "name": "Niemeijer",
+    "platform": "formitable",
+    "platformUid": "2d9d3d2c",
+    "website": "https://www.restaurantniemeijer.nl",
+    "city": "Groningen",
+    "address": "Akerkstraat 20, 9712 BE Groningen"
+  },
+  {
+    "id": "nikotin",
+    "name": "Nikotin",
+    "platform": "tebi",
+    "platformUid": "906121_fa1016e0407503e262bd5aaa5a0665477726c87c2aff32fb1dcab2bc59f59114",
+    "website": "https://www.nikotin.nl/",
+    "city": "Amsterdam",
+    "address": "Gedempt Hamerkanaal 75a, 1021KP Amsterdam"
+  },
+  {
+    "id": "o-o-sint-willebrord",
+    "name": "O&O",
+    "platform": "formitable",
+    "platformUid": "bcf7b86c",
+    "website": "http://www.restaurantoeno.nl",
+    "city": "Sint Willebrord",
+    "address": "Dorpsstraat 138, 4711 EL Sint Willebrord"
+  },
+  {
+    "id": "oan-tafel-wergea",
+    "name": "Oan Tafel",
+    "platform": "formitable",
+    "platformUid": "ff4b270e",
+    "website": "https://oantafel.nl",
+    "city": "Wergea",
+    "address": "Kerkbuurt 3, 9005 NZ Wergea"
+  },
+  {
+    "id": "occo",
+    "name": "OCCO",
+    "platform": "formitable",
+    "platformUid": "fd9397f5",
+    "website": "http://www.occo.nl",
+    "city": "Amsterdam",
+    "address": "Keizersgracht 384, 1016 GB Amsterdam"
+  },
+  {
+    "id": "ode-dokkum",
+    "name": "ODE",
+    "platform": "formitable",
+    "platformUid": "9df6d694",
+    "website": "https://restaurantode.nl",
+    "city": "Dokkum",
+    "address": "Markt 38, 9101 LS Dokkum"
+  },
+  {
+    "id": "oker-den-haag",
+    "name": "Oker",
+    "platform": "formitable",
+    "platformUid": "1ce5f197",
+    "website": "https://restaurantoker.nl",
+    "city": "Den Haag",
+    "address": "Denneweg 71, 2514 CE Den Haag"
+  },
+  {
+    "id": "old-skool-druten",
+    "name": "Old Skool",
+    "platform": "formitable",
+    "platformUid": "7973ac4b",
+    "website": "https://www.restaurantoldskool.nl",
+    "city": "Druten",
+    "address": "Hooistraat 22, 6651 AD Druten"
+  },
+  {
+    "id": "oli-mazi-utrecht",
+    "name": "Oli Mazi",
+    "platform": "formitable",
+    "platformUid": "c1460e89",
+    "website": "https://www.olimazi.nl",
+    "city": "Utrecht",
+    "address": "Amsterdamsestraatweg 701 E, 3555 HE Utrecht"
+  },
+  {
+    "id": "onda-den-haag",
+    "name": "Onda",
+    "platform": "tebi",
+    "platformUid": "386857_e4b1ed42edb37be9e3790329375825fc207a06c6236bf26da28f51b736ed1847",
+    "website": "https://www.onda.bar",
+    "city": "Den Haag",
+    "address": "Groenewegje 115, 2515 LP Den Haag"
+  },
+  {
+    "id": "oocker",
+    "name": "Oocker",
+    "platform": "tebi",
+    "platformUid": "703927_b2ef05a17c2ceb15f963596bcd01d5d583f1d495a6e6ee122a807e72014ecb64",
+    "website": "https://www.oockeramsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Frederiksplein 29h, 1017 XL Amsterdam"
+  },
+  {
+    "id": "oogst-den-haag",
+    "name": "Oogst",
+    "platform": "formitable",
+    "platformUid": "a888fcfe",
+    "website": "https://www.restaurantoogst.nl",
+    "city": "Den Haag",
+    "address": "Denneweg 10 B, 2514 CG Den Haag"
+  },
+  {
+    "id": "oriental-city",
+    "name": "Oriental City",
+    "platform": "formitable",
+    "platformUid": "5fe1d848",
+    "website": "https://www.oriental-city.com",
+    "city": "Amsterdam",
+    "address": "Oudezijds Voorburgwal 177-179, 1012 EV Amsterdam"
+  },
+  {
+    "id": "os-en-peper-zwolle",
+    "name": "Os en Peper",
+    "platform": "formitable",
+    "platformUid": "915ae752",
+    "website": "https://www.osenpeper.nl",
+    "city": "Zwolle",
+    "address": "Ossenmarkt 7-8, 8011 MR Zwolle"
+  },
+  {
+    "id": "osteria-liz-rotterdam",
+    "name": "Osteria Liz",
+    "platform": "tebi",
+    "platformUid": "734956_f553939f995aa9853ee7e6727ceb810cbc810e0eb55b8aaeb3c131f5b6eb20c3",
+    "website": "https://www.lizrotterdam.nl",
+    "city": "Rotterdam",
+    "address": "Berkelselaan 2A, 3037 PE Rotterdam"
+  },
+  {
+    "id": "ovum-grave",
+    "name": "Ovum",
+    "platform": "formitable",
+    "platformUid": "96d0be77",
+    "website": "https://ovumrestaurant.nl/contact/",
+    "city": "Grave",
+    "address": "St. Jorisstraat 32, 5361 HD Grave"
+  },
+  {
+    "id": "ox-rotterdam",
+    "name": "Ox",
+    "platform": "tebi",
+    "platformUid": "294228_3519e0adfa9f3e68af4909068692bd696e8101aed23d32c55be2ab30a3b3e002",
+    "website": "https://www.ox-rotterdam.nl",
+    "city": "Rotterdam",
+    "address": "Schiekade 189, 3013 BR Rotterdam"
+  },
+  {
+    "id": "pakhoes-maastricht",
+    "name": "Pakhoes",
+    "platform": "formitable",
+    "platformUid": "94167ae5",
+    "website": "http://www.pakhoes.nl",
+    "city": "Maastricht",
+    "address": "Waterpoort 4-6, 6221 GB Maastricht"
+  },
+  {
+    "id": "parkheuvel-rotterdam",
+    "name": "Parkheuvel",
+    "platform": "formitable",
+    "platformUid": "5ed5791b",
+    "website": "http://www.parkheuvel.nl",
+    "city": "Rotterdam",
+    "address": "Heuvellaan 21, 3016 GL Rotterdam"
+  },
+  {
+    "id": "pelusa",
+    "name": "Pelusa",
+    "platform": "tebi",
+    "platformUid": "715926_a620c007c35be554fa20395e4dde8b4f56ffece6a12bb0919bf73a304fc48be0",
+    "website": "https://pelusa.amsterdam",
+    "city": "Amsterdam",
+    "address": "Leen Jongewaardkade 41, 1031 HS Amsterdam"
+  },
+  {
+    "id": "perceel-capelle-a-d-ijssel",
+    "name": "Perceel",
+    "platform": "formitable",
+    "platformUid": "41df1a0c",
+    "website": "http://www.restaurantperceel.nl",
+    "city": "Capelle a/d IJssel",
+    "address": "Dorpsstraat 3, 2902 BC Capelle a/d IJssel"
+  },
+  {
+    "id": "petit-bonheur-maastricht",
+    "name": "Petit Bonheur",
+    "platform": "formitable",
+    "platformUid": "20ee1a28",
+    "website": "https://www.petitbonheur.nl",
+    "city": "Maastricht",
+    "address": "Achter de Molens 2, 6211 JC Maastricht"
+  },
+  {
+    "id": "pianeta-terra",
+    "name": "Pianeta Terra",
+    "platform": "formitable",
+    "platformUid": "06955422",
+    "website": "https://www.pianetaterra.nl",
+    "city": "Amsterdam",
+    "address": "Beulingstraat 7, 1017 BA Amsterdam"
+  },
+  {
+    "id": "pieters-restaurant-bergambacht",
+    "name": "Pieters Restaurant",
+    "platform": "formitable",
+    "platformUid": "fe2efdb7",
+    "website": "https://www.pietersrestaurant.nl",
+    "city": "Bergambacht",
+    "address": "Hoofdstraat 73 -75, 2861 AL Bergambacht"
+  },
+  {
+    "id": "pit-heeswijk-dinther",
+    "name": "PIT",
+    "platform": "formitable",
+    "platformUid": "686e6e3a",
+    "website": "https://www.restaurantpit.nl",
+    "city": "Heeswijk-Dinther",
+    "address": "Raadhuisplein 7, 5473 GC Heeswijk-Dinther"
+  },
+  {
+    "id": "poelzicht-kapel-avezaath",
+    "name": "Poelzicht",
+    "platform": "formitable",
+    "platformUid": "5a78b9d4",
+    "website": "https://www.poelzicht.nl",
+    "city": "Kapel-Avezaath",
+    "address": "Kromme Steeg 11, 4013 NG Kapel-Avezaath"
+  },
+  {
+    "id": "porta-sud-breda",
+    "name": "Porta Sud",
+    "platform": "formitable",
+    "platformUid": "7f954396",
+    "website": "https://portasud.nl/",
+    "city": "Breda",
+    "address": "Passage Zuidpoort 10, 4811 NT Breda"
+  },
+  {
+    "id": "portfolio-den-haag",
+    "name": "Portfolio",
+    "platform": "tebi",
+    "platformUid": "563127_b78112bcf9703e1e693554ff9661604caa14d5072f17ce148b02dd6cc7a98769",
+    "website": "https://portfolio-restaurant.nl",
+    "city": "Den Haag",
+    "address": "Prinsestraat 36, 2513 CD Den Haag"
+  },
+  {
+    "id": "r21",
+    "name": "R21",
+    "platform": "formitable",
+    "platformUid": "50d970ac",
+    "website": "https://www.r21.amsterdam",
+    "city": "Amsterdam",
+    "address": "Peperstraat 23, 1011 TJ Amsterdam"
+  },
+  {
+    "id": "ratatouille-food-wine-haarlem",
+    "name": "Ratatouille Food & Wine",
+    "platform": "formitable",
+    "platformUid": "c7094744",
+    "website": "http://www.ratatouillefoodandwine.nl",
+    "city": "Haarlem",
+    "address": "Spaarne 96, 2011 CL Haarlem"
+  },
+  {
+    "id": "red-orchids-asian-bistro-heemstede",
+    "name": "Red Orchids Asian Bistro",
+    "platform": "formitable",
+    "platformUid": "7ed28988",
+    "website": "https://redorchids.nl",
+    "city": "Heemstede",
+    "address": "Zandvoortselaan 139, 2106 CM Heemstede"
+  },
+  {
+    "id": "remouillage",
+    "name": "Remouillage",
+    "platform": "tebi",
+    "platformUid": "619423_c96b352d036168724b32d308c17207be8090528bf55c9f3fb879cbf6ff992f46",
+    "website": "https://cafe.remouillage.com",
+    "city": "Amsterdam",
+    "address": "Trompenburgstraat 111, 1079 TV Amsterdam"
+  },
+  {
+    "id": "renilde-rotterdam",
+    "name": "Renilde",
+    "platform": "formitable",
+    "platformUid": "f5427530",
+    "website": "https://www.restaurantrenilde.nl",
+    "city": "Rotterdam",
+    "address": "Museumpark 24, 3015 CX Rotterdam"
+  },
+  {
+    "id": "restaurant-kyo",
+    "name": "Restaurant Kyo",
+    "platform": "formitable",
+    "platformUid": "97bff3e7",
+    "website": "https://www.restaurantkyo.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "reverie-veldhoven",
+    "name": "Reverie",
+    "platform": "formitable",
+    "platformUid": "033743c0",
+    "website": "https://restaurantreverie.nl",
+    "city": "Veldhoven",
+    "address": "Dorpstraat 1, 5504 HA Veldhoven"
+  },
+  {
+    "id": "rijnzicht-doornenburg",
+    "name": "Rijnzicht",
+    "platform": "formitable",
+    "platformUid": "76a3f80e",
+    "website": "https://www.rijnzicht.nl",
+    "city": "Doornenburg",
+    "address": "Sterreschans 15, 6686 MS Doornenburg"
+  },
+  {
+    "id": "rijsel",
+    "name": "Rijsel",
+    "platform": "tebi",
+    "platformUid": "406079_33b338f8d11d64cec7a01fd504ff4bfa9d827d6a587a56d35cdf00f8ed457658",
+    "website": "http://www.rijsel.com",
+    "city": "Amsterdam",
+    "address": "Marcusstraat 52 B, 1091 TK Amsterdam"
+  },
+  {
+    "id": "ron-gastrobar-indonesia-bloemendaal",
+    "name": "Ron Gastrobar Indonesia",
+    "platform": "formitable",
+    "platformUid": "47bba43a",
+    "website": "https://rongastrobar.nl/restaurants/ron-gastrobar-bij-de-c",
+    "city": "Bloemendaal",
+    "address": "Hoge Duin en Daalseweg 6, 2061 AG Bloemendaal"
+  },
+  {
+    "id": "rondo-restaurant-amsteram",
+    "name": "Rondo Restaurant",
+    "platform": "tebi",
+    "platformUid": "438962_cea17ae4a699a98af0851d3930b58cfd6e31d21b9b48f482a11c80be537255c6",
+    "website": "https://www.rondorestaurant.nl",
+    "city": "Amsteram",
+    "address": "Planciusstraat 49, 1013 ME Amsteram"
+  },
+  {
+    "id": "rooie-nel-utrecht",
+    "name": "Rooie Nel",
+    "platform": "tebi",
+    "platformUid": "689148_db3f7be1a1dba0c291a25fe81e9aaaae942427b6a8616135ce2dac1fcdd3a42c",
+    "website": "https://rooienel.nl",
+    "city": "Utrecht",
+    "address": "Jagerskade 13, 3552 TL Utrecht"
+  },
+  {
+    "id": "rosto-leiden",
+    "name": "Rosto",
+    "platform": "formitable",
+    "platformUid": "aa5ab2ed",
+    "website": "https://www.restaurantrosto.nl",
+    "city": "Leiden",
+    "address": "Oude Rijn 1a, 2312 HB Leiden"
+  },
+  {
+    "id": "rotonde-rotterdam",
+    "name": "Rotonde",
+    "platform": "formitable",
+    "platformUid": "7e516bca",
+    "website": "https://restaurantrotonde.nl",
+    "city": "Rotterdam",
+    "address": "Goudsesingel 230, 3011 KE Rotterdam"
+  },
+  {
+    "id": "roux",
+    "name": "Roux",
+    "platform": "tebi",
+    "platformUid": "173598_cd3656bfcd6854487eae08e8d760b4b48a900285f81c3dcfdb3b53cd986797e2",
+    "website": "https://www.restaurantroux.nl",
+    "city": "Amsterdam",
+    "address": "Westerstraat 132H, 1015 MP Amsterdam"
+  },
+  {
+    "id": "saam-restaurant-amstelveen",
+    "name": "SAAM restaurant",
+    "platform": "formitable",
+    "platformUid": "51191a87",
+    "website": "https://www.saamrestaurant.nl",
+    "city": "Amstelveen",
+    "address": "Amstelzijde 59, 1184 TZ Amstelveen"
+  },
+  {
+    "id": "saar-utrecht",
+    "name": "Saar",
+    "platform": "tebi",
+    "platformUid": "982940_928bec849f9a14b7b98afa920b2ba2ac154cee2b015ee08900d1dcda73555762",
+    "website": "https://www.saar-utrecht.nl",
+    "city": "Utrecht",
+    "address": "Catharijnesingel 81, 3511AK Utrecht"
+  },
+  {
+    "id": "salmuera",
+    "name": "Salmuera",
+    "platform": "formitable",
+    "platformUid": "73e478fe",
+    "website": "https://www.sal-amsterdam.nl/",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "savarin-rijswijk",
+    "name": "Savarin",
+    "platform": "formitable",
+    "platformUid": "71ddc4bf",
+    "website": "http://www.savarin.nl",
+    "city": "Rijswijk",
+    "address": "Laan van Hoornwijck 29, 2289 DG Rijswijk"
+  },
+  {
+    "id": "scheepskameel",
+    "name": "Scheepskameel",
+    "platform": "formitable",
+    "platformUid": "4d144539",
+    "website": "http://www.scheepskameel.nl",
+    "city": "Amsterdam",
+    "address": "Kattenburgerstraat 7 - gebouw 24, 1018 JA Amsterdam"
+  },
+  {
+    "id": "sea-salt-saloon-utrecht",
+    "name": "Sea Salt Saloon",
+    "platform": "formitable",
+    "platformUid": "05700832",
+    "website": "http://www.seasaltsaloon.nl",
+    "city": "Utrecht",
+    "address": "Wed 3, 3581 NP Utrecht"
+  },
+  {
+    "id": "senses",
+    "name": "Senses",
+    "platform": "formitable",
+    "platformUid": "c2f4c319",
+    "website": "https://www.sensesrestaurant.nl",
+    "city": "Amsterdam",
+    "address": "Vijzelstraat 45, 1017 HE Amsterdam"
+  },
+  {
+    "id": "showw",
+    "name": "Showw",
+    "platform": "formitable",
+    "platformUid": "b0a781d4",
+    "website": "https://www.restaurantshoww.com",
+    "city": "Amsterdam",
+    "address": "Gelrestraat 28, 1079 MZ Amsterdam"
+  },
+  {
+    "id": "silver-lelystad",
+    "name": "Silver",
+    "platform": "formitable",
+    "platformUid": "663cb116",
+    "website": "https://www.restaurantsilver.nl",
+    "city": "Lelystad",
+    "address": "Zilverparkkade 1, 8232 WJ Lelystad"
+  },
+  {
+    "id": "sinck",
+    "name": "Sinck",
+    "platform": "formitable",
+    "platformUid": "e37584c9",
+    "website": "https://www.sinckamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Prinsengracht 422, 1016 JC Amsterdam"
+  },
+  {
+    "id": "sinne",
+    "name": "Sinne",
+    "platform": "formitable",
+    "platformUid": "c0b96977",
+    "website": "http://www.restaurantsinne.nl",
+    "city": "Amsterdam",
+    "address": "Ceintuurbaan 342-h, 1072 PB Amsterdam"
+  },
+  {
+    "id": "sizzles-at-the-park-apeldoorn",
+    "name": "Sizzles at the Park",
+    "platform": "formitable",
+    "platformUid": "ed721174",
+    "website": "https://www.sizzlesatthepark.nl/",
+    "city": "Apeldoorn",
+    "address": "Kerklaan 17, 7311 AA Apeldoorn"
+  },
+  {
+    "id": "sober-venlo-tegelen",
+    "name": "Sober",
+    "platform": "tebi",
+    "platformUid": "450701_1d5ffe368275db5d98a937cc72168d43be194562e617b671aef2bb0370372f9e",
+    "website": "https://www.sober-zavel.nl/restaurant-sober",
+    "city": "Venlo (Tegelen)",
+    "address": "Venloseweg 9, 5931 GR Venlo (Tegelen)"
+  },
+  {
+    "id": "soleil-enschede",
+    "name": "Soleil",
+    "platform": "formitable",
+    "platformUid": "661c715d",
+    "website": "https://www.cafesoleil.nl",
+    "city": "Enschede",
+    "address": "Pijpenstraat 20, 7511 GM Enschede"
+  },
+  {
+    "id": "southern-cross-heemstede",
+    "name": "Southern Cross",
+    "platform": "formitable",
+    "platformUid": "66e5114a",
+    "website": "http://www.southern-cross.nl",
+    "city": "Heemstede",
+    "address": "Zandvoortselaan 24, 2106 CP Heemstede"
+  },
+  {
+    "id": "spice-by-blake-rotterdam",
+    "name": "Spice by Blake",
+    "platform": "formitable",
+    "platformUid": "2cd42e49",
+    "website": "https://www.spicebyblake.com",
+    "city": "Rotterdam",
+    "address": "Pannekoekstraat 40A, 3011 LH Rotterdam"
+  },
+  {
+    "id": "stadsjochies-utrecht",
+    "name": "Stadsjochies",
+    "platform": "formitable",
+    "platformUid": "275d6399",
+    "website": "https://stadsjochies.nl",
+    "city": "Utrecht",
+    "address": "Rijndijk 12, 3585 LG Utrecht"
+  },
+  {
+    "id": "steef-leeuwarden",
+    "name": "STEEF.",
+    "platform": "formitable",
+    "platformUid": "537d9d50",
+    "website": "https://restaurant-steef.nl",
+    "city": "Leeuwarden",
+    "address": "Tweebaksmarkt 47, 8911 KW Leeuwarden"
+  },
+  {
+    "id": "tannay",
+    "name": "Tannay",
+    "platform": "formitable",
+    "platformUid": "e6fed078",
+    "website": "https://tannay.nl",
+    "city": "Amsterdam",
+    "address": "Zandhoek 14, 1013 KT Amsterdam"
+  },
+  {
+    "id": "tante-kee-kaag",
+    "name": "Tante Kee",
+    "platform": "formitable",
+    "platformUid": "d0996b06",
+    "website": "http://www.tantekee.nl",
+    "city": "Kaag",
+    "address": "Julianalaan 14, 2159 LA Kaag"
+  },
+  {
+    "id": "tapisco-den-haag",
+    "name": "Tapisco",
+    "platform": "formitable",
+    "platformUid": "b3fc0047",
+    "website": "https://www.tapisco.nl",
+    "city": "Den Haag",
+    "address": "Kneuterdijk 11, 2514 EM Den Haag"
+  },
+  {
+    "id": "terroir-utrecht",
+    "name": "Terroir",
+    "platform": "formitable",
+    "platformUid": "b9ae5764",
+    "website": "https://www.caferestaurantterroir.nl",
+    "city": "Utrecht",
+    "address": "Lange Nieuwstraat 62, 3512PL Utrecht"
+  },
+  {
+    "id": "terroir-grand-cru-hulst",
+    "name": "Terroir Grand Cru",
+    "platform": "formitable",
+    "platformUid": "3c09de1a",
+    "website": "https://www.terroirgrandcru.nl",
+    "city": "Hulst",
+    "address": "Vismarkt 5, 4561 AZ Hulst"
+  },
+  {
+    "id": "testamatta",
+    "name": "Testamatta",
+    "platform": "formitable",
+    "platformUid": "625bb5dd",
+    "website": "https://testamatta.nl",
+    "city": "Amsterdam",
+    "address": "Overtoom 125, 1054 HE Amsterdam"
+  },
+  {
+    "id": "the-bishop-leiden",
+    "name": "The Bishop",
+    "platform": "formitable",
+    "platformUid": "1a73d591",
+    "website": "http://www.thebishop.nl",
+    "city": "Leiden",
+    "address": "Middelweg 7-9, 2312 KE Leiden"
+  },
+  {
+    "id": "the-black-tie-assen",
+    "name": "The Black Tie",
+    "platform": "formitable",
+    "platformUid": "9719b881",
+    "website": "http://www.theblacktie.nl",
+    "city": "Assen",
+    "address": "Weiersloop 1, 9401 DZ Assen"
+  },
+  {
+    "id": "the-green-rose-arnhem",
+    "name": "The Green Rose",
+    "platform": "formitable",
+    "platformUid": "13ec9201",
+    "website": "http://www.thegreenrose.nl",
+    "city": "Arnhem",
+    "address": "Koningstraat 50, 6811 DH Arnhem"
+  },
+  {
+    "id": "the-lemon-tree-deventer",
+    "name": "The Lemon Tree",
+    "platform": "formitable",
+    "platformUid": "910c2888",
+    "website": "https://www.thelemontree.nl",
+    "city": "Deventer",
+    "address": "Grote Poot 1, 7411 KE Deventer"
+  },
+  {
+    "id": "the-madras-diaries-utrecht",
+    "name": "The Madras Diaries",
+    "platform": "formitable",
+    "platformUid": "90ab3b64",
+    "website": "https://themadrasdiaries.nl",
+    "city": "Utrecht",
+    "address": "Brusselplein 11, 3541 CH Utrecht"
+  },
+  {
+    "id": "the-red-sun-blaricum",
+    "name": "The Red Sun",
+    "platform": "formitable",
+    "platformUid": "e2ec55a1",
+    "website": "http://www.theredsun.nl",
+    "city": "Blaricum",
+    "address": "Huizerweg 3, 1261 AR Blaricum"
+  },
+  {
+    "id": "the-white-room",
+    "name": "The White Room",
+    "platform": "formitable",
+    "platformUid": "98a85dc9",
+    "website": "https://www.restaurantthewhiteroom.com",
+    "city": "Amsterdam",
+    "address": "Dam 9, 1012 JS Amsterdam"
+  },
+  {
+    "id": "titus-megen",
+    "name": "TITUS",
+    "platform": "formitable",
+    "platformUid": "6254cdcf",
+    "website": "https://www.restauranttitus.nl",
+    "city": "Megen",
+    "address": "Torenstraat 3, 5366 BJ Megen"
+  },
+  {
+    "id": "toet",
+    "name": "Toet",
+    "platform": "formitable",
+    "platformUid": "28c84997",
+    "website": "https://www.toetamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Europaplein 67, 1078 GW Amsterdam"
+  },
+  {
+    "id": "toscanini",
+    "name": "Toscanini",
+    "platform": "formitable",
+    "platformUid": "698d80d8",
+    "website": "http://www.restauranttoscanini.nl",
+    "city": "Amsterdam",
+    "address": "Lindengracht 75, 1015 KD Amsterdam"
+  },
+  {
+    "id": "tov-schagen",
+    "name": "TOV",
+    "platform": "formitable",
+    "platformUid": "41a91242",
+    "website": "http://www.restauranttov.nl",
+    "city": "Schagen",
+    "address": "Loet 8, 1741 BP Schagen"
+  },
+  {
+    "id": "tribeca-heeze",
+    "name": "Tribeca",
+    "platform": "formitable",
+    "platformUid": "735c935f",
+    "website": "https://restaurant-tribeca.com",
+    "city": "Heeze",
+    "address": "Jan Deckersstraat 7, 5591 HN Heeze"
+  },
+  {
+    "id": "troef",
+    "name": "Troef",
+    "platform": "formitable",
+    "platformUid": "dcfe4897",
+    "website": "https://troefamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Schollenbrugstraat 8, 1091 EX Amsterdam"
+  },
+  {
+    "id": "tuinkamer-priona-schuinesloot",
+    "name": "Tuinkamer Priona",
+    "platform": "formitable",
+    "platformUid": "59064184",
+    "website": "https://tuinkamer-priona.nl",
+    "city": "Schuinesloot",
+    "address": "Rondweg 1a, 7777 SM Schuinesloot"
+  },
+  {
+    "id": "uijttewaal-breda",
+    "name": "Uijttewaal",
+    "platform": "formitable",
+    "platformUid": "1647716e",
+    "website": "https://www.restaurantuijttewaal.nl",
+    "city": "Breda",
+    "address": "Ulvenhoutselaan 96, 4834 MH Breda"
+  },
+  {
+    "id": "vanoost",
+    "name": "VanOost",
+    "platform": "formitable",
+    "platformUid": "00f7c6f4",
+    "website": "https://www.vanoostrestaurant.com",
+    "city": "Amsterdam",
+    "address": "Mauritskade 61, 1092 AD Amsterdam"
+  },
+  {
+    "id": "vert-middelburg",
+    "name": "Vert",
+    "platform": "tebi",
+    "platformUid": "155309_14d7fb4ba77ba912b714941785991cc5251ea4f2f1e1f9a9b5e9c9cebf25cc64",
+    "website": "https://www.vertrestaurant.nl/",
+    "city": "Middelburg",
+    "address": "Vlasmarkt 27, 4331 PC Middelburg"
+  },
+  {
+    "id": "villa-de-duinen-noordwijk-aan-zee",
+    "name": "Villa de Duinen",
+    "platform": "formitable",
+    "platformUid": "e5d20bfc",
+    "website": "https://www.villadeduinen.nl/",
+    "city": "Noordwijk aan Zee",
+    "address": "Oude Zeeweg 74, 2202 CE Noordwijk aan Zee"
+  },
+  {
+    "id": "vinkeles",
+    "name": "Vinkeles",
+    "platform": "formitable",
+    "platformUid": "8038d382",
+    "website": "https://www.vinkeles.com",
+    "city": "Amsterdam",
+    "address": "Keizersgracht 384, 1016 GB Amsterdam"
+  },
+  {
+    "id": "vino-friends-maastricht",
+    "name": "Vino&Friends",
+    "platform": "formitable",
+    "platformUid": "96f78278",
+    "website": "https://www.vinoandfriends.nl",
+    "city": "Maastricht",
+    "address": "Plankstraat 6, 6211 GA Maastricht"
+  },
+  {
+    "id": "vrr",
+    "name": "VRR",
+    "platform": "tebi",
+    "platformUid": "659748_599478ae71a43ba04a92e287cfdcae3b7d84c6aa7ad8d00766f8ad079ff24fdd",
+    "website": "https://vrr.rest",
+    "city": "Amsterdam",
+    "address": "Conradstraat 471, 1018 NE Amsterdam"
+  },
+  {
+    "id": "vuurtoreneiland",
+    "name": "Vuurtoreneiland",
+    "platform": "formitable",
+    "platformUid": "2baf2f20",
+    "website": "https://www.vuurtoreneiland.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "watergang",
+    "name": "Watergang",
+    "platform": "tebi",
+    "platformUid": "741961_e49e08ab52f9358854a2e9e168e0698d8d9d2daceada8248b4d1b78a7cc5f857",
+    "website": "https://restaurantwatergang.nl",
+    "city": "Amsterdam",
+    "address": "Weteringstraat 41, 1017 SM Amsterdam"
+  },
+  {
+    "id": "wijmpje-beukers",
+    "name": "Wijmpje Beukers",
+    "platform": "formitable",
+    "platformUid": "6ee85b36",
+    "website": "http://www.wijmpjebeukers.nl",
+    "city": "Amsterdam",
+    "address": "Karel du Jardinstraat 47, 1073 TB Amsterdam"
+  },
+  {
+    "id": "wijnrestaurant-mes-amis-maastricht",
+    "name": "Wijnrestaurant Mes Amis",
+    "platform": "formitable",
+    "platformUid": "88ef1492",
+    "website": "http://www.mesamis.nl",
+    "city": "Maastricht",
+    "address": "Tongersestraat 5, 6211 LL Maastricht"
+  },
+  {
+    "id": "wilhelminapark-utrecht",
+    "name": "Wilhelminapark",
+    "platform": "formitable",
+    "platformUid": "beb58f11",
+    "website": "http://www.wilhelminapark.nl",
+    "city": "Utrecht",
+    "address": "Wilhelminapark 65, 3581 NP Utrecht"
+  },
+  {
+    "id": "wolf-atelier",
+    "name": "Wolf Atelier",
+    "platform": "tebi",
+    "platformUid": "426187_1a6ea98a1bbd473da1d934e0cc4bb03889a9af782d48cab2552ee4ef99b78475",
+    "website": "http://www.wolfatelier.nl",
+    "city": "Amsterdam",
+    "address": "Westerdoksplein 20-brug, 1013 AZ Amsterdam"
+  },
+  {
+    "id": "xin-rotterdam",
+    "name": "Xīn",
+    "platform": "tebi",
+    "platformUid": "620648_3491156ca822d94b5fbe8e38659b1ef609edc5e5161e258c40f7846e6a213f7f",
+    "website": "https://xinrotterdam.com",
+    "city": "Rotterdam",
+    "address": "'s-Gravendijkwal 68, 3014 EG Rotterdam"
+  },
+  {
+    "id": "zout-citroen-oosterhout",
+    "name": "Zout & Citroen",
+    "platform": "formitable",
+    "platformUid": "15b7e391",
+    "website": "http://www.zoutencitroen.nl",
+    "city": "Oosterhout",
+    "address": "Ridderstraat 86, 4902 AC Oosterhout"
+  }
+]
