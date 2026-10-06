@@ -134,6 +134,9 @@ export function createApi(d: ApiDeps): Hono {
         platform: r.platform,
         custom: r.custom,
         supported: supported(r.platform, r.platformUid),
+        canAutoBook: Boolean(d.platforms[r.platform]?.book),
+        hot: r.hot,
+        hotWhy: r.hotWhy,
       })),
     ),
   );

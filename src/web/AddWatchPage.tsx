@@ -49,6 +49,8 @@ export function AddWatchPage({ state, refresh }: { state: State; refresh: () => 
   const guestReady =
     state.settings.guestFirstName && state.settings.guestLastName && state.settings.guestEmail && state.settings.guestPhone;
 
+  const canAuto = Boolean(picked?.canAutoBook && state.radar.autoBookEnabled && guestReady);
+
   const toggleDay = (d: number) =>
     setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort()));
 
@@ -65,7 +67,7 @@ export function AddWatchPage({ state, refresh }: { state: State; refresh: () => 
         dateTo: dateMode === 'range' ? dateTo : null,
         timeFrom,
         timeTo,
-        autoBook,
+        autoBook: autoBook && canAuto,
       });
       await api.check().catch(() => undefined); // look straight away, so the user sees a first result
       await refresh();
@@ -241,12 +243,12 @@ export function AddWatchPage({ state, refresh }: { state: State; refresh: () => 
             </div>
 
             <div className="border-t border-stone-100 pt-5">
-              <label className={`flex items-start gap-3 ${state.radar.autoBookEnabled && guestReady ? '' : 'opacity-60'}`}>
+              <label className={`flex items-start gap-3 ${canAuto ? '' : 'opacity-60'}`}>
                 <input
                   type="checkbox"
                   className="mt-1 accent-copper-600"
                   checked={autoBook}
-                  disabled={!state.radar.autoBookEnabled || !guestReady}
+                  disabled={!canAuto}
                   onChange={(e) => setAutoBook(e.target.checked)}
                 />
                 <span>
@@ -255,10 +257,17 @@ export function AddWatchPage({ state, refresh }: { state: State; refresh: () => 
                     Seated books the first table that fits, in your name, then stops this watch. You get the confirmation by email.
                     Only use this when you will really go.
                   </span>
-                  {!state.radar.autoBookEnabled && (
+                  {!picked.canAutoBook && (
+                    <span className="mt-1 block text-xs text-stone-500">
+                      {picked.platform === 'tebi'
+                        ? "Tebi protects its booking form with a captcha, so you book yourself. Seated alerts you and opens the restaurant's Tebi page."
+                        : 'Seated cannot book on this booking system.'}
+                    </span>
+                  )}
+                  {picked.canAutoBook && !state.radar.autoBookEnabled && (
                     <span className="mt-1 block text-xs text-stone-500">Auto-book is switched off on this server (AUTOBOOK=true in .env).</span>
                   )}
-                  {state.radar.autoBookEnabled && !guestReady && (
+                  {picked.canAutoBook && state.radar.autoBookEnabled && !guestReady && (
                     <span className="mt-1 block text-xs text-stone-500">
                       Add your name, email and phone in <a className="underline" href="#/settings">Settings</a> first.
                     </span>

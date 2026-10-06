@@ -145,6 +145,8 @@ const toRestaurant = (r: Row): RestaurantRow => ({
   website: (r.website as string | null) ?? null,
   city: (r.city as string | null) ?? null,
   address: (r.address as string | null) ?? null,
+  hot: (r.hot as number | null) ?? null,
+  hotWhy: (r.hot_why as string | null) ?? null,
   custom: r.custom === 1,
   lastCheckedAt: (r.last_checked_at as string | null) ?? null,
   lastError: (r.last_error as string | null) ?? null,
@@ -201,6 +203,8 @@ export class Store {
     this.db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
     this.db.exec(SCHEMA);
     this.addColumnIfMissing('bookings', 'notified', 'INTEGER NOT NULL DEFAULT 0');
+    this.addColumnIfMissing('restaurants', 'hot', 'INTEGER');
+    this.addColumnIfMissing('restaurants', 'hot_why', 'TEXT');
   }
 
   // ── restaurants ──────────────────────────────────────────────────────────
@@ -208,11 +212,12 @@ export class Store {
   /** Loads the curated list. Updates curated rows, never touches custom ones. */
   seedRestaurants(list: Restaurant[]): void {
     const stmt = this.db.prepare(`
-      INSERT INTO restaurants (id, name, platform, platform_uid, website, city, address, custom)
-      VALUES (:id, :name, :platform, :platformUid, :website, :city, :address, 0)
+      INSERT INTO restaurants (id, name, platform, platform_uid, website, city, address, hot, hot_why, custom)
+      VALUES (:id, :name, :platform, :platformUid, :website, :city, :address, :hot, :hotWhy, 0)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name, platform = excluded.platform, platform_uid = excluded.platform_uid,
-        website = excluded.website, city = excluded.city, address = excluded.address
+        website = excluded.website, city = excluded.city, address = excluded.address,
+        hot = excluded.hot, hot_why = excluded.hot_why
       WHERE restaurants.custom = 0`);
     this.db.exec('BEGIN');
     for (const r of list) {
@@ -224,6 +229,8 @@ export class Store {
         website: r.website,
         city: r.city,
         address: r.address,
+        hot: r.hot ?? null,
+        hotWhy: r.hotWhy ?? null,
       });
     }
     this.db.exec('COMMIT');
@@ -235,7 +242,7 @@ export class Store {
         `INSERT INTO restaurants (id, name, platform, platform_uid, website, city, address, custom)
          VALUES (:id, :name, :platform, :platformUid, :website, :city, :address, 1)`,
       )
-      .run({ ...r });
+      .run({ id: r.id, name: r.name, platform: r.platform, platformUid: r.platformUid, website: r.website, city: r.city, address: r.address });
     return this.getRestaurant(r.id)!;
   }
 
@@ -253,6 +260,11 @@ export class Store {
       .prepare('SELECT * FROM restaurants WHERE platform = ? AND platform_uid = ?')
       .get(platform, uid);
     return row ? toRestaurant(row) : undefined;
+  }
+
+  /** Saves a platform id that changed (Tebi rotates them). */
+  updateRestaurantUid(restaurantId: string, uid: string): void {
+    this.db.prepare('UPDATE restaurants SET platform_uid = ? WHERE id = ?').run(uid, restaurantId);
   }
 
   markChecked(restaurantId: string, at: string, error: string | null): void {

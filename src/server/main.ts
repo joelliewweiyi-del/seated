@@ -9,6 +9,7 @@ import { createApi } from './api.js';
 import { Radar } from './radar.js';
 import { formitable } from './platforms/formitable.js';
 import { demoPlatform } from './platforms/demo.js';
+import { tebi } from './platforms/tebi.js';
 import type { Platform } from './platforms/types.js';
 import { memoryNotifier, ntfyNotifier } from './notify.js';
 import { loadCuratedRestaurants } from './restaurants.js';
@@ -18,8 +19,10 @@ const store = new Store(config.dbPath);
 store.seedRestaurants(loadCuratedRestaurants());
 
 const demo = config.demo ? demoPlatform() : null;
-const platforms: Record<string, Platform> = { formitable: demo ?? formitable() };
-const notifier = demo ? memoryNotifier() : ntfyNotifier(() => store.getSettings());
+const platforms: Record<string, Platform> = demo
+  ? { formitable: demo, tebi: { ...demo, id: 'tebi', label: 'Tebi (demo)', book: undefined } }
+  : { formitable: formitable(), tebi: tebi({ onUidChange: (id, uid) => store.updateRestaurantUid(id, uid) }) };
+const notifier = demo || config.observe ? memoryNotifier({ quiet: config.observe }) : ntfyNotifier(() => store.getSettings());
 const radar = new Radar({
   store,
   platforms,
@@ -101,7 +104,11 @@ if (existsSync(`${WEB_ROOT}/index.html`)) {
 }
 
 serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
-  const mode = config.demo ? ' (DEMO: fake restaurants, no real requests)' : '';
+  const mode = config.demo
+    ? ' (DEMO: fake restaurants, no real requests)'
+    : config.observe
+      ? ' (OBSERVE: records tables, never pushes or books)'
+      : '';
   console.log(`[seated] dashboard on http://${config.host}:${info.port}${mode}`);
   console.log(
     `[seated] checks every ${config.pollSeconds}s, auto-book ${config.autoBookEnabled ? 'ENABLED' : 'off'}`,

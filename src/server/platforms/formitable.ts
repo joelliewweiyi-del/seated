@@ -10,6 +10,10 @@ const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
 // Minimum gap between two requests to Formitable. Be a polite guest.
 const MIN_GAP_MS = 300;
+// Month-calendar day codes that never had an open table when checked against day reads
+// (119 days at 31 Amsterdam restaurants, Oct 2026): 1 none, 2 past, 3 and 6 closed or full,
+// 5 today when nothing is left. Code 0 means "has tables". Unknown codes get a day read.
+const EMPTY_DAY_CODES = new Set([1, 2, 3, 5, 6]);
 
 export interface FormitableSlot {
   timeString: string; // "19:30", restaurant-local
@@ -79,6 +83,25 @@ export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS } = 
     async getSlots(restaurant, date, partySize) {
       const slots = await daySlots(restaurant, date, partySize);
       return slots.map((s) => toSlot(date, s));
+    },
+
+    async openDates(restaurant, dates, partySize) {
+      const months = [...new Set(dates.map((d) => d.slice(0, 7)))];
+      const worth = new Set<string>();
+      for (const month of months) {
+        const [y, m] = month.split('-');
+        const days = await getJson<Array<{ dayString: string; status: number }>>(
+          restaurant,
+          `/availability/${restaurant.platformUid}/monthWeeks/${Number(m)}/${y}/${partySize}/en`,
+        );
+        if (!Array.isArray(days)) throw new Error('Formitable returned an unexpected month shape');
+        const code = new Map(days.map((d) => [d.dayString, d.status]));
+        for (const d of dates.filter((x) => x.startsWith(month))) {
+          const c = code.get(d);
+          if (c === undefined || !EMPTY_DAY_CODES.has(c)) worth.add(d);
+        }
+      }
+      return worth;
     },
 
     bookingUrl(restaurant, date, time, partySize) {

@@ -24,13 +24,17 @@ The hard part of getting a table is not booking it. Booking takes 30 seconds. Th
 
 ## What works today
 
-| Booking system | Watch for tables | One-tap link | Book for you |
+| Booking system | Watch for tables | Link | Book for you |
 |---|---|---|---|
-| Formitable (Zenchef) | Yes | Yes | Yes, opt-in |
-| Tebi | Not yet | Not yet | No (the booking form has a captcha) |
-| TheFork, others | Not yet | Not yet | No |
+| Formitable (Zenchef) | Yes | Opens pre-filled with date, time and party | Yes, opt-in |
+| Tebi | Yes | Opens the restaurant's Tebi page | No: Tebi's booking form has a captcha, and Seated does not get around captchas |
+| Zenchef, SevenRooms, Guestplan, TableCheck, TheFork | Not yet | | |
 
-The list in [data/restaurants.json](data/restaurants.json) has 274 restaurants in the Netherlands, 225 of them on Formitable. You can add any other Formitable restaurant from the dashboard by pasting its website.
+The list in [data/restaurants.json](data/restaurants.json) has 293 restaurants in the Netherlands, 115 in Amsterdam. 34 of them carry a hard-to-book score (1 to 3) from food guides and reviews, shown on the **Hot list** page. You can add any other Formitable restaurant from the dashboard by pasting its website.
+
+### What we learned watching Amsterdam's hardest tables
+
+On 6 October 2026 Seated read the 15 hardest-to-book restaurants it can watch (party of 2, dinner, next 14 days). Most had plenty of weekday tables. The scarce thing is **Friday and Saturday evening**: CUE, Rijsel and Toscanini had none, and Vuurtoreneiland had nothing at all. That is why the Hot list's one-tap watch covers Friday and Saturday dinners.
 
 ## Run it
 
@@ -66,6 +70,14 @@ npm run demo
 ```
 
 Demo mode uses fake restaurants and a database that lives only in memory. Nothing leaves your computer. It is the best way to explore the dashboard or work on the code.
+
+### Observe without alerts (research mode)
+
+```bash
+SEATED_DB=data/observe.db PORT=4311 npx tsx src/server/main.ts --observe
+```
+
+Observe mode checks real restaurants and records every table that opens and closes, but never pushes and never books. Use it to learn how a restaurant releases tables before you rely on alerts.
 
 ### Check one restaurant from the terminal
 
@@ -128,14 +140,16 @@ src/server/
   api.ts           JSON API for the dashboard
   notify.ts        ntfy alerts
   platforms/
-    formitable.ts  read availability, build the booking link, book
+    formitable.ts  read availability (month calendar first), build the booking link, book
+    tebi.ts        read availability (month calendar first), refresh rotating ids, link
     demo.ts        fake platform for demo mode and tests
 src/web/           React dashboard (Vite + Tailwind)
 src/cli.ts         npm run peek
+scripts/detect.ts  find which booking system a restaurant website uses
 data/restaurants.json  curated restaurant list
 ```
 
-Each check reads every (restaurant, date, party size) once, however many watches share it. Seated keeps a record of every open table it sees and when it disappears. That gives the "Recently gone" list, which shows how fast tables go.
+Each check first reads the platform's month calendar (one request per month) and then reads only the days that can have a table. A typical check costs 1 to 5 requests per restaurant instead of 14. It reads every (restaurant, date, party size) once, however many watches share it. Seated keeps a record of every open table it sees and when it disappears. That gives the "Recently gone" list, which shows how fast tables go.
 
 ## Be a good guest
 
@@ -147,7 +161,7 @@ Seated reads the same public availability that a restaurant's booking page shows
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The most useful next pieces are a Tebi reader and a Zenchef reader; Formitable restaurants are moving to Zenchef.
+See [CONTRIBUTING.md](CONTRIBUTING.md). The most useful next pieces are readers for **Zenchef**, **SevenRooms** and **Guestplan**: together they carry 12 of the 34 hardest Amsterdam restaurants.
 
 ## License
 

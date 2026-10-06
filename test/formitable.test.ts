@@ -176,3 +176,28 @@ describe('finding a Formitable id on a restaurant website', () => {
     expect(findFormitableUid('<html>Book via Tebi</html>')).toBeNull();
   });
 });
+
+describe('month pre-check', () => {
+  it('skips days whose calendar code never had a table, and reads code 0 and unknown codes', async () => {
+    const { impl, calls } = fakeFetch([
+      [
+        /monthWeeks\/10\/2026\/2\/en$/,
+        () =>
+          json([
+            { dayString: '2026-10-09', status: 0 },
+            { dayString: '2026-10-10', status: 1 },
+            { dayString: '2026-10-11', status: 6 },
+            { dayString: '2026-10-12', status: 4 }, // never seen: read it to be safe
+          ]),
+      ],
+      [/monthWeeks\/11\/2026\/2\/en$/, () => json([])],
+    ]);
+    const worth = await formitable({ fetchImpl: impl, gapMs: 0 }).openDates!(
+      klepel,
+      ['2026-10-09', '2026-10-10', '2026-10-11', '2026-10-12', '2026-11-02'],
+      2,
+    );
+    expect([...worth].sort()).toEqual(['2026-10-09', '2026-10-12', '2026-11-02']);
+    expect(calls).toHaveLength(2); // one request per month, not per day
+  });
+});

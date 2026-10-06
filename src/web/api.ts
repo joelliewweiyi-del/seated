@@ -8,6 +8,9 @@ export interface Restaurant {
   platform: string;
   custom: boolean;
   supported: boolean;
+  canAutoBook: boolean;
+  hot: number | null;
+  hotWhy: string | null;
 }
 
 export interface Sighting {

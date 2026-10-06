@@ -74,8 +74,8 @@
   {
     "id": "alba",
     "name": "Alba",
-    "platform": "formitable",
-    "platformUid": "b1754a7d",
+    "platform": "tebi",
+    "platformUid": "353993_5d3aef5bfcf327ec16e5b15e3be7d18f9d352becf2292f02fb2132868356175b",
     "website": "https://www.alba-amsterdam.nl",
     "city": "Amsterdam",
     "address": "Wibautstraat 105, 1091 GL Amsterdam"
@@ -146,11 +146,13 @@
   {
     "id": "bak",
     "name": "BAK",
-    "platform": "formitable",
-    "platformUid": "dadd7a3b",
+    "platform": "tebi",
+    "platformUid": "550174_a12d74afbd77186b31dd9a89d7dd41003e922e10d057bd3d3d6b016a8fe6c2c1",
     "website": "https://www.bakrestaurant.nl",
     "city": "Amsterdam",
-    "address": "Van Diemenstraat 408, 1013 CR Amsterdam"
+    "address": "Van Diemenstraat 408, 1013 CR Amsterdam",
+    "hot": 1,
+    "hotWhy": "Named Amsterdam's best restaurant by Time Out"
   },
   {
     "id": "bakboord-almere-haven",
@@ -173,8 +175,8 @@
   {
     "id": "bar-centraal",
     "name": "Bar Centraal",
-    "platform": "formitable",
-    "platformUid": "3a3bccee",
+    "platform": "tebi",
+    "platformUid": "213591_c506e9e6f6f63f01f1323f968c127597bc5578c420a60772f021a2db442c9349",
     "website": "https://barcentraal.nl",
     "city": "Amsterdam",
     "address": "Ten Katestraat 16, 1053 CE Amsterdam"
@@ -182,8 +184,8 @@
   {
     "id": "barracuda",
     "name": "Barracuda",
-    "platform": "formitable",
-    "platformUid": "78c17161",
+    "platform": "tebi",
+    "platformUid": "471835_0896cbcdc89da39ee29534bde65e6b2f1e8afaff14973affca4876990503cda5",
     "website": "https://www.barracuda.amsterdam",
     "city": "Amsterdam",
     "address": "Aambeeldstaat 10, 1021 KB Amsterdam"
@@ -263,8 +265,8 @@
   {
     "id": "bistrot-chapeau-blaricum",
     "name": "BISTRÔT CHAPEAU",
-    "platform": "formitable",
-    "platformUid": "7557f8c8",
+    "platform": "tebi",
+    "platformUid": "445420_ce3f000391e37ae3e8485dc418f48dde05ba937c40bcce249b6798126b8372e4",
     "website": "https://chapeaublaricum.nl",
     "city": "Blaricum",
     "address": "Huizerweg 1, 1261 AR Blaricum"
@@ -290,8 +292,8 @@
   {
     "id": "bistrot-neuf",
     "name": "Bistrot Neuf",
-    "platform": "formitable",
-    "platformUid": "7c0d4ab3",
+    "platform": "tebi",
+    "platformUid": "413899_1697ab3fbc1f0ec6d17579e3a1f837f4bec589ed6307f172c5d91484cf0e77eb",
     "website": "https://neuf.amsterdam",
     "city": "Amsterdam",
     "address": "Haarlemmerstraat 9, 1013 EH Amsterdam"
@@ -315,6 +317,28 @@
     "address": "Rijksstraatweg 35-37, 3631 AA Nieuwersluis"
   },
   {
+    "id": "blauw",
+    "name": "Blauw",
+    "platform": "guestplan",
+    "platformUid": null,
+    "website": "https://restaurantblauw.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Book a fortnight ahead for weekends"
+  },
+  {
+    "id": "blik",
+    "name": "Blik",
+    "platform": "guestplan",
+    "platformUid": null,
+    "website": "https://blikamsterdam.com/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Ex-three-star chef Jacob Jan Boerma's starred bistro-bar"
+  },
+  {
     "id": "blossem-breda",
     "name": "Blossem",
     "platform": "formitable",
@@ -331,6 +355,17 @@
     "website": "https://www.restaurantblume.nl",
     "city": "Groningen",
     "address": "Oude Boteringestraat 45, 9712 GD Groningen"
+  },
+  {
+    "id": "bolenius",
+    "name": "Bolenius",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://bolenius-rembrandtpark.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Michelin-starred; book about two weeks out"
   },
   {
     "id": "boompjes-overloon",
@@ -353,8 +388,8 @@
   {
     "id": "bouchon-d-en-face-maastricht",
     "name": "Bouchon D'en Face",
-    "platform": "formitable",
-    "platformUid": "bad3c7d3",
+    "platform": "tebi",
+    "platformUid": "987463_5861b50f720b5b3aa098e5a6a5db9977a959fcfae609f35ad1ab9adaadbb14ac",
     "website": "http://www.bouchondenface.nl",
     "city": "Maastricht",
     "address": "Wycker Brugstraat 54, 6221 ED Maastricht"
@@ -398,8 +433,8 @@
   {
     "id": "c-est-ca-utrecht",
     "name": "C’est ça",
-    "platform": "formitable",
-    "platformUid": "8e9b4422",
+    "platform": "tebi",
+    "platformUid": "580859_60302d93dcf5c1ec6d4eff61a328d08fc63eefe4352eb8be06e00c6a65ee2f6e",
     "website": "https://restaurant-cestca.nl",
     "city": "Utrecht",
     "address": "Bollenhofsestraat 142, 3572 VT Utrecht"
@@ -452,8 +487,8 @@
   {
     "id": "cafe-de-gaper-leiden",
     "name": "Café de Gaper",
-    "platform": "formitable",
-    "platformUid": "8dafcd98",
+    "platform": "tebi",
+    "platformUid": "244657_5ccba3f3badecba2c7a985715ed8f1e1443dc6891d4000040f11422e39debd54",
     "website": "https://cafedegaper.nl",
     "city": "Leiden",
     "address": "Rapenburg 97, 2311 GL Leiden"
@@ -470,8 +505,8 @@
   {
     "id": "cafe-maurits",
     "name": "Café Maurits",
-    "platform": "formitable",
-    "platformUid": "aa8f00a4",
+    "platform": "tebi",
+    "platformUid": "916468_af242d6243516d363c88840e6a5cd79efa543afb3b2ca34906cd5b21cbacaf25",
     "website": "https://cafemaurits.nl",
     "city": "Amsterdam",
     "address": "Hoofddorpplein 1, 1059 CV Amsterdam"
@@ -506,17 +541,19 @@
   {
     "id": "cafe-wu",
     "name": "Café Wu",
-    "platform": "formitable",
-    "platformUid": "ccf5e601",
+    "platform": "tebi",
+    "platformUid": "669916_55d66256309f3da92c3db7d43a0114ec79c02ac073e7599429cd63c2349eeb38",
     "website": "https://www.cafewu.nl",
     "city": "Amsterdam",
-    "address": "Dapperstraat 1, 1093 BK Amsterdam"
+    "address": "Dapperstraat 1, 1093 BK Amsterdam",
+    "hot": 1,
+    "hotWhy": "Hyped Chinese-wine bistro; “great success”, booking recommended"
   },
   {
     "id": "cellar-door-woudrichem",
     "name": "Cellar Door",
-    "platform": "formitable",
-    "platformUid": "ddd2c4de",
+    "platform": "tebi",
+    "platformUid": "428460_523a858e673db24c6b06cdfab59aa5ac6e15e4ae993e0be3bc269763e5ce3dd7",
     "website": "https://www.restaurantcellardoor.com",
     "city": "Woudrichem",
     "address": "Hoogstraat 47, 4285 AG Woudrichem"
@@ -551,11 +588,24 @@
   {
     "id": "choux",
     "name": "Choux",
-    "platform": "formitable",
-    "platformUid": "1f199734",
+    "platform": "guestplan",
+    "platformUid": null,
     "website": "http://choux.nl",
     "city": "Amsterdam",
-    "address": "De Ruyterkade 128, 1011 AC Amsterdam"
+    "address": "De Ruyterkade 128, 1011 AC Amsterdam",
+    "hot": 2,
+    "hotWhy": "Michelin star 2025; “often you must book months ahead”"
+  },
+  {
+    "id": "ciel-bleu",
+    "name": "Ciel Bleu",
+    "platform": "tablecheck",
+    "platformUid": null,
+    "website": "https://www.cielbleu.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 2,
+    "hotWhy": "Weekend window tables go a month or more out"
   },
   {
     "id": "citrus-s-hertogenbosch",
@@ -578,8 +628,8 @@
   {
     "id": "cornerstore",
     "name": "Cornerstore",
-    "platform": "formitable",
-    "platformUid": "79df0181",
+    "platform": "tebi",
+    "platformUid": "482521_14045bc0fe19a732ccc45a4443b1294fff546ca2e3c406b4fa8f2063c013c530",
     "website": "https://csnoord.com",
     "city": "Amsterdam",
     "address": "Papaverweg 11, 1032 KD Amsterdam"
@@ -609,7 +659,20 @@
     "platformUid": "378375_41d501d1afa86a4f1cbf525860d6052ddfb99e2bd938c50c9da4ef01a3af61f5",
     "website": "https://www.cue-amsterdam.com",
     "city": "Amsterdam",
-    "address": "Utrechtsestraat 30A, 1017 VN Amsterdam"
+    "address": "Utrechtsestraat 30A, 1017 VN Amsterdam",
+    "hot": 2,
+    "hotWhy": "New Michelin star, small set-menu room; book 2-3 weeks out"
+  },
+  {
+    "id": "daalder",
+    "name": "Daalder",
+    "platform": "thefork",
+    "platformUid": null,
+    "website": "https://daalderamsterdam.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Time Out #2 in Amsterdam; weekend evenings go quickly"
   },
   {
     "id": "de-belhamel",
@@ -663,7 +726,9 @@
     "platformUid": "643e1a93",
     "website": "https://www.restaurantdekas.com",
     "city": "Amsterdam",
-    "address": "Kamerlingh Onneslaan 3, 1097 DE Amsterdam"
+    "address": "Kamerlingh Onneslaan 3, 1097 DE Amsterdam",
+    "hot": 3,
+    "hotWhy": "Two-month wait for weekend dinner tables"
   },
   {
     "id": "de-lage-vuursche-lage-vuursche",
@@ -776,8 +841,8 @@
   {
     "id": "dekxels-den-haag",
     "name": "Dekxels",
-    "platform": "formitable",
-    "platformUid": "6917acbb",
+    "platform": "tebi",
+    "platformUid": "981808_c058027589eb9e1423377f32ea6a4c75be83b23b0b314e20b9b2ce7efb8f8a52",
     "website": "http://www.dekxels.nl",
     "city": "Den Haag",
     "address": "Denneweg 130, 2514 CL Den Haag"
@@ -894,10 +959,12 @@
     "id": "europa",
     "name": "Europa",
     "platform": "tebi",
-    "platformUid": "976290_86f81133641fc63a25c2e9a6f13eb6658fbd4a7e9470e56cea93030412ea5670",
+    "platformUid": "976290_9f23cd994e621e9836ded34d2b978a17ed56ce8e17bba2fdb734410530e8ec15",
     "website": "https://www.europa.rest",
     "city": "Amsterdam",
-    "address": "Gedempt Hamerkanaal 81, 1021 KP Amsterdam"
+    "address": "Gedempt Hamerkanaal 81, 1021 KP Amsterdam",
+    "hot": 2,
+    "hotWhy": "Only 18-26 counter seats, Thu-Sat only; Time Out #1"
   },
   {
     "id": "fa-pekelhaaring",
@@ -929,11 +996,13 @@
   {
     "id": "flore",
     "name": "Flore",
-    "platform": "formitable",
-    "platformUid": "b5a899c1",
+    "platform": "sevenrooms",
+    "platformUid": null,
     "website": "https://restaurantflore.com",
     "city": "Amsterdam",
-    "address": "Nieuwe Doelenstraat 2-14, 1012 CP Amsterdam"
+    "address": "Nieuwe Doelenstraat 2-14, 1012 CP Amsterdam",
+    "hot": 2,
+    "hotWhy": "Two stars, about 11 tables, Wed-Sat only; weekends book weeks out"
   },
   {
     "id": "florent-le-bistro-utrecht",
@@ -974,8 +1043,8 @@
   {
     "id": "fuku-ramen",
     "name": "Fuku Ramen",
-    "platform": "formitable",
-    "platformUid": "b68cc129",
+    "platform": "tebi",
+    "platformUid": "431923_d57b9f4c740c29a76d64c253e773200cb35c386a348f508874876abf312560e2",
     "website": "https://www.fukuramenamsterdam.com",
     "city": "Amsterdam",
     "address": "Ingogostraat 14A, 1092 HZ Amsterdam"
@@ -990,13 +1059,26 @@
     "address": "Klinkenberg 173, 6231 BC Rothem-Meerssen"
   },
   {
+    "id": "gartine",
+    "name": "Gartine",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://gartine.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 2,
+    "hotWhy": "About 10 tables, often a “fully booked” sign at the door. Breakfast and lunch only"
+  },
+  {
     "id": "gebr-hartering",
     "name": "Gebr. Hartering",
-    "platform": "formitable",
-    "platformUid": "2dfdc18a",
+    "platform": "tebi",
+    "platformUid": "876836_1b1eaf5f86bf5a79cfc11e46406ccfb09f4bd18b2d7a3bd31af334e410afbca4",
     "website": "http://www.gebr-hartering.nl",
     "city": "Amsterdam",
-    "address": "Peperstraat 10hs, 1011 TL Amsterdam"
+    "address": "Peperstraat 10hs, 1011 TL Amsterdam",
+    "hot": 2,
+    "hotWhy": "Guides: “Always packed, be sure to book”"
   },
   {
     "id": "george-s-sittard",
@@ -1019,11 +1101,22 @@
   {
     "id": "gist-tilburg",
     "name": "GIST",
-    "platform": "formitable",
-    "platformUid": "742ae117",
+    "platform": "tebi",
+    "platformUid": "356007_b14f886ea949e66b3e38a34f9b7b7beb481cc5a4cf24ed09a1305a20ec3b1b29",
     "website": "https://gisttilburg.nl",
     "city": "Tilburg",
     "address": "Langestraat 65, 5038 SC Tilburg"
+  },
+  {
+    "id": "gitane",
+    "name": "Gitane",
+    "platform": "formitable",
+    "platformUid": "86db0b51",
+    "website": "https://www.restaurantgitane.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 3,
+    "hotWhy": "Guides: “Booking is almost impossible unless you plan months ahead”"
   },
   {
     "id": "glaswerk-den-haag",
@@ -1069,6 +1162,17 @@
     "website": "https://www.restaurantgroenland.nl",
     "city": "Driebergen",
     "address": "Hoofdstraat 155, 3971 KJ Driebergen"
+  },
+  {
+    "id": "hatsune",
+    "name": "Hatsune",
+    "platform": "zenchef",
+    "platformUid": null,
+    "website": "https://hatsune-ams.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 2,
+    "hotWhy": "Kaiseki with only six tables; reservations essential"
   },
   {
     "id": "heimat-utrecht",
@@ -1118,8 +1222,8 @@
   {
     "id": "heron-utrecht",
     "name": "Héron",
-    "platform": "formitable",
-    "platformUid": "41d6d845",
+    "platform": "tebi",
+    "platformUid": "503944_f93c3ff7cbc1b357463ed13f945e132036ebbf83dba123faf59c84845040ff5a",
     "website": "http://www.heronrestaurant.nl",
     "city": "Utrecht",
     "address": "Schalkwijkstraat 28, 3512 KS Utrecht"
@@ -1177,6 +1281,17 @@
     "website": "https://www.hokkaikitchen.nl",
     "city": "IJmuiden",
     "address": "Egmondstraat 2, 1976 BR IJmuiden"
+  },
+  {
+    "id": "hotel-de-goudfazant",
+    "name": "Hotel de Goudfazant",
+    "platform": "zenchef",
+    "platformUid": null,
+    "website": "https://hoteldegoudfazant.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Often books a week ahead; Time Out top 10"
   },
   {
     "id": "houbolt-den-haag",
@@ -1293,7 +1408,9 @@
     "platformUid": "00e5b489",
     "website": "https://www.kaagmanenkortekaas.nl",
     "city": "Amsterdam",
-    "address": "Sint Nicolaasstraat 43, 1012 NJ Amsterdam"
+    "address": "Sint Nicolaasstraat 43, 1012 NJ Amsterdam",
+    "hot": 1,
+    "hotWhy": "Tiny counter-and-tables room, weekly menu"
   },
   {
     "id": "ken-sushi",
@@ -1302,7 +1419,9 @@
     "platformUid": "7d7fdf68",
     "website": "https://www.kensushi.nl",
     "city": "Amsterdam",
-    "address": "Geldersekade 19, 1011 EJ Amsterdam"
+    "address": "Geldersekade 19, 1011 EJ Amsterdam",
+    "hot": 3,
+    "hotWhy": "10-seat omakase counter; about 6-week wait"
   },
   {
     "id": "kien",
@@ -1316,8 +1435,8 @@
   {
     "id": "klaproos",
     "name": "Klaproos",
-    "platform": "formitable",
-    "platformUid": "d41d756a",
+    "platform": "tebi",
+    "platformUid": "223893_bd43354500502f618985bef52bfcc9545109a4effba5309d2877b8a64af6dd29",
     "website": "https://klaproosamsterdam.nl",
     "city": "Amsterdam",
     "address": "Papaverweg 39, 1032 JZ Amsterdam"
@@ -1343,8 +1462,8 @@
   {
     "id": "kook-atelier-op-oost-texel-oosterend",
     "name": "Kook Atelier op Oost",
-    "platform": "formitable",
-    "platformUid": "8ee5daf9",
+    "platform": "tebi",
+    "platformUid": "695103_426f0c6b14772fe4c355aa6054ea088dc6e5e6ba8c995631000b42c200cc37eb",
     "website": "https://www.opoost.nl/",
     "city": "Texel - Oosterend",
     "address": "Oost 76, 1794 GR Texel - Oosterend"
@@ -1352,8 +1471,8 @@
   {
     "id": "l-eglise-zwolle",
     "name": "L’église",
-    "platform": "formitable",
-    "platformUid": "0f64680b",
+    "platform": "tebi",
+    "platformUid": "260455_383ee2771c0d2024ab47b82dc692bb16329d786f0ecd307fd1f06e5ad8c97068",
     "website": "https://restaurantleglise.nl",
     "city": "Zwolle",
     "address": "Bethlehemkerkplein 42, 8011 PH Zwolle"
@@ -1487,8 +1606,8 @@
   {
     "id": "mano-haarlem",
     "name": "Mano",
-    "platform": "formitable",
-    "platformUid": "2f67696a",
+    "platform": "tebi",
+    "platformUid": "277021_d1fa674ac4e37a1a7516acd682dfba38ed8fef2ddbdc0629d4ae9a4690016d9c",
     "website": "https://mano-restaurant.nl",
     "city": "Haarlem",
     "address": "Bakenessergracht 109, 2011 JV Haarlem"
@@ -1557,6 +1676,17 @@
     "address": "IJdok 185, 1013 MM Amsterdam"
   },
   {
+    "id": "motief",
+    "name": "Motief",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://restaurantmotief.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Summer 2026 opening led by an ex-De Kas chef"
+  },
+  {
     "id": "moyo",
     "name": "MOYŌ",
     "platform": "formitable",
@@ -1618,6 +1748,17 @@
     "website": "https://www.nikotin.nl/",
     "city": "Amsterdam",
     "address": "Gedempt Hamerkanaal 75a, 1021KP Amsterdam"
+  },
+  {
+    "id": "nnea",
+    "name": "nNea",
+    "platform": "tebi",
+    "platformUid": "107930_702a9f43a503131eb34e035db27215bd2a78a57517c90fe8d690efe4878f9145",
+    "website": "https://www.nneapizza.com/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 3,
+    "hotWhy": "Top-50 pizzeria; tables reserved months to almost a year ahead"
   },
   {
     "id": "o-o-sint-willebrord",
@@ -1735,6 +1876,17 @@
     "website": "https://www.lizrotterdam.nl",
     "city": "Rotterdam",
     "address": "Berkelselaan 2A, 3037 PE Rotterdam"
+  },
+  {
+    "id": "ottolenghi",
+    "name": "Ottolenghi Amsterdam",
+    "platform": "sevenrooms",
+    "platformUid": null,
+    "website": "https://www.mandarinoriental.com/en/amsterdam/conservatorium/dine/ottolenghi",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Ottolenghi's first NL restaurant, opened 19 March 2026"
   },
   {
     "id": "ovum-grave",
@@ -1874,8 +2026,8 @@
   {
     "id": "red-orchids-asian-bistro-heemstede",
     "name": "Red Orchids Asian Bistro",
-    "platform": "formitable",
-    "platformUid": "7ed28988",
+    "platform": "tebi",
+    "platformUid": "457192_232d0a28170519354facc97ac4b20a75fafb5243022f54aace3fb4ba32e240fc",
     "website": "https://redorchids.nl",
     "city": "Heemstede",
     "address": "Zandvoortselaan 139, 2106 CM Heemstede"
@@ -1908,6 +2060,17 @@
     "address": null
   },
   {
+    "id": "restobar-massalia",
+    "name": "Restobar Massalia",
+    "platform": "formitable",
+    "platformUid": "f7a16fdb",
+    "website": "https://www.restobarmassalia.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Gitane team's follow-up; new in Michelin guide 2026"
+  },
+  {
     "id": "reverie-veldhoven",
     "name": "Reverie",
     "platform": "formitable",
@@ -1929,10 +2092,23 @@
     "id": "rijsel",
     "name": "Rijsel",
     "platform": "tebi",
-    "platformUid": "406079_33b338f8d11d64cec7a01fd504ff4bfa9d827d6a587a56d35cdf00f8ed457658",
+    "platformUid": "406079_c4c78071467bb8bebb1a94d9a8e17c4d0ea2f9ceb9c7cbcf3ed837899f8e5c57",
     "website": "http://www.rijsel.com",
     "city": "Amsterdam",
-    "address": "Marcusstraat 52 B, 1091 TK Amsterdam"
+    "address": "Marcusstraat 52 B, 1091 TK Amsterdam",
+    "hot": 2,
+    "hotWhy": "Next month opens on the 1st and goes fast. Weekdays only, so Fridays are the prize"
+  },
+  {
+    "id": "roef",
+    "name": "Roef",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://roefamsterdam.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "2025 opening; book at least a week ahead"
   },
   {
     "id": "ron-gastrobar-indonesia-bloemendaal",
@@ -1964,8 +2140,8 @@
   {
     "id": "rosto-leiden",
     "name": "Rosto",
-    "platform": "formitable",
-    "platformUid": "aa5ab2ed",
+    "platform": "tebi",
+    "platformUid": "941380_8f4f02f8c21ec04f1fc8327c2df64f6d49fb34dc2c570c2b4d9e4cdb27c40ae6",
     "website": "https://www.restaurantrosto.nl",
     "city": "Leiden",
     "address": "Oude Rijn 1a, 2312 HB Leiden"
@@ -1973,8 +2149,8 @@
   {
     "id": "rotonde-rotterdam",
     "name": "Rotonde",
-    "platform": "formitable",
-    "platformUid": "7e516bca",
+    "platform": "tebi",
+    "platformUid": "444010_0e5abc60b5061dfe84961bfc752a4b392c8dbd946c580d02a435636009e70ede",
     "website": "https://restaurantrotonde.nl",
     "city": "Rotterdam",
     "address": "Goudsesingel 230, 3011 KE Rotterdam"
@@ -2016,6 +2192,17 @@
     "address": null
   },
   {
+    "id": "satkara",
+    "name": "Satkara",
+    "platform": "thefork",
+    "platformUid": null,
+    "website": "https://satkara.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "New Indian-Nepalese fine dining, opened August 2026"
+  },
+  {
     "id": "savarin-rijswijk",
     "name": "Savarin",
     "platform": "formitable",
@@ -2027,8 +2214,8 @@
   {
     "id": "scheepskameel",
     "name": "Scheepskameel",
-    "platform": "formitable",
-    "platformUid": "4d144539",
+    "platform": "tebi",
+    "platformUid": "837134_39fcfb060a0834fb5c675de8f20eed5c68c5ea04bfa64c168b187357453043f5",
     "website": "http://www.scheepskameel.nl",
     "city": "Amsterdam",
     "address": "Kattenburgerstraat 7 - gebouw 24, 1018 JA Amsterdam"
@@ -2151,10 +2338,32 @@
     "address": "Tweebaksmarkt 47, 8911 KW Leeuwarden"
   },
   {
+    "id": "sushi-oodo",
+    "name": "Sushi Oodo",
+    "platform": "zenchef",
+    "platformUid": null,
+    "website": "https://sushioodo.com/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Exclusive omakase, opened 12 September 2026"
+  },
+  {
+    "id": "tacite",
+    "name": "Tacite",
+    "platform": "guestplan",
+    "platformUid": null,
+    "website": "https://tacite.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "New 2026 fine dining by Michelin-trained team"
+  },
+  {
     "id": "tannay",
     "name": "Tannay",
-    "platform": "formitable",
-    "platformUid": "e6fed078",
+    "platform": "tebi",
+    "platformUid": "191385_30784da9730e77261166010ae4950a8c72428da3b5f58aaceb6bea6578b4a843",
     "website": "https://tannay.nl",
     "city": "Amsterdam",
     "address": "Zandhoek 14, 1013 KT Amsterdam"
@@ -2207,8 +2416,8 @@
   {
     "id": "the-bishop-leiden",
     "name": "The Bishop",
-    "platform": "formitable",
-    "platformUid": "1a73d591",
+    "platform": "tebi",
+    "platformUid": "126192_42f6dfd397ae14383421b2d2ed60e2ea961008633696b371c692b2262f4830df",
     "website": "http://www.thebishop.nl",
     "city": "Leiden",
     "address": "Middelweg 7-9, 2312 KE Leiden"
@@ -2288,11 +2497,13 @@
   {
     "id": "toscanini",
     "name": "Toscanini",
-    "platform": "formitable",
-    "platformUid": "698d80d8",
+    "platform": "tebi",
+    "platformUid": "920651_884416efb63820e1419e7cca2b002720c06e56abd6b8f2487bc202cc960a9508",
     "website": "http://www.restauranttoscanini.nl",
     "city": "Amsterdam",
-    "address": "Lindengracht 75, 1015 KD Amsterdam"
+    "address": "Lindengracht 75, 1015 KD Amsterdam",
+    "hot": 2,
+    "hotWhy": "Saturdays book solid a week out; reserve 2 weeks for weekends"
   },
   {
     "id": "tov-schagen",
@@ -2315,11 +2526,24 @@
   {
     "id": "troef",
     "name": "Troef",
-    "platform": "formitable",
-    "platformUid": "dcfe4897",
+    "platform": "sevenrooms",
+    "platformUid": null,
     "website": "https://troefamsterdam.nl",
     "city": "Amsterdam",
-    "address": "Schollenbrugstraat 8, 1091 EX Amsterdam"
+    "address": "Schollenbrugstraat 8, 1091 EX Amsterdam",
+    "hot": 2,
+    "hotWhy": "Guides: “Reservations get snapped up quickly”"
+  },
+  {
+    "id": "tsunarie",
+    "name": "Tsunarié",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://tsunarie.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 2,
+    "hotWhy": "New 10-seat wagyu/omakase counter, two sittings"
   },
   {
     "id": "tuinkamer-priona-schuinesloot",
@@ -2373,7 +2597,9 @@
     "platformUid": "8038d382",
     "website": "https://www.vinkeles.com",
     "city": "Amsterdam",
-    "address": "Keizersgracht 384, 1016 GB Amsterdam"
+    "address": "Keizersgracht 384, 1016 GB Amsterdam",
+    "hot": 2,
+    "hotWhy": "Weekends book 3-4 weeks out; ranked #2 hardest in 2026"
   },
   {
     "id": "vino-friends-maastricht",
@@ -2397,10 +2623,12 @@
     "id": "vuurtoreneiland",
     "name": "Vuurtoreneiland",
     "platform": "formitable",
-    "platformUid": "2baf2f20",
+    "platformUid": "9d79d108",
     "website": "https://www.vuurtoreneiland.nl",
     "city": "Amsterdam",
-    "address": null
+    "address": null,
+    "hot": 3,
+    "hotWhy": "Dates release 3 months ahead at 13:00 daily; waitlist “often very long”"
   },
   {
     "id": "watergang",
@@ -2414,8 +2642,8 @@
   {
     "id": "wijmpje-beukers",
     "name": "Wijmpje Beukers",
-    "platform": "formitable",
-    "platformUid": "6ee85b36",
+    "platform": "tebi",
+    "platformUid": "965153_7e5c57c8719ee2c5aac67ec7e2263613a4b9ffe9b62c490fc2383cad7103a2ce",
     "website": "http://www.wijmpjebeukers.nl",
     "city": "Amsterdam",
     "address": "Karel du Jardinstraat 47, 1073 TB Amsterdam"
@@ -2437,6 +2665,17 @@
     "website": "http://www.wilhelminapark.nl",
     "city": "Utrecht",
     "address": "Wilhelminapark 65, 3581 NP Utrecht"
+  },
+  {
+    "id": "wils",
+    "name": "Wils",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://restaurantwils.nl/",
+    "city": "Amsterdam",
+    "address": null,
+    "hot": 1,
+    "hotWhy": "Two weeks' notice needed even midweek"
   },
   {
     "id": "wolf-atelier",

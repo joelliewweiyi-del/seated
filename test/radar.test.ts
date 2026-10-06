@@ -527,3 +527,66 @@ describe('found in review round 3 (Codex, Oct 2026)', () => {
     expect(store.openSightings(w.id)).toHaveLength(0);
   });
 });
+
+describe('calendar pre-check', () => {
+  it('reads only the days the calendar marks as possible, and still closes tables on the other days', async () => {
+    const demo = demoPlatform();
+    let calendar = new Set([FRI]);
+    const reads: string[] = [];
+    const platform: Platform = {
+      ...demo,
+      openDates: async () => calendar,
+      getSlots: async (r, d, p) => {
+        reads.push(d);
+        return demo.getSlots(r, d, p);
+      },
+    };
+    const { store, radar, watch } = setup({ platform });
+    const w = watch();
+    demo.open('klepel', FRI, '19:30');
+    const report = await radar.tick();
+    expect(reads).toEqual([FRI]);
+    expect(report.requests).toBe(2); // one calendar call, one day read
+    expect(store.openSightings(w.id)).toHaveLength(1);
+
+    calendar = new Set(); // the calendar now says Friday is gone
+    await radar.tick();
+    expect(store.openSightings(w.id)).toHaveLength(0);
+  });
+
+  it('asks the calendar once per restaurant and party size, even for watches on different days', async () => {
+    const demo = demoPlatform();
+    let calls = 0;
+    const platform: Platform = {
+      ...demo,
+      openDates: async (_r, dates) => {
+        calls++;
+        return new Set(dates);
+      },
+    };
+    const { radar, watch } = setup({ platform });
+    watch({ weekdays: [5] });
+    watch({ weekdays: [6] });
+    await radar.tick();
+    expect(calls).toBe(1);
+  });
+
+  it('falls back to reading every day when the calendar call fails', async () => {
+    const demo = demoPlatform();
+    const reads: string[] = [];
+    const platform: Platform = {
+      ...demo,
+      openDates: async () => {
+        throw new Error('calendar down');
+      },
+      getSlots: async (r, d, p) => {
+        reads.push(d);
+        return demo.getSlots(r, d, p);
+      },
+    };
+    const { radar, watch } = setup({ platform });
+    watch();
+    await radar.tick();
+    expect(reads).toHaveLength(14);
+  });
+});

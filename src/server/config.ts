@@ -15,9 +15,12 @@ const num = (value: string | undefined, fallback: number) => {
 };
 
 const demo = flag('demo');
+/** Observe mode: real restaurants, but record tables only and never push or book. For research. */
+const observe = flag('observe');
 
 export const config = {
   demo,
+  observe,
   /** Demo mode: also create sample watches and open tables so the dashboard has content. */
   seedDemo: demo && flag('seed'),
   port: num(process.env.PORT, 4310),
@@ -25,7 +28,7 @@ export const config = {
   dbPath: demo ? ':memory:' : process.env.SEATED_DB || 'data/seated.db',
   pollSeconds: Math.max(60, num(process.env.POLL_SECONDS, 120)),
   horizonDays: num(process.env.HORIZON_DAYS, 14),
-  autoBookEnabled: demo || process.env.AUTOBOOK === 'true',
+  autoBookEnabled: !observe && (demo || process.env.AUTOBOOK === 'true'),
   password: process.env.SEATED_PASSWORD || '',
 };
 

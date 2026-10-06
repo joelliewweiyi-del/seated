@@ -44,9 +44,9 @@ test('a new user sees an empty radar with one clear next step', async ({ page })
 test('adding a watch: pick a restaurant, set party and days, start watching', async ({ page }) => {
   await page.goto('/#/add');
   await shot(page, '02-add-list');
-  // Tebi restaurants are listed but cannot be picked yet.
-  await page.getByLabel('Search restaurants').fill('Bacalar');
-  await expect(page.getByRole('button', { name: /Bacalar/ })).toBeDisabled();
+  // Restaurants on booking systems Seated cannot read yet are listed but cannot be picked.
+  await page.getByLabel('Search restaurants').fill('Ciel Bleu');
+  await expect(page.getByRole('button', { name: /Ciel Bleu/ })).toBeDisabled();
 
   await page.getByLabel('Search restaurants').fill('klepel');
   await page.getByRole('button', { name: /Café de Klepel/ }).click();
@@ -124,8 +124,8 @@ test('settings: make a private push topic and save it', async ({ page }) => {
 
 test('auto-book stays locked until the guest details are filled in, then books one table', async ({ page }) => {
   await page.goto('/#/add');
-  await page.getByLabel('Search restaurants').fill('alba');
-  await page.getByRole('button', { name: /^Alba/ }).click();
+  await page.getByLabel('Search restaurants').fill('arca');
+  await page.getByRole('button', { name: /^Arca/ }).click();
   await expect(page.getByLabel(/Book it for me/)).toBeDisabled();
 
   await page.goto('/#/settings');
@@ -137,19 +137,19 @@ test('auto-book stays locked until the guest details are filled in, then books o
   await expect(page.getByRole('status')).toHaveText('Saved.');
 
   await page.goto('/#/add');
-  await page.getByLabel('Search restaurants').fill('alba');
-  await page.getByRole('button', { name: /^Alba/ }).click();
+  await page.getByLabel('Search restaurants').fill('arca');
+  await page.getByRole('button', { name: /^Arca/ }).click();
   await page.getByLabel(/Book it for me/).check();
   await page.getByRole('button', { name: 'Start watching' }).click();
   await expect(page).toHaveURL(/#\/$/);
 
   const date = nextWeekday(await today(page), 3);
-  await openTable(page, 'alba', date, '19:00');
-  await openTable(page, 'alba', date, '20:00');
+  await openTable(page, 'arca', date, '19:00');
+  await openTable(page, 'arca', date, '20:00');
   await checkNow(page);
   await expect(page.getByRole('heading', { name: 'Booked by Seated' })).toBeVisible();
   await expect(page.getByText('Confirmed')).toHaveCount(1);
-  const albaRow = page.getByTestId('watch-row').filter({ hasText: 'Alba' });
+  const albaRow = page.getByTestId('watch-row').filter({ hasText: 'Arca' });
   await expect(albaRow).toContainText('Booked');
 
   // A second check must not book a second table.
@@ -160,6 +160,7 @@ test('auto-book stays locked until the guest details are filled in, then books o
 
 test('remove asks once, inline, then removes', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByTestId('watch-row').first()).toBeVisible(); // count only after the page has loaded
   const before = await page.getByTestId('watch-row').count();
   const row = page.getByTestId('watch-row').first();
   await row.getByRole('button', { name: 'Remove' }).click();
@@ -180,4 +181,42 @@ test('the radar works on a phone-sized screen', async ({ page }) => {
   await shot(page, '07-mobile');
   await page.goto('/#/add');
   await shot(page, '08-mobile-add');
+});
+
+test('Tebi restaurants can be watched, but Seated explains it cannot book them for you', async ({ page }) => {
+  await page.goto('/#/add');
+  await page.getByLabel('Search restaurants').fill('bacalar');
+  await page.getByRole('button', { name: /Bacalar/ }).click();
+  await expect(page.getByLabel(/Book it for me/)).toBeDisabled();
+  await expect(page.getByText(/Tebi protects its booking form with a captcha/)).toBeVisible();
+});
+
+test('the hot list ranks the hardest tables and watches Friday and Saturday dinners in one tap', async ({ page }) => {
+  await page.goto('/#/hot');
+  const rows = page.getByTestId('hot-row');
+  await expect(rows.first()).toBeVisible();
+  // Nearly impossible restaurants come first.
+  await expect(rows.first().getByLabel('Nearly impossible')).toBeVisible();
+  await shot(page, '09-hot-list');
+
+  const gitane = rows.filter({ has: page.getByText('Gitane', { exact: true }) });
+  await gitane.getByRole('button', { name: /Watch Friday and Saturday dinners/ }).click();
+  await expect(gitane.getByText('Watching')).toBeVisible();
+
+  // Restaurants on other systems say why they cannot be watched.
+  const notYet = page.getByRole('region', { name: /Not supported yet/ });
+  await expect(notYet.getByTestId('hot-row').filter({ hasText: 'Ciel Bleu' })).toContainText('TableCheck');
+
+  await page.goto('/');
+  await expect(page.getByTestId('watch-row').filter({ hasText: 'Gitane' })).toContainText(/Fri, Sat\s*·\s*18:30–21:30/);
+});
+
+test('the hot list fits a small phone screen', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/#/hot');
+  await expect(page.getByTestId('hot-row').first()).toBeVisible();
+  // Nothing may stick out sideways at 360px, including the four-item header.
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await shot(page, '10-mobile-hot');
 });

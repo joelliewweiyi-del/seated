@@ -111,6 +111,29 @@ export class Radar {
       report.restaurants++;
       const errors: string[] = [];
       const cache = new Map<string, Slot[] | Error>();
+      // One calendar call per party size, covering the dates of every watch on this restaurant.
+      const calendar = new Map<number, Set<string> | Error>();
+      const calendarFor = async (partySize: number): Promise<Set<string> | null> => {
+        if (!platform.openDates) return null;
+        if (!calendar.has(partySize)) {
+          const today = localDate(this.now());
+          const all = [
+            ...new Set(
+              watches.filter((w) => w.partySize === partySize).flatMap((w) => datesForWatch(w, today, this.o.horizonDays)),
+            ),
+          ].sort();
+          report.requests++;
+          try {
+            calendar.set(partySize, all.length ? await platform.openDates(restaurant, all, partySize) : new Set());
+          } catch (err) {
+            report.failedRequests++;
+            errors.push(`calendar: ${err instanceof Error ? err.message : err}`);
+            calendar.set(partySize, err instanceof Error ? err : new Error(String(err)));
+          }
+        }
+        const result = calendar.get(partySize)!;
+        return result instanceof Error ? null : result; // on a failed calendar, read every day
+      };
 
       for (const watch of watches) {
         report.watches++;
@@ -124,8 +147,12 @@ export class Radar {
 
         const checked = new Set<string>();
         const found: Slot[] = [];
-        for (const date of datesForWatch(watch, today, this.o.horizonDays)) {
+        const dates = datesForWatch(watch, today, this.o.horizonDays);
+        // Cheap pre-check where the platform has one: skip days its calendar says are empty.
+        const worth = dates.length > 0 ? await calendarFor(watch.partySize) : null;
+        for (const date of dates) {
           const key = `${date}|${watch.partySize}`;
+          if (worth && !worth.has(date) && !cache.has(key)) cache.set(key, []); // calendar says no tables
           let result = cache.get(key);
           if (!result) {
             report.requests++;

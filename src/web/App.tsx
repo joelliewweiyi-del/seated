@@ -4,12 +4,13 @@ import { ago, Button } from './ui';
 import { RadarPage } from './RadarPage';
 import { AddWatchPage } from './AddWatchPage';
 import { SettingsPage } from './SettingsPage';
+import { HotPage } from './HotPage';
 
-type Route = 'radar' | 'add' | 'settings';
+type Route = 'radar' | 'hot' | 'add' | 'settings';
 
 function routeFromHash(): Route {
   const h = window.location.hash.replace('#/', '');
-  return h === 'add' || h === 'settings' ? h : 'radar';
+  return h === 'add' || h === 'settings' || h === 'hot' ? h : 'radar';
 }
 
 export function go(route: Route): void {
@@ -81,18 +82,20 @@ export function App() {
           <nav className="flex items-center gap-0.5 text-sm sm:gap-1" aria-label="Main">
             {(
               [
-                ['radar', 'Radar'],
-                ['add', 'Add watch'],
-                ['settings', 'Settings'],
+                ['radar', 'Radar', 'Radar'],
+                ['hot', 'Hot list', 'Hot'],
+                ['add', 'Add watch', 'Add'],
+                ['settings', 'Settings', 'Settings'],
               ] as const
-            ).map(([r, label]) => (
+            ).map(([r, label, short]) => (
               <a
                 key={r}
                 href={r === 'radar' ? '#/' : `#/${r}`}
                 aria-current={route === r ? 'page' : undefined}
-                className={`whitespace-nowrap rounded-lg px-2 py-1.5 sm:px-2.5 ${route === r ? 'bg-stone-100 font-medium text-ink' : 'text-stone-500 hover:text-ink'}`}
+                className={`whitespace-nowrap rounded-lg px-1.5 py-1.5 text-[13px] sm:px-2.5 sm:text-sm ${route === r ? 'bg-stone-100 font-medium text-ink' : 'text-stone-500 hover:text-ink'}`}
               >
-                {label}
+                <span className="sm:hidden">{short}</span>
+                <span className="max-sm:hidden">{label}</span>
               </a>
             ))}
           </nav>
@@ -123,6 +126,7 @@ export function App() {
           </p>
         )}
         {state && route === 'radar' && <RadarPage state={state} refresh={refresh} />}
+        {state && route === 'hot' && <HotPage state={state} refresh={refresh} />}
         {state && route === 'add' && <AddWatchPage state={state} refresh={refresh} />}
         {state && route === 'settings' && <SettingsPage state={state} refresh={refresh} />}
       </main>

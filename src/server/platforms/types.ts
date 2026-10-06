@@ -9,6 +9,9 @@ export interface Restaurant {
   website: string | null;
   city: string | null;
   address: string | null;
+  /** On the hard-to-book list: 1 hard, 2 very hard, 3 nearly impossible. */
+  hot?: number | null;
+  hotWhy?: string | null;
 }
 
 export interface Slot {
@@ -37,6 +40,11 @@ export interface Platform {
   label: string;
   /** All slots for one restaurant on one local date. Throws on network or API errors. */
   getSlots(restaurant: Restaurant, date: string, partySize: number): Promise<Slot[]>;
+  /**
+   * Optional cheap pre-check: of these dates, which could have a table? Usually one request per
+   * month instead of one per day. Dates left out are treated as "no tables". Throws on errors.
+   */
+  openDates?(restaurant: Restaurant, dates: string[], partySize: number): Promise<Set<string>>;
   /** A link that opens the platform's booking page, pre-filled where possible. */
   bookingUrl(restaurant: Restaurant, date: string, time: string, partySize: number): string;
   /** Books a slot for the guest. Only platforms that allow it implement this. */

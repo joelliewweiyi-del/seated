@@ -28,6 +28,8 @@ Seated is a personal table radar. It watches restaurant booking systems and aler
 
 ```bash
 npm run demo        # fake restaurants, in-memory DB, http://127.0.0.1:4310
+# observe mode: real restaurants, records tables, never pushes or books
+SEATED_DB=data/observe.db PORT=4311 npx tsx src/server/main.ts --observe
 npm start           # real mode, data/seated.db
 npm run peek -- klepel
 npm run typecheck && npm test && npm run test:e2e
@@ -55,7 +57,9 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 
 - API base: `https://widget-api.formitable.com/api`. Send a Chrome User-Agent, `Referer: https://widget.formitable.com/`, and `ft-returnurl: <restaurant website>`.
 - `GET /availability/{uid}/day/{YYYY-MM-DD}/{party}/en` returns slots: `timeString` (local), `time` (UTC instant), `status` (`AVAILABLE`, `SHORT`, `WAITLIST`, `SOLD_OUT`), `minutes` since local midnight.
-- `GET /availability/{uid}/monthWeeks/{month}/{year}/{party}/en` returns a status code per day. The meaning of the codes has not been decoded yet (0 had open slots, 2 = past). This could cut requests a lot.
+- `GET /availability/{uid}/monthWeeks/{month}/{year}/{party}/en` returns a status code per day. Validated on 119 days at 31 restaurants (Oct 2026): code 0 had open tables 61 of 62 times; codes 1, 3 and 6 never did; 2 = past, 5 = today when nothing is left. `openDates()` skips only those known-empty codes.
+- Many restaurants load the Formitable widget with JavaScript only (Gitane, Massalia). HTML detection misses them; a headless browser sees the `widget-api.formitable.com/api/restaurant/{uid}` request.
+- A dead Formitable widget can stay on a site after a move to Tebi (Alba). It answers with no availability. Check the site for a Tebi token before calling a restaurant "fully booked".
 - `GET /restaurant/{uid}/status`: the `live` flag is **not** a bookability signal. Many bookable restaurants report `live: false`.
 - Deep link (checked in Chrome, Oct 2026): `https://widget.formitable.com/side/en/{uid}/book?partysize=N&date=YYYY-MM-DD&time={minutes}`.
 - Booking: `GET /product/{uid}/search/{slot.time}/{party}/en` for the product, then `POST /booking/{uid}`. The payload is in `formitable.ts`. It booked real tables in June 2026.
@@ -65,8 +69,18 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 
 - Reads need no captcha. Base `https://live.tebi.co/api/reservations-guest/ledgers/{uid}`, headers `Tebi-Version-Code: 1680400`, Origin and Referer `https://live.tebi.co`.
 - `GET /reservation-dates/{YYYY-MM-DD}?groupSize=N` gives `timeslots[{ time, availabilityType }]`.
-- Seeded ledger ids rotate and then return `400 invalid ledger id`. Refresh with `GET https://live.tebi.co/api/widget/{oldUid}` (Referer = restaurant site); the 302 `Location` holds the new id.
+- `GET /reservation-months/{YYYY-MM}?groupSize=N` gives `[{ date, availability: Available|Waitlist|Unavailable }]`; `openDates()` uses it so only Available days get a slot read.
+- Seeded ledger ids rotate and then return `400 invalid ledger id`. Refresh with `GET https://live.tebi.co/api/widget/{oldUid}` (Referer = restaurant site); the 302 `Location` holds the new id. `tebi.ts` does this on any 400 and saves the new id through `onUidChange`.
+- Restaurant websites embed a **widget token** (`data-widget-token="…"` on `widget-manager.js`). It is not the ledger id: resolve it with the same `/api/widget/{token}` redirect.
+- The booking page `https://live.tebi.co/ecom/reservations/{uid}` reads no date or party from the link (only `serviceId`), so Tebi links cannot be pre-filled.
+- Tebi is also a till and web shop: a `tebi.co` link on a site does not prove Tebi takes the bookings.
 - Writes need reCAPTCHA v3. Do not try to get around it.
+
+## Restaurant data
+
+- `data/restaurants.json`: `hot` (1 to 3) and `hotWhy` mark the hard-to-book list (34 Amsterdam restaurants, researched 6 Oct 2026 from Time Out, Amsterdam Foodie, Your Little Black Book, Michelin and others).
+- On 6 Oct 2026, 29 restaurants listed as Formitable had moved to Tebi; they were switched with ids resolved from their websites.
+- `scripts/detect.ts <url>` finds the booking system on a website.
 
 ## History
 

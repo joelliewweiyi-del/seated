@@ -37,7 +37,9 @@ All three must pass. CI runs the same commands.
 3. Only add `book()` if the platform allows it without a captcha or other bot check. Never work around one.
 4. Register it in `src/server/main.ts` and add tests with a fake `fetch`.
 
-Good next platforms: **Tebi** (availability can be read without a captcha; only booking has one) and **Zenchef** (Formitable's new owner).
+Good next platforms: **Zenchef** (Formitable's new owner), **SevenRooms** and **Guestplan**. The Hot list page shows which hard-to-book restaurants each one would unlock.
+
+To find out which system a restaurant uses: `npx tsx scripts/detect.ts https://restaurant.nl`. Some sites load their widget with JavaScript only; open those in a browser and watch the network requests.
 
 ## Adding restaurants to the list
 
