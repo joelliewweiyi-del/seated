@@ -63,7 +63,7 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - `GET /restaurant/{uid}/status`: the `live` flag is **not** a bookability signal. Many bookable restaurants report `live: false`.
 - Deep link (checked in Chrome, Oct 2026): `https://widget.formitable.com/side/en/{uid}/book?partysize=N&date=YYYY-MM-DD&time={minutes}`.
 - Booking: `GET /product/{uid}/search/{slot.time}/{party}/en` for the product, then `POST /booking/{uid}`. The payload is in `formitable.ts`. It booked real tables in June 2026.
-- Risk: restaurants are migrating to Zenchef (the status endpoint shows a `zenchefId`). Toscanini already returns no slots. A Zenchef reader is the most important next platform.
+- Risk: restaurants are migrating to Zenchef (the status endpoint shows a `zenchefId`). Toscanini looked "migrated" but had in fact moved to Tebi; check for that first. A Zenchef reader is the most important next platform.
 
 ### Tebi
 
