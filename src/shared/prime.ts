@@ -1,9 +1,9 @@
-// Prime time: dinner for two on Fridays and Saturdays, when the hardest tables are hardest to get.
+// Prime time: dinner for two on Thursdays, Fridays and Saturdays, when the hardest tables are hardest to get.
 // Shared by the server (live board) and the dashboard (one-tap watch), so both mean the same thing.
 
 export const PRIME = {
   partySize: 2,
-  weekdays: [5, 6],
+  weekdays: [4, 5, 6],
   timeFrom: '18:30',
   timeTo: '21:30',
   dateFrom: null,

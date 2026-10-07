@@ -1,22 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type State } from './api';
-import { ago, Button } from './ui';
-import { RadarPage } from './RadarPage';
-import { AddWatchPage } from './AddWatchPage';
+import { Button } from './ui';
 import { SettingsPage } from './SettingsPage';
-import { LivePage } from './LivePage';
+import { WatchListPage } from './WatchListPage';
 import { RestaurantSearch } from './Search';
 
-type Route = 'radar' | 'live' | 'add' | 'settings';
+// One screen (the watch list) plus Settings. Old links (#/live, #/hot, #/add) land on the watch list.
+type Route = 'home' | 'settings';
 
 function routeFromHash(): Route {
-  const h = window.location.hash.replace('#/', '').split('?')[0];
-  if (h === 'activity') return 'live'; // the old name of the live page
-  return h === 'add' || h === 'settings' || h === 'live' ? h : 'radar'; // the old Hot list is now the search box
-}
-
-export function go(route: Route): void {
-  window.location.hash = route === 'radar' ? '/' : `/${route}`;
+  return window.location.hash.replace('#/', '').split('?')[0] === 'settings' ? 'settings' : 'home';
 }
 
 export function App() {
@@ -24,7 +17,6 @@ export function App() {
   const [state, setState] = useState<State | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
-  const [, setClock] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
@@ -44,10 +36,8 @@ export function App() {
   useEffect(() => {
     void refresh();
     const poll = setInterval(() => void refresh(), 10_000);
-    const tick = setInterval(() => setClock((c) => c + 1), 5_000); // keeps "x min ago" fresh
     return () => {
       clearInterval(poll);
-      clearInterval(tick);
     };
   }, [refresh]);
 
@@ -61,7 +51,6 @@ export function App() {
     }
   };
 
-  const lastCheck = state?.radar.lastReport?.finishedAt ?? null;
 
   return (
     <div className="min-h-screen">
@@ -71,9 +60,9 @@ export function App() {
           Demo mode: fake restaurants, nothing leaves your computer.
         </div>
       )}
-      <header className="border-b border-stone-200 bg-white">
+      <header className="relative z-30 border-b border-stone-200 bg-white">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:gap-x-5">
-          <a href="#/" className="flex items-center gap-2 text-ink" aria-label="Seated home">
+          <a href="#/" className="flex items-center gap-2 text-ink" aria-label="Seated, watch list">
             <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
               <rect width="32" height="32" rx="7" fill="#0f766e" />
               <circle cx="16" cy="16" r="7" fill="none" stroke="white" strokeWidth="2.5" />
@@ -81,34 +70,12 @@ export function App() {
             </svg>
             <span className="hidden text-[17px] font-semibold tracking-tight sm:inline">Seated</span>
           </a>
-          <nav className="flex items-center gap-0.5 text-sm sm:gap-1" aria-label="Main">
-            {(
-              [
-                ['radar', 'Watchlist', 'Watchlist'],
-                ['live', 'Live', 'Live'],
-                ['settings', 'Settings', 'Settings'],
-              ] as const
-            ).map(([r, label, short]) => (
-              <a
-                key={r}
-                href={r === 'radar' ? '#/' : `#/${r}`}
-                aria-current={route === r ? 'page' : undefined}
-                className={`whitespace-nowrap rounded-lg px-1.5 py-1.5 text-[13px] sm:px-2.5 sm:text-sm ${route === r || (route === 'add' && r === 'radar') ? 'bg-stone-100 font-medium text-ink' : 'text-stone-500 hover:text-ink'}`}
-              >
-                <span className="sm:hidden">{short}</span>
-                <span className="max-sm:hidden">{label}</span>
-              </a>
-            ))}
-          </nav>
-          {state && route !== 'add' && ( // the Add page has its own search
+          {state && (
             <div className="order-last w-full sm:order-none sm:ml-auto sm:w-auto">
               <RestaurantSearch state={state} refresh={refresh} />
             </div>
           )}
-          <div className={`ml-auto flex items-center gap-3 ${route === 'add' ? '' : 'sm:ml-0'}`}>
-            <span className="hidden text-xs text-stone-500 sm:inline" data-testid="last-check">
-              {checking || state?.radar.running ? 'Checking…' : lastCheck ? `Checked ${ago(lastCheck)}` : 'Not checked yet'}
-            </span>
+          <div className="ml-auto flex items-center gap-3 sm:ml-0">
             <Button
               onClick={checkNow}
               disabled={checking || !state || state.watches.length === 0}
@@ -121,6 +88,13 @@ export function App() {
               </svg>
               <span className="max-sm:hidden">Check now</span>
             </Button>
+            <a
+              href="#/settings"
+              aria-current={route === 'settings' ? 'page' : undefined}
+              className={`rounded-lg px-2 py-1.5 text-sm ${route === 'settings' ? 'bg-stone-100 font-medium text-ink' : 'text-stone-500 hover:text-ink'}`}
+            >
+              Settings
+            </a>
           </div>
         </div>
       </header>
@@ -131,9 +105,7 @@ export function App() {
             Cannot reach the Seated server: {loadError}. Is it running?
           </p>
         )}
-        {state && route === 'radar' && <RadarPage state={state} refresh={refresh} />}
-        {state && route === 'live' && <LivePage />}
-        {state && route === 'add' && <AddWatchPage key={window.location.hash} state={state} refresh={refresh} />}
+        {state && route === 'home' && <WatchListPage state={state} />}
         {state && route === 'settings' && <SettingsPage state={state} refresh={refresh} />}
       </main>
     </div>

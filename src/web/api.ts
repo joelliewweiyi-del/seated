@@ -107,6 +107,7 @@ export interface Board {
     lastError: string | null;
     lastCheckedAt: string | null;
     cells: Array<{ date: string; times: string[]; bookingUrl: string | null; known: boolean }>;
+    watchIds: number[];
     free: number;
     unknown: number;
     everySeconds: number;

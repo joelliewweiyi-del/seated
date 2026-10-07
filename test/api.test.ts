@@ -134,14 +134,21 @@ describe('activity log and watch edits', () => {
 });
 
 describe('live board', () => {
-  /** The next Friday from tomorrow on, so the table is never in the past. */
+  /** The next Thursday, Friday or Saturday from tomorrow on: never in the past, and always one of the board's three evenings. */
   const nextFriday = () => {
     let d = addDays(localDate(new Date()), 1);
-    while (isoWeekday(d) !== 5) d = addDays(d, 1);
+    while (![4, 5, 6].includes(isoWeekday(d))) d = addDays(d, 1);
     return d;
   };
 
-  it('ranks the fully booked restaurants first, counting only Friday and Saturday dinner tables', async () => {
+  it('shows only the coming Thursday, Friday and Saturday: one evening each, within the week', async () => {
+    const { call } = app();
+    const board = (await (await call('GET', '/board')).json()) as { dates: string[] };
+    expect(board.dates.map(isoWeekday).sort()).toEqual([4, 5, 6]);
+    expect(board.dates.every((d) => d >= localDate(new Date()) && d < addDays(localDate(new Date()), 7))).toBe(true);
+  });
+
+  it('ranks the fully booked restaurants first, counting only Thursday to Saturday dinner tables', async () => {
     const { call, demo, radar } = app();
     await call('POST', '/watches', { restaurantId: 'klepel', ...PRIME });
     await call('POST', '/watches', { restaurantId: 'alba', ...PRIME });
@@ -154,7 +161,7 @@ describe('live board', () => {
       dates: string[];
       rows: Array<{ id: string; free: number; cells: Array<{ date: string; times: string[]; bookingUrl: string | null }> }>;
     };
-    expect(board.dates.every((d) => [5, 6].includes(isoWeekday(d)))).toBe(true);
+    expect(board.dates.every((d) => [4, 5, 6].includes(isoWeekday(d)))).toBe(true);
     expect(board.rows.map((r) => [r.id, r.free])).toEqual([
       ['alba', 0], // fully booked: hardest, so first
       ['klepel', 1],

@@ -81,6 +81,8 @@ interface BoardRow {
   lastCheckedAt: string | null;
   /** known: the day was read without error, so an empty cell means fully booked, not unknown. */
   cells: Array<{ date: string; times: string[]; bookingUrl: string | null; known: boolean }>;
+  /** The watches behind this row, so the page can remove them. */
+  watchIds: number[];
   free: number;
   unknown: number;
   /** Seconds between reads of this restaurant right now (scarce restaurants are read more often). */
@@ -134,10 +136,11 @@ export function createApi(d: ApiDeps): Hono {
     return c.json({ ok, watching, lastCheckAt: last?.finishedAt ?? null, ageSeconds, secondsWithoutProgress: hungSeconds }, ok ? 200 : 503);
   });
 
-  // The live board: hard-to-book restaurants with a prime-time watch, ranked by free prime tables (fewest first).
+  // The watch list: restaurants with a prime-time watch, ranked by free tables (fewest first),
+  // for the coming Thursday, Friday and Saturday only (one evening each).
   api.get('/board', (c) => {
     const today = localDate(new Date());
-    const dates = Array.from({ length: d.horizonDays }, (_, i) => addDays(today, i)).filter(isPrimeDay);
+    const dates = Array.from({ length: 7 }, (_, i) => addDays(today, i)).filter(isPrimeDay);
     const restaurants = new Map(store.listRestaurants().map((r) => [r.id, r]));
     const events = store.listEvents(1000);
     const rows = new Map<string, BoardRow>();
@@ -153,11 +156,13 @@ export function createApi(d: ApiDeps): Hono {
         lastError: r.lastError,
         lastCheckedAt: r.lastCheckedAt,
         cells: dates.map((date) => ({ date, times: [] as string[], bookingUrl: null as string | null, known: false })),
+        watchIds: [] as number[],
         free: 0,
         unknown: 0,
         everySeconds: Math.round(d.radar.intervalFor(r.id) / 1000),
         lastChange: null as { at: string; kind: string; date: string; time: string } | null,
       };
+      row.watchIds.push(w.id);
       const read = store.watchCheckedDates(w.id);
       for (const cell of row.cells) if (read.has(cell.date)) cell.known = true;
       for (const s of store.openSightings(w.id)) {
@@ -172,7 +177,7 @@ export function createApi(d: ApiDeps): Hono {
     }
     // Only changes to tables for the prime party size; a table for four says nothing about a table for two.
     const primeChange = (e: (typeof events)[number]) =>
-      e.kind !== 'listed' && e.partySize === PRIME.partySize && e.date !== null && e.time !== null && isPrime(e.date, e.time);
+      e.kind !== 'listed' && e.partySize === PRIME.partySize && e.date !== null && e.time !== null && dates.includes(e.date) && isPrime(e.date, e.time);
     for (const row of rows.values()) {
       row.free = row.cells.reduce((n, x) => n + x.times.length, 0);
       row.unknown = row.cells.filter((x) => !x.known).length;

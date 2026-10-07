@@ -39,7 +39,7 @@ The list in [data/restaurants.json](data/restaurants.json) has 297 restaurants i
 
 ### What we learned watching Amsterdam's hardest tables
 
-- **The scarce thing is Friday and Saturday evening.** On 6 October 2026 most hard-to-book restaurants had plenty of weekday tables. CUE, Rijsel and Toscanini had none on Friday or Saturday, and Vuurtoreneiland had nothing at all. That is why the one-tap **+ Watch** in the search box covers Friday and Saturday dinners.
+- **The scarce thing is Friday and Saturday evening.** On 6 October 2026 most hard-to-book restaurants had plenty of weekday tables. CUE, Rijsel and Toscanini had none on Friday or Saturday, and Vuurtoreneiland had nothing at all. That is why the one-tap **+ Watch** in the search box covers Thursday to Saturday dinners.
 - **Formitable restaurants are moving to Zenchef, and the old calendar stays online.** Zenchef owns Formitable. A restaurant that moved keeps a Formitable calendar that no longer takes bookings, so it looks empty. On 7 October 2026 De Kas showed 41 free tables on Formitable and none on Zenchef. 16 Amsterdam restaurants had moved. Seated now refuses to read a Formitable calendar that names a Zenchef id. `scripts/migrate-zenchef.ts` moves such restaurants in the list.
 
 ## Run it
@@ -58,9 +58,9 @@ Open http://127.0.0.1:4310. Then:
 1. Go to **Settings** and press **Generate** to make a private alert topic.
 2. Install the free [ntfy](https://ntfy.sh) app on your phone and subscribe to that topic.
 3. Press **Save and send test alert**. Your phone should buzz.
-4. Type a restaurant in the search box at the top. Tap **+ Watch** for Friday and Saturday dinners, or **Other times** to pick your own party, days and hours.
+4. Type a restaurant in the search box at the top and tap **+ Watch**. Seated watches Thursday, Friday and Saturday dinner for two (18:30–21:30).
 
-The **Live** page shows the hot restaurants you watch, ranked by free Friday and Saturday tables, and a feed of every table that opens or is taken. It updates by itself.
+Seated is one screen: the **watch list**. It shows your restaurants with their free tables on the coming Thursday, Friday and Saturday, fewest first, and a feed of every table that opens or is taken. Tap a number to book. It updates by itself.
 
 Seated only checks while it runs. On a laptop, that means while the laptop is awake. To watch around the clock, run it on a small always-on machine (see [Hosting](#hosting)).
 
@@ -96,7 +96,7 @@ npm run peek -- "bistro feline" 4 10
 
 ## Which alerts buzz
 
-An alert is only useful if it is rare. Seated pushes loudly only when a table opens at a restaurant that had **two or fewer** open tables for that watch. Everything else is logged on the Live page, and some of it goes to your phone as a silent notification.
+An alert is only useful if it is rare. Seated pushes loudly only when a table opens at a restaurant that had **two or fewer** open tables for that watch. Everything else is logged in the watch list's feed, and some of it goes to your phone as a silent notification.
 
 | What happened | Push |
 |---|---|
@@ -104,7 +104,7 @@ An alert is only useful if it is rare. Seated pushes loudly only when a table op
 | A table opens where many tables are already free | Silent |
 | A new watch finds tables that were already open | None (they are listed, not "new") |
 | A table you were alerted about is taken | Silent: "Gone: …" |
-| Seated was not running for a while | None. The Live page shows the gap. |
+| Seated was not running for a while | None. The feed shows the gap. |
 
 ## How often Seated looks
 
@@ -117,15 +117,11 @@ Seated reads each restaurant on its own schedule. It looks more often where tabl
 | more than 10 | 5 min |
 | the last reads failed | 4 min |
 
-Nothing is ever read more often than once a minute. After two failed requests in a row, Seated skips that restaurant for the rest of the check. The **Live** page shows, per restaurant, how long its tables stay free. If they go faster than Seated looks, it says so.
+Nothing is ever read more often than once a minute. After two failed requests in a row, Seated skips that restaurant for the rest of the check. `GET /api/stats` shows, per restaurant, how long its tables stay free, and whether they go faster than Seated looks.
 
 ## Auto-book
 
-Auto-book is off by default. To use it:
-
-1. Set `AUTOBOOK=true` in `.env` and restart.
-2. Fill in your name, email and phone in **Settings**.
-3. Tick **Book it for me** on a watch.
+Auto-book is off by default, and the dashboard has no switch for it since the one-screen redesign (October 2026). The server still supports it, with all the guards below: set `AUTOBOOK=true`, save your guest details through `PUT /api/settings`, and create a watch with `"autoBook": true` through `POST /api/watches`. Only Formitable restaurants can be booked.
 
 Seated then books the first table that fits and stops that watch. The restaurant sends its confirmation to your email.
 
@@ -138,7 +134,7 @@ Seated has these guards against bookings you did not want:
 - Seated makes at most one automatic booking in 24 hours.
 - Seated never books a table that asks for a deposit, a prepayment or a no-show fee. It alerts you instead.
 
-When you book a table yourself, tap **I got it** on the open table. Seated stops the watch and counts the table as a win.
+`POST /api/watches/:id/got-it` records a table you booked yourself: Seated stops the watch and counts the table as a win.
 
 **Only use auto-book for tables you will really use.** A no-show costs a small restaurant real money and takes the table from someone else.
 
@@ -206,7 +202,7 @@ scripts/
 data/restaurants.json  curated restaurant list
 ```
 
-Each read first asks the platform's calendar which days can have a table, then reads only those days. It reads every (restaurant, date, party size) once, however many watches share it. Seated keeps a record of every open table it sees and when it disappears. That gives the "Recently gone" list and the Live feed, which show how fast tables go.
+Each read first asks the platform's calendar which days can have a table, then reads only those days. It reads every (restaurant, date, party size) once, however many watches share it. Seated keeps a record of every open table it sees and when it disappears. That gives the feed, which shows how fast tables go.
 
 ## Be a good guest
 

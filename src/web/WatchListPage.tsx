@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, type Board, type EventKind, type Stats } from './api';
+import { api, type Board, type EventKind, type State } from './api';
 import { ago, Badge, Card, dayLabel, SectionLabel } from './ui';
 import { PRIME } from '../shared/prime';
 import { platformName } from '../shared/platforms';
 
-const TOP = 10;
 /** No finished check for this long means the radar has probably stopped. */
 const STALE_MS = 6 * 60_000;
-const LEVEL = ['', 'Hard to book', 'Very hard to book', 'Nearly impossible'];
 const KIND: Partial<Record<EventKind, { label: string; tone: 'amber' | 'stone' | 'red' | 'green' }>> = {
   opened: { label: 'Opened', tone: 'amber' },
   reopened: { label: 'Back', tone: 'amber' },
@@ -17,7 +15,7 @@ const KIND: Partial<Record<EventKind, { label: string; tone: 'amber' | 'stone' |
   gap: { label: 'Not checking', tone: 'red' },
 };
 
-/** "every 1 min", "every 5 min", "every 90 s". */
+/** "every minute", "every 5 min", "every 90 s". */
 const every = (seconds: number) => (seconds === 60 ? 'every minute' : seconds % 60 === 0 ? `every ${seconds / 60} min` : `every ${seconds} s`);
 const VERB: Partial<Record<EventKind, string>> = { opened: 'Opened', reopened: 'Back', taken: 'Taken' };
 
@@ -25,20 +23,9 @@ const shortDay = (date: string) => dayLabel(date).split(' ').slice(0, 2).join(' 
 const clock = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Europe/Amsterdam', hour: '2-digit', minute: '2-digit' });
 
-function Difficulty({ level }: { level: number }) {
-  return (
-    <span className="inline-flex items-center gap-0.5" role="img" aria-label={LEVEL[level]} title={LEVEL[level]}>
-      {[1, 2, 3].map((i) => (
-        <span key={i} className={`h-1.5 w-2 rounded-sm ${i <= level ? 'bg-copper-600' : 'bg-stone-300'}`} />
-      ))}
-    </span>
-  );
-}
-
-/** Hard-to-book restaurants, ranked live by free prime-time tables. Updates the moment the radar sees a change. */
-export function LivePage() {
+/** The one screen: your restaurants and their free tables on the coming Thursday, Friday and Saturday. Updates live. */
+export function WatchListPage({ state }: { state: State }) {
   const [board, setBoard] = useState<Board | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [changed, setChanged] = useState<Set<string>>(new Set());
@@ -47,7 +34,6 @@ export function LivePage() {
   const requests = useRef({ sent: 0, applied: 0 });
 
   const load = useCallback(() => {
-    api.stats().then(setStats, () => undefined); // the board matters more; stats can wait for the next change
     const id = ++requests.current.sent;
     api.board().then(
       (b) => {
@@ -93,12 +79,15 @@ export function LivePage() {
     };
   }, [load]);
 
-  if (!board) return <p className="text-sm text-stone-500">{error ? `Cannot load the live board: ${error}` : 'Loading…'}</p>;
+  // A watch added from the search box: reload, so its row shows before its first check finishes.
+  const watchCount = state.watches.length;
+  useEffect(() => load(), [watchCount, load]);
 
-  const top = board.rows.slice(0, TOP);
-  const rest = board.rows.slice(TOP);
-  const soldOut = top.filter((r) => r.free === 0 && r.unknown === 0).length;
-  const stale = !board.running && (!board.lastCheckAt || Date.now() - Date.parse(board.lastCheckAt) > STALE_MS);
+  if (!board) return <p className="text-sm text-stone-500">{error ? `Cannot load the watch list: ${error}` : 'Loading…'}</p>;
+
+  const rows = board.rows;
+  // Only a list with restaurants can be stale: an empty list has nothing to check.
+  const stale = rows.length > 0 && !board.running && (!board.lastCheckAt || Date.now() - Date.parse(board.lastCheckAt) > STALE_MS);
 
   return (
     <div className="space-y-8">
@@ -108,9 +97,16 @@ export function LivePage() {
         </p>
       )}
 
+      {!state.settings.ntfyTopic && !state.radar.demo && (
+        <a href="#/settings" className="edge-open block rounded-xl border border-stone-200 bg-white p-4 hover:bg-stone-50">
+          <p className="text-sm font-medium text-ink">Phone alerts are off</p>
+          <p className="text-sm text-stone-500">Set them up in Settings, or you will only see open tables on this page.</p>
+        </a>
+      )}
+
       <div>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink">Hardest tables in Amsterdam</h1>
+          <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink">Watch list</h1>
           <p className="flex items-center gap-2 text-xs text-stone-500" data-testid="live-status">
             <span className="relative flex size-2">
               {connected && <span className="absolute inline-flex size-full animate-ping rounded-full bg-copper-600 opacity-60 motion-reduce:hidden" />}
@@ -118,32 +114,28 @@ export function LivePage() {
             </span>
             <span className="font-mono uppercase tracking-wide">{connected ? 'Live' : 'Reconnecting'}</span>
             <span className={stale ? 'font-medium text-red-700' : ''}>
-              · {board.running ? 'checking now…' : `checked ${ago(board.lastCheckAt)}`}
+              · {board.running ? 'checking now…' : board.lastCheckAt ? `checked ${ago(board.lastCheckAt)}` : 'not checked yet'}
               {stale && '. Is Seated still running?'}
             </span>
           </p>
         </div>
         <p className="mt-1 max-w-2xl text-pretty text-[15px] text-stone-500">
-          Fridays and Saturdays, <span className="whitespace-nowrap">{PRIME.timeFrom}–{PRIME.timeTo}</span>, for{' '}
-          {PRIME.partySize}. Ranked live: fewest free tables first.{' '}
-          {top.length > 0 && (
-            <strong className="font-medium text-stone-700">
-              {soldOut} of {top.length} are fully booked.
-            </strong>
-          )}
+          Thursday, Friday and Saturday, <span className="whitespace-nowrap">{PRIME.timeFrom}–{PRIME.timeTo}</span>, for{' '}
+          {PRIME.partySize}. Fewest free tables first.
         </p>
       </div>
 
-      {top.length === 0 ? (
-        <Card className="p-6">
-          <p className="text-sm text-stone-600">
-            Nothing to rank yet. Search for a restaurant at the top and tap <strong className="font-medium">+ Watch</strong>.
+      {rows.length === 0 ? (
+        <Card className="p-6 text-center">
+          <p className="font-medium text-ink">No restaurants yet</p>
+          <p className="mt-1 text-sm text-stone-500">
+            Search for a restaurant at the top and tap <strong className="font-medium">+ Watch</strong>.
           </p>
         </Card>
       ) : (
         <section aria-labelledby="board">
           <SectionLabel aside={<span className="text-xs text-stone-500">Free tables per evening · tap a number to book</span>}>
-            <span id="board">Top {top.length}</span>
+            <span id="board">This week</span>
           </SectionLabel>
           <Card>
             <div className="hidden items-center gap-3 border-b border-stone-100 px-4 py-2 sm:flex" aria-hidden="true">
@@ -155,19 +147,19 @@ export function LivePage() {
                 </span>
               ))}
               <span className="w-10 text-right font-mono text-[10px] uppercase tracking-wide text-stone-500">Free</span>
+              <span className="w-16" />
             </div>
             <ol className="divide-y divide-stone-100" data-testid="board">
-              {top.map((r, i) => (
+              {rows.map((r, i) => (
                 <li
                   key={r.id}
                   data-testid="board-row"
-                  className={`${r.lastError ? 'edge-urgent' : r.free ? 'edge-open' : 'edge-neutral'} ${changed.has(r.id) ? 'just-changed' : ''} flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3`}
+                  className={`${r.lastError ? 'edge-urgent' : r.free ? 'edge-open' : 'edge-watching'} ${changed.has(r.id) ? 'just-changed' : ''} flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3`}
                 >
                   <span className="w-5 font-mono text-sm text-stone-500">{i + 1}</span>
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <span className="font-medium text-ink">{r.name}</span>
-                      {r.hot && <Difficulty level={r.hot} />}
                       <span className="font-mono text-[11px] uppercase tracking-wide text-stone-500">{platformName(r.platform)}</span>
                     </p>
                     <p className="mt-0.5 text-xs text-stone-500">
@@ -212,32 +204,28 @@ export function LivePage() {
                         )}
                       </span>
                     ))}
-                    <span className={`ml-auto w-10 text-right font-mono text-sm font-medium sm:ml-0 ${r.free ? 'text-amber-700' : 'text-stone-400'}`}>
+                    <span className={`w-10 text-right font-mono text-sm font-medium ${r.free ? 'text-amber-700' : 'text-stone-400'}`}>
                       <span data-testid="free">{r.free}</span>
                       <span className="text-xs font-normal sm:hidden"> free</span>
+                    </span>
+                    <span className="ml-auto flex w-16 justify-end sm:ml-0">
+                      <Remove name={r.name} watchIds={r.watchIds} done={load} />
                     </span>
                   </div>
                 </li>
               ))}
             </ol>
           </Card>
-          {rest.length > 0 && (
-            <p className="mt-2 text-xs text-stone-500">
-              Also watching, with more free tables: {rest.map((r) => `${r.name} (${r.free})`).join(', ')}.
-            </p>
-          )}
         </section>
       )}
 
-      {stats && <StatsSection stats={stats} />}
-
       <section aria-labelledby="feed">
-        <SectionLabel aside={<span className="text-xs text-stone-500">Prime-time changes only</span>}>
-          <span id="feed">Live feed</span>
+        <SectionLabel aside={<span className="text-xs text-stone-500">These three evenings only</span>}>
+          <span id="feed">Recent changes</span>
         </SectionLabel>
         <Card>
           {board.feed.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-stone-500">Quiet so far. A table that opens or is taken shows up here the moment the radar sees it.</p>
+            <p className="px-4 py-6 text-sm text-stone-500">Quiet so far. A table that opens or is taken shows up here the moment Seated sees it.</p>
           ) : (
             <ol className="divide-y divide-stone-100" data-testid="feed">
               {board.feed.map((e) => (
@@ -265,46 +253,33 @@ export function LivePage() {
   );
 }
 
-/** How fast tables go, and what the alerts turned into. Tells the user whether Seated looks often enough. */
-function StatsSection({ stats }: { stats: Stats }) {
-  const seen = stats.restaurants.filter((r) => r.openings > 0);
-  const quiet = stats.restaurants.filter((r) => r.openings === 0);
+/** Stops watching a restaurant. Asks once, inline. */
+function Remove({ name, watchIds, done }: { name: string; watchIds: number[]; done: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  if (!asking) {
+    return (
+      <button onClick={() => setAsking(true)} aria-label={`Remove ${name}`} className="text-xs text-stone-400 hover:text-red-700">
+        Remove
+      </button>
+    );
+  }
   return (
-    <section aria-labelledby="stats">
-      <SectionLabel aside={<span className="text-xs text-stone-500">All your watches · last {stats.days} days</span>}>
-        <span id="stats">How fast tables go</span>
-      </SectionLabel>
-      <Card>
-        <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600" data-testid="funnel">
-          <strong className="font-medium text-ink">{stats.loudAlerts}</strong> {stats.loudAlerts === 1 ? 'table' : 'tables'} buzzed your phone →{' '}
-          <strong className="font-medium text-ink">{stats.bookedByYou}</strong> booked by you,{' '}
-          <strong className="font-medium text-ink">{stats.bookedBySeated}</strong> by Seated
-        </p>
-        {seen.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-stone-500">No table has opened yet. Each opening is timed here: how long it stayed free before someone took it.</p>
-        ) : (
-          <ul className="divide-y divide-stone-100" data-testid="stats">
-            {seen.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-2 text-sm">
-                <span className="w-full font-medium text-ink sm:w-auto sm:min-w-0 sm:flex-1">{r.name}</span>
-                <span className="text-stone-600">
-                  {r.openings} {r.openings === 1 ? 'opening' : 'openings'}
-                  {r.medianMinutes !== null && (
-                    <> · {r.medianMinutes === 0 ? 'usually gone within a minute' : `usually gone after ${r.medianMinutes} min`}</>
-                  )}
-                </span>
-                <span className="w-full text-xs text-stone-500 sm:w-auto">
-                  read {every(r.everySeconds)}
-                  {r.tooSlow && <span className="text-amber-800"> · tables go faster than Seated looks</span>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {quiet.length > 0 && (
-          <p className="border-t border-stone-100 px-4 py-2 text-xs text-stone-500">No openings yet: {quiet.map((r) => r.name).join(', ')}.</p>
-        )}
-      </Card>
-    </section>
+    <span className="flex items-center gap-2 text-xs">
+      <button
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          await Promise.all(watchIds.map((id) => api.deleteWatch(id))).finally(() => setBusy(false));
+          done();
+        }}
+        className="font-medium text-red-700 hover:underline"
+      >
+        Yes, remove
+      </button>
+      <button onClick={() => setAsking(false)} className="text-stone-500 hover:text-ink">
+        No
+      </button>
+    </span>
   );
 }

@@ -34,7 +34,7 @@ export function SettingsPage({ state, refresh }: { state: State; refresh: () => 
     <div className="space-y-10">
       <div>
         <h1 className="text-[28px] font-semibold tracking-tight text-ink">Settings</h1>
-        <p className="mt-1 text-[15px] text-stone-500">Where Seated sends alerts, and who it books for.</p>
+        <p className="mt-1 text-[15px] text-stone-500">Where Seated sends your alerts.</p>
       </div>
 
       <section aria-labelledby="pushes">
@@ -78,50 +78,13 @@ export function SettingsPage({ state, refresh }: { state: State; refresh: () => 
         </Card>
       </section>
 
-      <section aria-labelledby="guest">
-        <SectionLabel>
-          <span id="guest">Your details for auto-book</span>
-        </SectionLabel>
-        <Card className="space-y-5 p-5">
-          <p className="text-sm text-stone-600">
-            Seated only uses these when a watch has "Book it for me" switched on. The restaurant sees them as a normal booking.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="First name">
-              <input className={inputClass} value={form.guestFirstName} onChange={set('guestFirstName')} autoComplete="given-name" />
-            </Field>
-            <Field label="Last name">
-              <input className={inputClass} value={form.guestLastName} onChange={set('guestLastName')} autoComplete="family-name" />
-            </Field>
-            <Field label="Email" hint="The restaurant sends the confirmation here.">
-              <input className={inputClass} type="email" value={form.guestEmail} onChange={set('guestEmail')} autoComplete="email" />
-            </Field>
-            <Field label="Phone" hint="Restaurants sometimes call to confirm.">
-              <input className={inputClass} type="tel" value={form.guestPhone} onChange={set('guestPhone')} autoComplete="tel" placeholder="+31 6 …" />
-            </Field>
-          </div>
-          <p className="flex flex-wrap items-center gap-2 text-xs text-stone-500">
-            Auto-book on this server
-            <Badge tone={state.radar.autoBookEnabled ? 'teal' : 'stone'}>{state.radar.autoBookEnabled ? 'Enabled' : 'Off'}</Badge>
-            {!state.radar.autoBookEnabled && 'Set AUTOBOOK=true in .env and restart to allow it.'}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="primary" disabled={busy} onClick={() => save('guest')}>
-              Save details
-            </Button>
-            <SaveMessage message={message} section="guest" />
-          </div>
-        </Card>
-      </section>
-
       <section aria-labelledby="about">
         <SectionLabel>
           <span id="about">How checking works</span>
         </SectionLabel>
         <p className="text-sm text-stone-600">
-          Seated checks every watched restaurant about every {Math.round(state.radar.pollSeconds / 60)} minutes, while this computer or
-          server is running. It reads the same availability the restaurant's booking page shows. It reads each date once, however many
-          watches you have.
+          Seated reads each restaurant every 1 to 5 minutes: most often where few tables are free. It only checks while this computer
+          or server is running. It reads the same availability the restaurant's booking page shows.
         </p>
       </section>
     </div>

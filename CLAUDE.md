@@ -116,8 +116,8 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - `events` holds every change: `listed` (open before Seated could see it: first read of a day, or a day that just came into range), `opened`, `reopened`, `taken` (gone from a day that was read without error, before its time), `error` and `recovered` (state changes only), and `gap` (Seated was not running or the computer slept; restaurant `*`).
 - `checks` holds one row per check, so a quiet log can be told apart from a stopped radar.
 - Editing, pausing or resuming a watch closes its open tables quietly and forgets its read days (`checked_dates`), so the next check starts fresh.
-- The Live page also shows `GET /api/stats`: openings per restaurant, how long they stayed free (median), and whether they go faster than Seated reads (`tooSlow`).
-- The Live page (`#/live`, `GET /api/board`) ranks restaurants with a prime-time watch (`src/shared/prime.ts`: Fri and Sat, 18:30–21:30, 2 people) by free prime tables. `GET /api/live` is a server-sent event stream: one `change` message per logged event or finished check, so the page never polls. A day never read shows `?`, not "full".
+- `GET /api/stats`: openings per restaurant, how long they stayed free (median), and whether they go faster than Seated reads (`tooSlow`). No page shows it since the one-screen redesign.
+- **The dashboard is one screen** (Joel, 7 Oct 2026): the watch list (`WatchListPage.tsx`, `GET /api/board`) plus Settings. The header search (`Search.tsx`) is the only way to add a restaurant: + Watch creates the prime watch. The board ranks restaurants with a prime-time watch (`src/shared/prime.ts`: Thu, Fri and Sat, 18:30–21:30, 2 people) by free tables and shows only the coming Thursday, Friday and Saturday. Do not add pages or nav back without Joel asking. `GET /api/live` is a server-sent event stream: one `change` message per logged event or finished check, so the page never polls. A day never read shows `?`, not "full".
 
 ## History
 
