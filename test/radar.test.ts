@@ -697,6 +697,22 @@ describe('activity log', () => {
     }
   });
 
+  it('stops reading a restaurant after two failures in a row, so one slow restaurant cannot stall the radar', async () => {
+    const demo = demoPlatform();
+    let calls = 0;
+    const down: Platform = {
+      ...demo,
+      openDates: () => (calls++, Promise.reject(new Error('timeout'))),
+      getSlots: () => (calls++, Promise.reject(new Error('timeout'))),
+    };
+    const { store, radar, watch } = setup({ platform: down });
+    watch(); // 14 days to read
+    const report = await radar.tick();
+    expect(calls).toBe(2); // the calendar and one day, not 15 timeouts
+    expect(report.failedRequests).toBe(2);
+    expect(store.listChecks(1)).toHaveLength(1);
+  });
+
   it('writes one heartbeat row per check, even when nothing changes', async () => {
     const { store, radar, watch } = setup();
     watch();

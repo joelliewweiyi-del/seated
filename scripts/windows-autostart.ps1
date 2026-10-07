@@ -17,6 +17,8 @@ if ($Remove) {
 $command = "Set-Location '$repo'; cmd /c 'npm start > data\seated.log 2>&1'"
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -Command `"$command`""
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+# Priority 4 = normal. The default (7, below normal) let Windows throttle the radar: checks took 20 minutes
+# and requests timed out, while the same check took 21 seconds from a terminal (Oct 2026).
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -Priority 4
 Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
 Write-Output "Seated now starts at login. Start it right away with: Start-ScheduledTask -TaskName '$name'"

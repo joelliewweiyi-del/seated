@@ -127,6 +127,10 @@ export class Radar {
       report.restaurants++;
       const errors: string[] = [];
       const cache = new Map<string, Slot[] | Error>();
+      // Two failed requests in a row: the restaurant is down or slow. Stop reading it until the next check,
+      // instead of waiting out one timeout per day. Days not read keep their open tables, like any failed read.
+      let failedInARow = 0;
+      const down = () => failedInARow >= 2;
       // One calendar call per party size, covering the dates of every watch on this restaurant.
       const calendar = new Map<number, Set<string> | Error>();
       const calendarFor = async (partySize: number): Promise<Set<string> | null> => {
@@ -141,7 +145,9 @@ export class Radar {
           report.requests++;
           try {
             calendar.set(partySize, all.length ? await limited(platform.openDates(restaurant, all, partySize), 'calendar') : new Set());
+            failedInARow = 0;
           } catch (err) {
+            failedInARow++;
             report.failedRequests++;
             errors.push(`calendar: ${err instanceof Error ? err.message : err}`);
             calendar.set(partySize, err instanceof Error ? err : new Error(String(err)));
@@ -170,11 +176,14 @@ export class Radar {
           const key = `${date}|${watch.partySize}`;
           if (worth && !worth.has(date) && !cache.has(key)) cache.set(key, []); // calendar says no tables
           let result = cache.get(key);
+          if (!result && down()) continue; // not read this check: unknown, so leave this date's sightings alone
           if (!result) {
             report.requests++;
             try {
               result = await limited(platform.getSlots(restaurant, date, watch.partySize), date);
+              failedInARow = 0;
             } catch (err) {
+              failedInARow++;
               result = err instanceof Error ? err : new Error(String(err));
               report.failedRequests++;
               errors.push(`${date}: ${result.message}`);
