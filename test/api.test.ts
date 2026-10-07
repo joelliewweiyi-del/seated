@@ -233,6 +233,14 @@ describe('health check (what the watchdog and uptime monitors ask)', () => {
     expect((await call('GET', '/health')).status).toBe(503);
   });
 
+  it('reports a fresh restart as healthy, so the watchdog does not restart it again before its first check', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const { store, call } = app({ real: true });
+    await call('POST', '/watches', valid);
+    check(store, Date.now() - 30 * MIN); // the last check before a 30-minute outage
+    expect((await call('GET', '/health')).status).toBe(200);
+  });
+
   it('does not report trouble when a long POLL_SECONDS makes reads rare, so a healthy Seated is not restarted', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const { store, call } = app({ real: true, pollSeconds: 300 }); // busy restaurants are read every 12.5 min

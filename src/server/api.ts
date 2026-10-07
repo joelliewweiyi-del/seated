@@ -127,7 +127,8 @@ export function createApi(d: ApiDeps): Hono {
     const moving = d.radar.progressAt !== null && hungSeconds <= 300; // a long check that still makes progress
     // The slowest schedule (many open tables) reads a restaurant every 2.5 × POLL_SECONDS; allow that plus a minute.
     const staleAfter = Math.max(HEALTH_STALE_SECONDS, Math.round(pollInterval(Infinity, false, d.pollSeconds) / 1000) + 60);
-    const sinceSeconds = ageSeconds ?? Math.round((now - startedAt) / 1000); // no check yet: count from start
+    // Count from the start when that is more recent: a fresh restart is not stale, whatever the last check before it.
+    const sinceSeconds = Math.min(ageSeconds ?? Infinity, Math.round((now - startedAt) / 1000));
     const stale = watching > 0 && !d.demo && sinceSeconds > staleAfter && !moving;
     const ok = !stale && hungSeconds <= 300;
     return c.json({ ok, watching, lastCheckAt: last?.finishedAt ?? null, ageSeconds, secondsWithoutProgress: hungSeconds }, ok ? 200 : 503);
