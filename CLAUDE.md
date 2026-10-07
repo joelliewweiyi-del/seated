@@ -98,7 +98,7 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 
 ## Restaurant data
 
-- `data/restaurants.json`: `hot` (1 to 3) and `hotWhy` mark the hard-to-book list (35 Amsterdam restaurants, 24 readable; researched 6 Oct 2026 from Time Out, Amsterdam Foodie, Your Little Black Book, Michelin and others).
+- `data/restaurants.json`: `hot` (1 to 3) and `hotWhy` mark the hard-to-book list (40 Amsterdam restaurants, 29 readable; 35 researched 6 Oct 2026 from Time Out, Amsterdam Foodie, Your Little Black Book, Michelin and others; Weinlokal Stern, Kamer, KID, September and Bacalar added by Joel on 7 Oct, scored from Seated's own reads).
 - On 6 Oct 2026, 29 restaurants listed as Formitable had moved to Tebi; they were switched with ids resolved from their websites.
 - `scripts/detect.ts <url>` finds the booking system on a website.
 
