@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { EventEmitter } from 'node:events';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Restaurant } from './platforms/types.js';
@@ -251,6 +252,8 @@ const toBooking = (r: Row): Booking => ({
 
 export class Store {
   readonly db: DatabaseSync;
+  /** Emits 'change' after every logged event and finished check. The live board listens to it. */
+  readonly changes = new EventEmitter().setMaxListeners(0);
 
   constructor(path: string) {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
@@ -458,6 +461,7 @@ export class Store {
         `INSERT INTO events (at, kind, restaurant_id, watch_id, party_size, date, time, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(e.at, e.kind, e.restaurantId, e.watchId, e.partySize, e.date, e.time, e.detail);
+    this.changes.emit('change', 'event');
   }
 
   listEvents(limit: number): RadarEvent[] {
@@ -484,6 +488,7 @@ export class Store {
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(c.startedAt, c.finishedAt, c.restaurants, c.requests, c.failedRequests, c.newTables, c.tablesTaken);
+    this.changes.emit('change', 'check');
   }
 
   listChecks(limit: number): CheckRow[] {

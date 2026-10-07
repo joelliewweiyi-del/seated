@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createApi } from '../src/server/api';
 import { Store } from '../src/server/db';
 import { Radar } from '../src/server/radar';
-import { addDays, localDate } from '../src/server/time';
+import { addDays, isoWeekday, localDate } from '../src/server/time';
+import { PRIME } from '../src/shared/prime';
 import { demoPlatform } from '../src/server/platforms/demo';
 import { memoryNotifier } from '../src/server/notify';
 
@@ -11,6 +12,7 @@ function app({ localOnly = false } = {}) {
   store.seedRestaurants([
     { id: 'klepel', name: 'Café de Klepel', platform: 'formitable', platformUid: 'd94c781e', website: null, city: 'Amsterdam', address: null },
     { id: 'esra', name: 'Esra', platform: 'tebi', platformUid: '967051_x', website: null, city: 'Amsterdam', address: null },
+    { id: 'alba', name: 'Alba', platform: 'formitable', platformUid: 'b1754a7d', website: null, city: 'Amsterdam', address: null, hot: 3 },
   ]);
   const demo = demoPlatform();
   const notifier = memoryNotifier({ quiet: true });
@@ -128,5 +130,89 @@ describe('activity log and watch edits', () => {
     const kinds = store.listEvents(50).map((e) => e.kind);
     expect(kinds).not.toContain('taken');
     expect(kinds).not.toContain('opened'); // after an edit, what is open is "open at start" again
+  });
+});
+
+describe('live board', () => {
+  /** The next Friday from tomorrow on, so the table is never in the past. */
+  const nextFriday = () => {
+    let d = addDays(localDate(new Date()), 1);
+    while (isoWeekday(d) !== 5) d = addDays(d, 1);
+    return d;
+  };
+
+  it('ranks the fully booked restaurants first, counting only Friday and Saturday dinner tables', async () => {
+    const { call, demo, radar } = app();
+    await call('POST', '/watches', { restaurantId: 'klepel', ...PRIME });
+    await call('POST', '/watches', { restaurantId: 'alba', ...PRIME });
+    const friday = nextFriday();
+    demo.open('klepel', friday, '19:30'); // prime
+    demo.open('klepel', friday, '22:00'); // too late for prime: not on the board
+    await radar.tick();
+
+    const board = (await (await call('GET', '/board')).json()) as {
+      dates: string[];
+      rows: Array<{ id: string; free: number; cells: Array<{ date: string; times: string[]; bookingUrl: string | null }> }>;
+    };
+    expect(board.dates.every((d) => [5, 6].includes(isoWeekday(d)))).toBe(true);
+    expect(board.rows.map((r) => [r.id, r.free])).toEqual([
+      ['alba', 0], // fully booked: hardest, so first
+      ['klepel', 1],
+    ]);
+    const cell = board.rows[1]!.cells.find((c) => c.date === friday)!;
+    expect(cell.times).toEqual(['19:30']);
+    expect(cell.bookingUrl).toContain(`date=${friday}`);
+  });
+
+  it('says "not read yet" instead of "fully booked" before a restaurant was read, and ranks it last', async () => {
+    const { call, radar, demo } = app();
+    await call('POST', '/watches', { restaurantId: 'klepel', ...PRIME });
+    await radar.tick(); // Klepel read: empty, so fully booked
+    await call('POST', '/watches', { restaurantId: 'alba', ...PRIME }); // not read yet
+    demo.open('alba', nextFriday(), '19:30');
+    const board = (await (await call('GET', '/board')).json()) as {
+      rows: Array<{ id: string; cells: Array<{ known: boolean }> }>;
+    };
+    expect(board.rows.map((r) => r.id)).toEqual(['klepel', 'alba']);
+    expect(board.rows[0]!.cells.every((c) => c.known)).toBe(true);
+    expect(board.rows[1]!.cells.some((c) => c.known)).toBe(false);
+  });
+
+  it('only reports changes to tables for two, the party size the board shows', async () => {
+    const { call, demo, radar } = app();
+    await call('POST', '/watches', { restaurantId: 'klepel', ...PRIME });
+    await call('POST', '/watches', { restaurantId: 'klepel', ...PRIME, partySize: 4 });
+    await radar.tick();
+    demo.open('klepel', nextFriday(), '19:30'); // the demo platform answers for any party size
+    await radar.tick();
+    const board = (await (await call('GET', '/board')).json()) as { feed: Array<{ partySize: number }> };
+    expect(board.feed.length).toBeGreaterThan(0);
+    expect(board.feed.every((e) => e.partySize === 2)).toBe(true);
+  });
+
+  it('leaves out restaurants watched only outside prime time', async () => {
+    const { call, radar } = app();
+    await call('POST', '/watches', { ...valid, weekdays: [1, 2, 3] });
+    await radar.tick();
+    const board = (await (await call('GET', '/board')).json()) as { rows: unknown[] };
+    expect(board.rows).toHaveLength(0);
+  });
+
+  it('streams a change message the moment a check finishes, so the page needs no polling', async () => {
+    const { call, radar } = app();
+    const res = await call('GET', '/live');
+    expect(res.headers.get('content-type')).toContain('text/event-stream');
+    const reader = res.body!.getReader();
+    const text = new TextDecoder();
+    let received = '';
+    void radar.tick();
+    const deadline = Date.now() + 3000;
+    while (!received.includes('event: change') && Date.now() < deadline) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      received += text.decode(value);
+    }
+    await reader.cancel();
+    expect(received).toContain('event: change');
   });
 });

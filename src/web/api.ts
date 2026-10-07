@@ -95,8 +95,22 @@ export interface State {
 
 export type EventKind = 'listed' | 'opened' | 'reopened' | 'taken' | 'error' | 'recovered';
 
-export interface Activity {
-  events: Array<{
+export interface Board {
+  dates: string[];
+  rows: Array<{
+    id: string;
+    name: string;
+    platform: string;
+    hot: number | null;
+    hotWhy: string | null;
+    lastError: string | null;
+    lastCheckedAt: string | null;
+    cells: Array<{ date: string; times: string[]; bookingUrl: string | null; known: boolean }>;
+    free: number;
+    unknown: number;
+    lastChange: { at: string; kind: EventKind; date: string; time: string } | null;
+  }>;
+  feed: Array<{
     id: number;
     at: string;
     kind: EventKind;
@@ -107,8 +121,9 @@ export interface Activity {
     time: string | null;
     detail: string | null;
   }>;
-  checks: Array<Pick<TickReport, 'startedAt' | 'finishedAt' | 'restaurants' | 'requests' | 'failedRequests' | 'newTables' | 'tablesTaken'> & { id: number }>;
-  restaurants: Array<{ id: string; name: string; platform: string; lastCheckedAt: string | null; lastError: string | null; openNow: number }>;
+  lastCheckAt: string | null;
+  nextCheckAt: string | null;
+  running: boolean;
 }
 
 export type WatchDraft = Pick<
@@ -131,7 +146,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 
 export const api = {
   state: () => call<State>('GET', '/state'),
-  activity: () => call<Activity>('GET', '/activity'),
+  board: () => call<Board>('GET', '/board'),
   restaurants: () => call<Restaurant[]>('GET', '/restaurants'),
   addRestaurant: (b: { name: string; link: string; city?: string }) => call<Restaurant>('POST', '/restaurants', b),
   createWatch: (w: WatchDraft) => call<Watch>('POST', '/watches', w),

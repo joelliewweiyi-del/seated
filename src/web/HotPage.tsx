@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type Restaurant, type State } from './api';
 import { Badge, Card, SectionLabel } from './ui';
+import { coversPrime, PRIME } from '../shared/prime';
 
 const LEVEL = ['', 'Hard to book', 'Very hard to book', 'Nearly impossible'];
 const PLATFORM_NAME: Record<string, string> = {
@@ -13,23 +14,6 @@ const PLATFORM_NAME: Record<string, string> = {
   thefork: 'TheFork',
   other: 'Unknown system',
 };
-
-/** One tap: watch Friday and Saturday dinners for two, the slots that are actually hard to get. */
-const PRIME = { partySize: 2, weekdays: [5, 6], timeFrom: '18:30', timeTo: '21:30', dateFrom: null, dateTo: null, autoBook: false };
-
-/** True if this watch already covers everything the one-tap watch would. */
-function coversPrime(w: State['watches'][number]): boolean {
-  const days = w.weekdays ?? [1, 2, 3, 4, 5, 6, 7];
-  return (
-    w.status === 'watching' &&
-    w.dateFrom === null && // the one-tap watch is open-ended, so only an open-ended watch covers it
-    w.dateTo === null &&
-    w.partySize === PRIME.partySize &&
-    PRIME.weekdays.every((d) => days.includes(d)) &&
-    w.timeFrom <= PRIME.timeFrom &&
-    w.timeTo >= PRIME.timeTo
-  );
-}
 
 function Difficulty({ level }: { level: number }) {
   return (

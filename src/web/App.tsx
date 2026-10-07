@@ -5,13 +5,14 @@ import { RadarPage } from './RadarPage';
 import { AddWatchPage } from './AddWatchPage';
 import { SettingsPage } from './SettingsPage';
 import { HotPage } from './HotPage';
-import { ActivityPage } from './ActivityPage';
+import { LivePage } from './LivePage';
 
-type Route = 'radar' | 'hot' | 'activity' | 'add' | 'settings';
+type Route = 'radar' | 'live' | 'hot' | 'add' | 'settings';
 
 function routeFromHash(): Route {
   const h = window.location.hash.replace('#/', '');
-  return h === 'add' || h === 'settings' || h === 'hot' || h === 'activity' ? h : 'radar';
+  if (h === 'activity') return 'live'; // the old name of the live page
+  return h === 'add' || h === 'settings' || h === 'hot' || h === 'live' ? h : 'radar';
 }
 
 export function go(route: Route): void {
@@ -84,8 +85,8 @@ export function App() {
             {(
               [
                 ['radar', 'Radar', 'Radar'],
+                ['live', 'Live', 'Live'],
                 ['hot', 'Hot list', 'Hot'],
-                ['activity', 'Activity', 'Log'],
                 ['add', 'Add watch', 'Add'],
                 ['settings', 'Settings', 'Settings'],
               ] as const
@@ -129,7 +130,7 @@ export function App() {
         )}
         {state && route === 'radar' && <RadarPage state={state} refresh={refresh} />}
         {state && route === 'hot' && <HotPage state={state} refresh={refresh} />}
-        {state && route === 'activity' && <ActivityPage />}
+        {state && route === 'live' && <LivePage />}
         {state && route === 'add' && <AddWatchPage state={state} refresh={refresh} />}
         {state && route === 'settings' && <SettingsPage state={state} refresh={refresh} />}
       </main>

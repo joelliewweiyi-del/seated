@@ -221,25 +221,33 @@ test('the hot list fits a small phone screen', async ({ page }) => {
   await shot(page, '10-mobile-hot');
 });
 
-test('the activity log shows every change and one heartbeat bar per check', async ({ page }) => {
-  await page.goto('/#/activity');
-  await expect(page.getByTestId('heartbeat')).toContainText('Last check');
-  // The Klepel table opened and was taken earlier in this run: both changes are in the log.
-  const klepel = page.getByTestId('log-row').filter({ hasText: 'Café de Klepel' });
-  await expect(klepel.filter({ hasText: 'Taken' })).toHaveCount(1);
-  await expect(klepel.filter({ hasText: /Opened|Open at start/ })).not.toHaveCount(0);
-  await shot(page, '11-activity');
+test('the live board updates by itself when a table opens or is taken, without a reload', async ({ page }) => {
+  await page.goto('/#/live');
+  await expect(page.getByTestId('live-status')).toContainText('Live');
+  // Gitane got a Friday-and-Saturday watch from the hot list test above.
+  const gitane = page.getByTestId('board-row').filter({ hasText: 'Gitane' });
+  await expect(gitane.getByTestId('free')).toHaveText('0');
 
-  // Tapping a watched restaurant shows only its changes (Klepel's watch was removed earlier; Gitane is still watched).
-  await page.getByRole('button', { name: /Gitane/ }).click();
-  await expect(page.getByTestId('log-row').filter({ hasNotText: 'Gitane' })).toHaveCount(0);
+  const friday = nextWeekday(await today(page), 5);
+  const check = () => page.request.post('/api/check', { headers: { 'X-Seated': '1' } });
+  await openTable(page, 'gitane', friday, '19:30');
+  await check(); // from outside the page: only the live stream can tell the page
+  await expect(gitane.getByTestId('free')).toHaveText('1');
+  await expect(page.getByTestId('feed-row').filter({ hasText: 'Gitane' }).first()).toContainText('Opened');
+  await expect(gitane.getByRole('link', { name: /Gitane, .*1 free, book/ })).toHaveAttribute('href', new RegExp(`date=${friday}`));
+  await shot(page, '11-live');
+
+  await closeTable(page, 'gitane', friday, '19:30');
+  await check();
+  await expect(gitane.getByTestId('free')).toHaveText('0');
+  await expect(page.getByTestId('feed-row').filter({ hasText: 'Gitane' }).first()).toContainText('Taken');
 });
 
-test('the activity log fits a small phone screen', async ({ page }) => {
+test('the live board fits a small phone screen', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
-  await page.goto('/#/activity');
-  await expect(page.getByTestId('heartbeat')).toBeVisible();
+  await page.goto('/#/live');
+  await expect(page.getByTestId('board-row').first()).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
-  await shot(page, '12-mobile-activity');
+  await shot(page, '12-mobile-live');
 });

@@ -5,7 +5,9 @@ import type { DemoPlatform } from './platforms/demo.js';
 import type { Notifier } from './notify.js';
 import type { Radar } from './radar.js';
 import { resolveFormitableUid, slugify } from './restaurants.js';
-import { localDate } from './time.js';
+import { addDays, localDate } from './time.js';
+import { coversPrime, isPrime, isPrimeDay, PRIME } from '../shared/prime.js';
+import { streamSSE } from 'hono/streaming';
 
 export interface ApiDeps {
   store: Store;
@@ -66,6 +68,21 @@ function parseWatch(body: Record<string, unknown>, partial: boolean): Partial<Wa
   return out;
 }
 
+interface BoardRow {
+  id: string;
+  name: string;
+  platform: string;
+  hot: number | null;
+  hotWhy: string | null;
+  lastError: string | null;
+  lastCheckedAt: string | null;
+  /** known: the day was read without error, so an empty cell means fully booked, not unknown. */
+  cells: Array<{ date: string; times: string[]; bookingUrl: string | null; known: boolean }>;
+  free: number;
+  unknown: number;
+  lastChange: { at: string; kind: string; date: string; time: string } | null;
+}
+
 export function createApi(d: ApiDeps): Hono {
   const { store } = d;
   const api = new Hono();
@@ -94,20 +111,84 @@ export function createApi(d: ApiDeps): Hono {
 
   const supported = (platform: string, uid: string | null) => Boolean(d.platforms[platform] && uid);
 
-  // The activity log: every change, a heartbeat per check, and where each watched restaurant stands.
-  api.get('/activity', (c) => {
+  // The live board: hard-to-book restaurants with a prime-time watch, ranked by free prime tables (fewest first).
+  api.get('/board', (c) => {
+    const today = localDate(new Date());
+    const dates = Array.from({ length: d.horizonDays }, (_, i) => addDays(today, i)).filter(isPrimeDay);
     const restaurants = new Map(store.listRestaurants().map((r) => [r.id, r]));
-    const events = store.listEvents(1000).map((e) => ({ ...e, restaurantName: restaurants.get(e.restaurantId)?.name ?? e.restaurantId }));
-    const watched = new Map<string, { id: string; name: string; platform: string; lastCheckedAt: string | null; lastError: string | null; openNow: number }>();
+    const events = store.listEvents(1000);
+    const rows = new Map<string, BoardRow>();
     for (const w of store.listWatches('watching')) {
       const r = restaurants.get(w.restaurantId);
-      if (!r) continue;
-      const row = watched.get(r.id) ?? { id: r.id, name: r.name, platform: r.platform, lastCheckedAt: r.lastCheckedAt, lastError: r.lastError, openNow: 0 };
-      row.openNow += store.openSightings(w.id).length;
-      watched.set(r.id, row);
+      if (!r || !coversPrime(w)) continue;
+      const row = rows.get(r.id) ?? {
+        id: r.id,
+        name: r.name,
+        platform: r.platform,
+        hot: r.hot ?? null,
+        hotWhy: r.hotWhy ?? null,
+        lastError: r.lastError,
+        lastCheckedAt: r.lastCheckedAt,
+        cells: dates.map((date) => ({ date, times: [] as string[], bookingUrl: null as string | null, known: false })),
+        free: 0,
+        unknown: 0,
+        lastChange: null as { at: string; kind: string; date: string; time: string } | null,
+      };
+      const read = store.watchCheckedDates(w.id);
+      for (const cell of row.cells) if (read.has(cell.date)) cell.known = true;
+      for (const s of store.openSightings(w.id)) {
+        const cell = row.cells.find((x) => x.date === s.date);
+        if (!cell || !isPrime(s.date, s.time) || cell.times.includes(s.time)) continue;
+        cell.known = true;
+        cell.times.push(s.time);
+        cell.times.sort();
+        if (cell.times[0] === s.time) cell.bookingUrl = s.bookingUrl; // the link goes to the earliest table
+      }
+      rows.set(r.id, row);
     }
-    return c.json({ events, checks: store.listChecks(120), restaurants: [...watched.values()] });
+    // Only changes to tables for the prime party size; a table for four says nothing about a table for two.
+    const primeChange = (e: (typeof events)[number]) =>
+      e.kind !== 'listed' && e.partySize === PRIME.partySize && e.date !== null && e.time !== null && isPrime(e.date, e.time);
+    for (const row of rows.values()) {
+      row.free = row.cells.reduce((n, x) => n + x.times.length, 0);
+      row.unknown = row.cells.filter((x) => !x.known).length;
+      const last = events.find((e) => e.restaurantId === row.id && primeChange(e));
+      if (last) row.lastChange = { at: last.at, kind: last.kind, date: last.date!, time: last.time! };
+    }
+    // Fewest free tables first. A restaurant not read yet has no known count, so it goes last, not first.
+    const neverRead = (r: BoardRow) => (r.cells.length > 0 && r.unknown === r.cells.length ? 1 : 0);
+    const ranked = [...rows.values()].sort(
+      (a, b) => neverRead(a) - neverRead(b) || a.free - b.free || (b.hot ?? 0) - (a.hot ?? 0) || a.name.localeCompare(b.name),
+    );
+    const feed = events
+      .filter((e) => rows.has(e.restaurantId) && (e.kind === 'error' || e.kind === 'recovered' || primeChange(e)))
+      .slice(0, 40)
+      .map((e) => ({ ...e, restaurantName: rows.get(e.restaurantId)!.name }));
+    const [lastCheck] = store.listChecks(1);
+    return c.json({
+      dates,
+      rows: ranked,
+      feed,
+      lastCheckAt: lastCheck?.finishedAt ?? null,
+      nextCheckAt: d.nextCheckAt(),
+      running: d.radar.running,
+    });
   });
+
+  // Server-sent events: one 'change' message per logged event or finished check, so the board updates at once.
+  api.get('/live', (c) =>
+    streamSSE(c, async (stream) => {
+      const onChange = (what: string) => void stream.writeSSE({ event: 'change', data: what }).catch(() => undefined);
+      store.changes.on('change', onChange);
+      stream.onAbort(() => {
+        store.changes.off('change', onChange);
+      });
+      while (!stream.aborted) {
+        await stream.writeSSE({ event: 'ping', data: '' }); // keeps proxies from closing a quiet stream
+        await stream.sleep(25_000);
+      }
+    }),
+  );
 
   api.get('/state', (c) => {
     const restaurants = new Map(store.listRestaurants().map((r) => [r.id, r]));

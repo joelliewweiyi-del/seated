@@ -89,6 +89,7 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - `checks` holds one row per check, so a quiet log can be told apart from a stopped radar.
 - Editing, pausing or resuming a watch closes its open tables quietly and forgets its read days (`checked_dates`), so the next check starts fresh.
 - Taken tables get a quiet push (ntfy priority 2: no sound).
+- The Live page (`#/live`, `GET /api/board`) ranks restaurants with a prime-time watch (`src/shared/prime.ts`: Fri and Sat, 18:30–21:30, 2 people) by free prime tables. `GET /api/live` is a server-sent event stream: one `change` message per logged event or finished check, so the page never polls. A day never read shows `?`, not "full".
 
 ## History
 

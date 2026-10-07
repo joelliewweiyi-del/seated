@@ -30,3 +30,13 @@ body {
 .edge-booked { --edge: #22c55e; }
 .edge-urgent { --edge: #dc2626; }
 .edge-neutral { --edge: #d6d3d1; }
+
+/* Live board: a row or feed item that just changed glows amber for a moment. */
+@keyframes changed {
+  from { background-color: #fef3c7; }
+  to { background-color: transparent; }
+}
+.just-changed { animation: changed 2.5s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .just-changed { animation: none; }
+}
