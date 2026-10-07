@@ -340,8 +340,10 @@ export class Radar {
       // The first read of a new watch: these tables were open before the user started watching. The dashboard
       // shows them; a push would be noise (it once sent 13 loud pushes in a minute).
       const firstRead = known.size === 0;
-      if (flicker) store.markNotified([sighting.id], previous.notified === LOUD ? LOUD : QUIET); // covered by the earlier push
-      else if (firstRead) store.markNotified([sighting.id], QUIET);
+      // A first read comes first: after a switch of booking system, the old system's loud tables must not make
+      // the new ones "loud" (each would later send a "Gone:" push). Seen live on 7 Oct 2026.
+      if (firstRead) store.markNotified([sighting.id], QUIET);
+      else if (flicker) store.markNotified([sighting.id], previous.notified === LOUD ? LOUD : QUIET); // covered by the earlier push
       else fresh.push({ sighting, slot });
     }
     const stillKnown = [...new Set([...known, ...checked])].filter((d) => d >= today && wanted.has(d)).sort();

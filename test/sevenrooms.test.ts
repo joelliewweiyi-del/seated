@@ -56,7 +56,7 @@ describe('SevenRooms reads', () => {
     expect([...worth]).toEqual(['2026-10-09', '2026-10-10']);
     expect(urls).toHaveLength(1);
     expect(urls[0]).toContain('start_date=10-09-2026'); // the widget wants MM-DD-YYYY
-    expect(urls[0]).toContain('num_days=2');
+    expect(urls[0]).toContain('num_days=3'); // the API refuses num_days=2 with a 400 (seen live, Oct 2026)
 
     const sat = await platform.getSlots(troef, '2026-10-10', 2);
     expect(sat.filter((s) => s.open)).toHaveLength(3);

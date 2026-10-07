@@ -114,8 +114,8 @@ export function sevenrooms({ fetchImpl = fetch, gapMs = MIN_GAP_MS, now = () => 
         const start = sorted[i]!;
         const last = addDays(start, MAX_DAYS - 1);
         const window = sorted.filter((d) => d >= start && d <= last);
-        const span = Math.round((Date.parse(window.at(-1)!) - Date.parse(start)) / 86_400_000) + 1;
-        const days = await readRange(restaurant, start, span, partySize);
+        // Always three days: the API answers 400 "invalid num_days" for 2 (checked Oct 2026).
+        const days = await readRange(restaurant, start, MAX_DAYS, partySize);
         for (const d of window) if (days.get(d)?.some((s) => s.open)) worth.add(d);
         i += window.length;
       }

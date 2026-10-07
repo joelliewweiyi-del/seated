@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Store, type WatchInput } from '../src/server/db';
+import { LOUD, QUIET, Store, type WatchInput } from '../src/server/db';
 import { AUTOBOOK_WINDOW_MS, POLITE_FLOOR_SECONDS, pollInterval, Radar, QUIET_REOPEN_MS, READ_LIMIT_MS } from '../src/server/radar';
 import { demoPlatform } from '../src/server/platforms/demo';
 import { memoryNotifier } from '../src/server/notify';
@@ -22,7 +22,7 @@ function setup({ autoBookEnabled = false, platform }: { autoBookEnabled?: boolea
   let now = START;
   const radar = new Radar({
     store,
-    platforms: { formitable: platform ?? demo },
+    platforms: { formitable: platform ?? demo, zenchef: platform ?? demo },
     notifier,
     horizonDays: 14,
     autoBookEnabled,
@@ -930,6 +930,28 @@ describe('a restaurant that changes booking system', () => {
     expect(store.openSightings(w.id)).toHaveLength(0);
     expect(store.watchCheckedDates(w.id).size).toBe(0); // the next read is a first read: no pushes, no "taken"
     expect(store.listEvents(10).filter((e) => e.kind === 'taken')).toHaveLength(0);
+  });
+
+  it('does not carry a loud push over to the new system, so no "Gone" pushes follow for tables nobody was told about', async () => {
+    const { store, demo, notifier, radar, watch, advance } = setup();
+    const w = watch();
+    await radar.tick({ all: true });
+    demo.open('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true }); // a loud push on Formitable
+    expect(store.openSightings(w.id)[0]!.notified).toBe(LOUD);
+    const pushes = notifier.sent.length;
+
+    store.seedRestaurants([
+      { id: 'klepel', name: 'Café de Klepel', platform: 'zenchef', platformUid: '382832', website: null, city: 'Amsterdam', address: null },
+    ]);
+    advance(MIN);
+    await radar.tick({ all: true }); // Zenchef shows the same table a minute later: a first read
+    expect(store.openSightings(w.id)[0]!.notified).toBe(QUIET);
+    demo.close('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(notifier.sent.length).toBe(pushes); // no "Gone:" push
   });
 
   it('keeps the watch state when only the id changed (Tebi rotates ids on every start)', () => {
