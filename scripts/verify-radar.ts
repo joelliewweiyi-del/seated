@@ -5,14 +5,13 @@
 // and this read shows up as a difference, so expect a few; many differences mean a bug.
 // Skips Esra (see CLAUDE.md). Read-only: never writes to the database.
 import { DatabaseSync } from 'node:sqlite';
-import { formitable } from '../src/server/platforms/formitable.js';
-import { tebi } from '../src/server/platforms/tebi.js';
+import { createPlatforms } from '../src/server/platforms/index.js';
 import type { Platform, Restaurant } from '../src/server/platforms/types.js';
 import { datesForWatch, matchingSlots } from '../src/server/match.js';
 import { localDate } from '../src/server/time.js';
 
 const db = new DatabaseSync(process.argv[2] ?? 'data/seated.db', { readOnly: true });
-const platforms: Record<string, Platform> = { formitable: formitable(), tebi: tebi() };
+const platforms: Record<string, Platform> = createPlatforms();
 const horizonDays = Number(process.env.HORIZON_DAYS ?? 14);
 const today = localDate(new Date());
 
