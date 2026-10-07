@@ -3,12 +3,13 @@
 // Reads the homepage and up to 4 linked reservation pages. Prints one JSON line per site.
 import { findFormitableUid } from '../src/server/platforms/formitable.js';
 import { findTebiUid } from '../src/server/platforms/tebi.js';
+import { findZenchefId } from '../src/server/platforms/zenchef.js';
+import { findSevenroomsSlug } from '../src/server/platforms/sevenrooms.js';
+import { findGuestplanKey } from '../src/server/platforms/guestplan.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
+// Systems Seated cannot read yet, detected only so the restaurant list can say why.
 const OTHERS: Array<[string, RegExp]> = [
-  ['zenchef', /zenchef\.com|bookings\.zenchef/i],
-  ['sevenrooms', /sevenrooms\.com/i],
-  ['guestplan', /guestplan/i],
   ['tablecheck', /tablecheck\.com/i],
   ['thefork', /thefork\.|lafourchette/i],
   ['opentable', /opentable\./i],
@@ -42,8 +43,13 @@ export async function detect(url: string) {
   const all = pages.join('\n');
   const formitable = findFormitableUid(all);
   const tebi = findTebiUid(all);
+  const zenchef = findZenchefId(all);
+  const sevenrooms = findSevenroomsSlug(all);
+  // Guestplan needs the account id too: list the key's accounts with GET https://etender-connect.com/v1/restaurants
+  // (header "Authorization: AccessKey <key>"), then use "<key>:<accountId>" as the platform id.
+  const guestplanKey = findGuestplanKey(all);
   const others = OTHERS.filter(([, re]) => re.test(all)).map(([n]) => n);
-  return { url, reachable: html.length > 0, formitable, tebi, others };
+  return { url, reachable: html.length > 0, formitable, tebi, zenchef, sevenrooms, guestplanKey, others };
 }
 
 if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, '/')}` || process.argv[1]?.endsWith('detect.ts')) {

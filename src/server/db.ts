@@ -31,8 +31,12 @@ export interface Sighting {
   firstSeenAt: string;
   lastSeenAt: string;
   goneAt: string | null;
-  notified: boolean;
+  /** 0 = not pushed yet (retried while open), LOUD = pushed with sound, QUIET = pushed quietly or on purpose not at all. */
+  notified: number;
 }
+
+export const LOUD = 1;
+export const QUIET = 2;
 
 // uncertain: the platform did not answer clearly; a booking may exist. Treated as live.
 export type BookingStatus = 'booked' | 'needs_payment' | 'uncertain' | 'failed';
@@ -52,6 +56,8 @@ export interface Booking {
   createdAt: string;
   /** The user has been told about this booking. Unsent notices are retried every check. */
   notified: boolean;
+  /** 'seated' = auto-booked; 'you' = the user booked it and told Seated ("I got it"). */
+  source: 'seated' | 'you';
 }
 
 /**
@@ -61,8 +67,9 @@ export interface Booking {
  *   reopened - a table that was taken earlier and is open again
  *   taken    - an open table disappeared on a day that was read successfully
  *   error    - reading this restaurant started to fail; recovered - it works again
+ *   gap      - Seated was not checking for a while (stopped, or the computer slept); restaurant id '*'
  */
-export type EventKind = 'listed' | 'opened' | 'reopened' | 'taken' | 'error' | 'recovered';
+export type EventKind = 'listed' | 'opened' | 'reopened' | 'taken' | 'error' | 'recovered' | 'gap';
 
 export interface RadarEvent {
   id: number;
@@ -231,7 +238,7 @@ const toSighting = (r: Row): Sighting => ({
   firstSeenAt: r.first_seen_at as string,
   lastSeenAt: r.last_seen_at as string,
   goneAt: (r.gone_at as string | null) ?? null,
-  notified: r.notified === 1,
+  notified: r.notified as number,
 });
 
 const toBooking = (r: Row): Booking => ({
@@ -248,6 +255,7 @@ const toBooking = (r: Row): Booking => ({
   error: (r.error as string | null) ?? null,
   notified: r.notified === 1,
   createdAt: r.created_at as string,
+  source: (r.source as 'seated' | 'you' | null) ?? 'seated',
 });
 
 export class Store {
@@ -265,12 +273,23 @@ export class Store {
     this.addColumnIfMissing('restaurants', 'hot_why', 'TEXT');
     // Days of this watch that have been read without error, so a new table there is news. Null = none yet.
     this.addColumnIfMissing('watches', 'checked_dates', 'TEXT');
+    this.addColumnIfMissing('bookings', 'source', "TEXT NOT NULL DEFAULT 'seated'");
   }
 
   // ── restaurants ──────────────────────────────────────────────────────────
 
-  /** Loads the curated list. Updates curated rows, never touches custom ones. */
-  seedRestaurants(list: Restaurant[]): void {
+  /**
+   * Loads the curated list. Updates curated rows, never touches custom ones.
+   * A restaurant that changed booking system (e.g. Formitable to Zenchef) starts its watches fresh: its old
+   * open tables came from the old system, so they are closed quietly instead of being logged as "taken".
+   * Returns the ids of restaurants that changed system.
+   */
+  seedRestaurants(list: Restaurant[]): string[] {
+    const before = new Map(
+      (this.db.prepare('SELECT id, platform FROM restaurants WHERE custom = 0').all() as Array<{ id: string; platform: string }>).map(
+        (r) => [r.id, r.platform],
+      ),
+    );
     const stmt = this.db.prepare(`
       INSERT INTO restaurants (id, name, platform, platform_uid, website, city, address, hot, hot_why, custom)
       VALUES (:id, :name, :platform, :platformUid, :website, :city, :address, :hot, :hotWhy, 0)
@@ -294,6 +313,16 @@ export class Store {
       });
     }
     this.db.exec('COMMIT');
+    const switched = list.filter((r) => before.has(r.id) && before.get(r.id) !== r.platform).map((r) => r.id);
+    const now = new Date().toISOString();
+    for (const id of switched) {
+      for (const w of this.listWatches().filter((x) => x.restaurantId === id)) {
+        this.closeAllSightings(w.id, now);
+        this.setWatchCheckedDates(w.id, null);
+      }
+      this.markChecked(id, now, null);
+    }
+    return switched;
   }
 
   addCustomRestaurant(r: Restaurant): RestaurantRow {
@@ -444,9 +473,9 @@ export class Store {
     this.db.prepare('UPDATE sightings SET gone_at = ? WHERE watch_id = ? AND gone_at IS NULL').run(now, watchId);
   }
 
-  markNotified(ids: number[]): void {
-    const stmt = this.db.prepare('UPDATE sightings SET notified = 1 WHERE id = ?');
-    for (const id of ids) stmt.run(id);
+  markNotified(ids: number[], level: number = LOUD): void {
+    const stmt = this.db.prepare('UPDATE sightings SET notified = ? WHERE id = ?');
+    for (const id of ids) stmt.run(level, id);
   }
 
   recentSightings(limit: number): Sighting[] {
@@ -515,11 +544,11 @@ export class Store {
     if (!cols.some((c) => c.name === column)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
   }
 
-  addBooking(b: Omit<Booking, 'id' | 'notified'>): Booking {
+  addBooking(b: Omit<Booking, 'id' | 'notified' | 'source'> & { source?: Booking['source']; notified?: boolean }): Booking {
     const result = this.db
       .prepare(
-        `INSERT INTO bookings (watch_id, restaurant_id, restaurant_name, date, time, party_size, status, reference, payment_url, error, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bookings (watch_id, restaurant_id, restaurant_name, date, time, party_size, status, reference, payment_url, error, created_at, source, notified)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         b.watchId,
@@ -533,6 +562,8 @@ export class Store {
         b.paymentUrl,
         b.error,
         b.createdAt,
+        b.source ?? 'seated',
+        b.notified ? 1 : 0,
       );
     return toBooking(this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid)!);
   }
@@ -577,6 +608,24 @@ export class Store {
       .prepare(`UPDATE bookings SET status = 'failed' WHERE id = ? AND status = 'uncertain'`)
       .run(id);
     return Number(result.changes) > 0;
+  }
+
+  /** True if the user already has a table on this evening, through any watch. Seated never books a second one. */
+  hasBookingOn(date: string): boolean {
+    const row = this.db
+      .prepare(`SELECT 1 FROM bookings WHERE date = ? AND status IN ('booked', 'needs_payment', 'uncertain') LIMIT 1`)
+      .get(date);
+    return row !== undefined;
+  }
+
+  /** Auto-bookings made since this instant that may hold a table (refused attempts do not count). */
+  autoBookingsSince(since: string): number {
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM bookings WHERE source = 'seated' AND created_at >= ? AND status IN ('booked', 'needs_payment', 'uncertain')`,
+      )
+      .get(since);
+    return Number(row?.n ?? 0);
   }
 
   /** True if this watch already holds a table today or later. Guards against double booking. */

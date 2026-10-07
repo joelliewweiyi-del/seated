@@ -101,8 +101,8 @@
   {
     "id": "arca",
     "name": "Arca",
-    "platform": "formitable",
-    "platformUid": "475c853b",
+    "platform": "zenchef",
+    "platformUid": "387207",
     "website": "https://arcaamsterdam.com",
     "city": "Amsterdam",
     "address": "Martelaarsgracht 5, 1012 TN Amsterdam"
@@ -320,7 +320,7 @@
     "id": "blauw",
     "name": "Blauw",
     "platform": "guestplan",
-    "platformUid": null,
+    "platformUid": "d68cd1acdde24b607eb39d33c205eec8f8d4f8b6:54656",
     "website": "https://restaurantblauw.nl/",
     "city": "Amsterdam",
     "address": null,
@@ -331,7 +331,7 @@
     "id": "blik",
     "name": "Blik",
     "platform": "guestplan",
-    "platformUid": null,
+    "platformUid": "8f17659c1cc36f69866ebd21e5a5685189b15848:6703",
     "website": "https://blikamsterdam.com/",
     "city": "Amsterdam",
     "address": null,
@@ -496,8 +496,8 @@
   {
     "id": "cafe-de-klepel",
     "name": "Café de Klepel",
-    "platform": "formitable",
-    "platformUid": "d94c781e",
+    "platform": "zenchef",
+    "platformUid": "382832",
     "website": "http://cafedeklepel.nl",
     "city": "Amsterdam",
     "address": "Prinsenstraat 22, 1015 DD Amsterdam"
@@ -589,7 +589,7 @@
     "id": "choux",
     "name": "Choux",
     "platform": "guestplan",
-    "platformUid": null,
+    "platformUid": "452a9bf7d731a71756f543bfe336e74afdf79922:60771",
     "website": "http://choux.nl",
     "city": "Amsterdam",
     "address": "De Ruyterkade 128, 1011 AC Amsterdam",
@@ -646,8 +646,8 @@
   {
     "id": "cucina-casalinga",
     "name": "Cucina Casalinga",
-    "platform": "formitable",
-    "platformUid": "e896c9f3",
+    "platform": "zenchef",
+    "platformUid": "383178",
     "website": "https://casalinga.nl",
     "city": "Amsterdam",
     "address": "Stadionweg 271, 1076 NZ Amsterdam"
@@ -677,8 +677,8 @@
   {
     "id": "de-belhamel",
     "name": "De Belhamel",
-    "platform": "formitable",
-    "platformUid": "86e443e6",
+    "platform": "zenchef",
+    "platformUid": "386485",
     "website": "http://www.belhamel.nl",
     "city": "Amsterdam",
     "address": "Brouwersgracht 60, 1013 GX Amsterdam"
@@ -722,8 +722,8 @@
   {
     "id": "de-kas",
     "name": "De Kas",
-    "platform": "formitable",
-    "platformUid": "643e1a93",
+    "platform": "zenchef",
+    "platformUid": "386643",
     "website": "https://www.restaurantdekas.com",
     "city": "Amsterdam",
     "address": "Kamerlingh Onneslaan 3, 1097 DE Amsterdam",
@@ -946,7 +946,7 @@
     "city": "Amsterdam",
     "address": "C van Eesterenlaan 35, 1019 JK Amsterdam",
     "hot": 2,
-    "hotWhy": "Tiny two-person kitchen with very few tables. On Joel's own list."
+    "hotWhy": "Tiny two-person kitchen with very few tables."
   },
   {
     "id": "euro-pizza",
@@ -999,7 +999,7 @@
     "id": "flore",
     "name": "Flore",
     "platform": "sevenrooms",
-    "platformUid": null,
+    "platformUid": "restaurantflore",
     "website": "https://restaurantflore.com",
     "city": "Amsterdam",
     "address": "Nieuwe Doelenstraat 2-14, 1012 CP Amsterdam",
@@ -1288,7 +1288,7 @@
     "id": "hotel-de-goudfazant",
     "name": "Hotel de Goudfazant",
     "platform": "zenchef",
-    "platformUid": null,
+    "platformUid": "367072",
     "website": "https://hoteldegoudfazant.nl/",
     "city": "Amsterdam",
     "address": null,
@@ -1325,8 +1325,8 @@
   {
     "id": "incanto",
     "name": "Incanto",
-    "platform": "formitable",
-    "platformUid": "c5dd261d",
+    "platform": "zenchef",
+    "platformUid": "373162",
     "website": "http://www.restaurant-incanto.nl",
     "city": "Amsterdam",
     "address": "Amstel 2, 1017AA Amsterdam"
@@ -1388,8 +1388,8 @@
   {
     "id": "johannes",
     "name": "Johannes",
-    "platform": "formitable",
-    "platformUid": "278aaf9f",
+    "platform": "zenchef",
+    "platformUid": "374861",
     "website": "http://www.restaurantjohannes.nl",
     "city": "Amsterdam",
     "address": "Herengracht 413 h, 1017 BP Amsterdam"
@@ -1406,8 +1406,8 @@
   {
     "id": "kaagman-kortekaas",
     "name": "Kaagman & Kortekaas",
-    "platform": "formitable",
-    "platformUid": "00e5b489",
+    "platform": "zenchef",
+    "platformUid": "387651",
     "website": "https://www.kaagmanenkortekaas.nl",
     "city": "Amsterdam",
     "address": "Sint Nicolaasstraat 43, 1012 NJ Amsterdam",
@@ -1417,8 +1417,8 @@
   {
     "id": "ken-sushi",
     "name": "Ken Sushi",
-    "platform": "formitable",
-    "platformUid": "7d7fdf68",
+    "platform": "zenchef",
+    "platformUid": "387336",
     "website": "https://www.kensushi.nl",
     "city": "Amsterdam",
     "address": "Geldersekade 19, 1011 EJ Amsterdam",
@@ -1500,8 +1500,8 @@
   {
     "id": "la-fiorita",
     "name": "La Fiorita",
-    "platform": "formitable",
-    "platformUid": "1038ed32",
+    "platform": "zenchef",
+    "platformUid": "386932",
     "website": "https://lafiorita.nl",
     "city": "Amsterdam",
     "address": "Tweede Tuindwarsstraat 12H, 1015 RZ Amsterdam"
@@ -1509,8 +1509,8 @@
   {
     "id": "la-vallade",
     "name": "La Vallade",
-    "platform": "formitable",
-    "platformUid": "e823f8ab",
+    "platform": "zenchef",
+    "platformUid": "383209",
     "website": "https://www.lavallade.nl",
     "city": "Amsterdam",
     "address": "Ringdijk 23, 1097 AB Amsterdam"
@@ -1883,7 +1883,7 @@
     "id": "ottolenghi",
     "name": "Ottolenghi Amsterdam",
     "platform": "sevenrooms",
-    "platformUid": null,
+    "platformUid": "ottolenghimoams",
     "website": "https://www.mandarinoriental.com/en/amsterdam/conservatorium/dine/ottolenghi",
     "city": "Amsterdam",
     "address": null,
@@ -1956,8 +1956,8 @@
   {
     "id": "pianeta-terra",
     "name": "Pianeta Terra",
-    "platform": "formitable",
-    "platformUid": "06955422",
+    "platform": "zenchef",
+    "platformUid": "386128",
     "website": "https://www.pianetaterra.nl",
     "city": "Amsterdam",
     "address": "Beulingstraat 7, 1017 BA Amsterdam"
@@ -2187,8 +2187,8 @@
   {
     "id": "salmuera",
     "name": "Salmuera",
-    "platform": "formitable",
-    "platformUid": "73e478fe",
+    "platform": "zenchef",
+    "platformUid": "383198",
     "website": "https://www.sal-amsterdam.nl/",
     "city": "Amsterdam",
     "address": null
@@ -2243,8 +2243,8 @@
   {
     "id": "showw",
     "name": "Showw",
-    "platform": "formitable",
-    "platformUid": "b0a781d4",
+    "platform": "zenchef",
+    "platformUid": "388085",
     "website": "https://www.restaurantshoww.com",
     "city": "Amsterdam",
     "address": "Gelrestraat 28, 1079 MZ Amsterdam"
@@ -2261,8 +2261,8 @@
   {
     "id": "sinck",
     "name": "Sinck",
-    "platform": "formitable",
-    "platformUid": "e37584c9",
+    "platform": "zenchef",
+    "platformUid": "386351",
     "website": "https://www.sinckamsterdam.nl",
     "city": "Amsterdam",
     "address": "Prinsengracht 422, 1016 JC Amsterdam"
@@ -2343,7 +2343,7 @@
     "id": "sushi-oodo",
     "name": "Sushi Oodo",
     "platform": "zenchef",
-    "platformUid": null,
+    "platformUid": "387061",
     "website": "https://sushioodo.com/",
     "city": "Amsterdam",
     "address": null,
@@ -2409,8 +2409,8 @@
   {
     "id": "testamatta",
     "name": "Testamatta",
-    "platform": "formitable",
-    "platformUid": "625bb5dd",
+    "platform": "zenchef",
+    "platformUid": "379026",
     "website": "https://testamatta.nl",
     "city": "Amsterdam",
     "address": "Overtoom 125, 1054 HE Amsterdam"
@@ -2529,7 +2529,7 @@
     "id": "troef",
     "name": "Troef",
     "platform": "sevenrooms",
-    "platformUid": null,
+    "platformUid": "troef",
     "website": "https://troefamsterdam.nl",
     "city": "Amsterdam",
     "address": "Schollenbrugstraat 8, 1091 EX Amsterdam",

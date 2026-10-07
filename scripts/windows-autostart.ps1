@@ -1,15 +1,19 @@
-# Start Seated in the background every time you log in to Windows.
+# Start Seated in the background every time you log in to Windows, and keep it running.
 #   powershell -ExecutionPolicy Bypass -File scripts\windows-autostart.ps1            # turn on
 #   powershell -ExecutionPolicy Bypass -File scripts\windows-autostart.ps1 -Remove    # turn off
 # The log goes to data\seated.log. The dashboard is at http://127.0.0.1:4310.
+# A second task, the watchdog, checks every 5 minutes that Seated is still checking. If not, it restarts
+# Seated and pushes a notice to your phone (scripts\watchdog.mjs, log in data\watchdog.log).
 param([switch]$Remove)
 
 $name = 'Seated radar'
+$watchdog = 'Seated watchdog'
 $repo = Split-Path -Parent $PSScriptRoot
 
 if ($Remove) {
   Unregister-ScheduledTask -TaskName $name -Confirm:$false -ErrorAction SilentlyContinue
-  Write-Output "Removed '$name'. Seated no longer starts at login."
+  Unregister-ScheduledTask -TaskName $watchdog -Confirm:$false -ErrorAction SilentlyContinue
+  Write-Output "Removed '$name' and '$watchdog'. Seated no longer starts at login."
   exit 0
 }
 
@@ -21,4 +25,14 @@ $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 # and requests timed out, while the same check took 21 seconds from a terminal (Oct 2026).
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -Priority 4
 Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
-Write-Output "Seated now starts at login. Start it right away with: Start-ScheduledTask -TaskName '$name'"
+
+# The watchdog runs through a tiny VBScript so no console window flashes every 5 minutes.
+$node = (Get-Command node).Source
+$check = "`"$node`" --disable-warning=ExperimentalWarning scripts\watchdog.mjs --restart-task `"$name`""
+$wdAction = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$repo\scripts\windows-hidden.vbs`" `"$($check.Replace('"', '""'))`"" -WorkingDirectory $repo
+$wdTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5)
+$wdSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -MultipleInstances IgnoreNew -StartWhenAvailable
+Register-ScheduledTask -TaskName $watchdog -Action $wdAction -Trigger $wdTrigger -Settings $wdSettings -Force | Out-Null
+
+Write-Output "Seated now starts at login, and '$watchdog' checks on it every 5 minutes."
+Write-Output "Start it right away with: Start-ScheduledTask -TaskName '$name'"

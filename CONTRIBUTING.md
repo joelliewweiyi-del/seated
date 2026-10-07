@@ -35,9 +35,10 @@ All three must pass. CI runs the same commands.
 1. Create `src/server/platforms/<name>.ts` that returns a `Platform` (see `formitable.ts`).
 2. `getSlots()` must throw on errors. An empty array means "no tables", and the radar treats the two differently.
 3. Only add `book()` if the platform allows it without a captcha or other bot check. Never work around one.
-4. Register it in `src/server/main.ts` and add tests with a fake `fetch`.
+4. Register it in `src/server/platforms/index.ts` (both `createPlatforms` and `demoPlatforms`) and give it a name in `src/shared/platforms.ts`.
+5. Add tests with a fake `fetch` and a fixture taken from one real answer. Strip tokens and personal data from the fixture.
 
-Good next platforms: **Zenchef** (Formitable's new owner), **SevenRooms** and **Guestplan**. The Hot list page shows which hard-to-book restaurants each one would unlock.
+Good next platforms: **TableCheck** and **TheFork**. The Hot list page shows which hard-to-book restaurants Seated cannot read yet.
 
 To find out which system a restaurant uses: `npx tsx scripts/detect.ts https://restaurant.nl`. Some sites load their widget with JavaScript only; open those in a browser and watch the network requests.
 

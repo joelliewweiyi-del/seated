@@ -1,4 +1,4 @@
-import type { EventKind, RadarEvent, RestaurantRow, Sighting, Store, Watch } from './db.js';
+import { LOUD, QUIET, type EventKind, type RadarEvent, type RestaurantRow, type Sighting, type Store, type Watch } from './db.js';
 import type { Guest, Platform, Slot } from './platforms/types.js';
 import type { Notifier } from './notify.js';
 import { datesForWatch, matchingSlots } from './match.js';
@@ -27,8 +27,29 @@ export interface RadarOptions {
   notifier: Notifier;
   horizonDays: number;
   autoBookEnabled: boolean;
+  /** Base seconds between reads of one restaurant. Scarce restaurants are read more often, plentiful ones less. */
+  pollSeconds?: number;
   now?: () => Date;
 }
+
+/** No restaurant is ever read more often than this, whatever the settings. Be polite to small restaurants. */
+export const POLITE_FLOOR_SECONDS = 60;
+
+/** A watch with this many open tables or fewer is scarce: a new table there is real news. */
+export const SCARCE_TABLES = 2;
+
+/**
+ * How long to wait between reads of one restaurant. Scarce restaurants (few open tables) are read often,
+ * because a cancellation there is gone in minutes. Plentiful ones are read rarely: one more table is not news.
+ * A restaurant that fails to answer is read less often, so Seated does not add to its trouble.
+ */
+export function pollInterval(openTables: number, failing: boolean, pollSeconds: number): number {
+  const factor = failing ? 2 : openTables <= SCARCE_TABLES ? 0.5 : openTables <= 10 ? 1 : 2.5;
+  return Math.max(POLITE_FLOOR_SECONDS, Math.round(pollSeconds * factor)) * 1000;
+}
+
+/** One auto-booking per this window, across all watches: Seated never books a week of dinners in one night. */
+export const AUTOBOOK_WINDOW_MS = 24 * 60 * 60_000;
 
 export interface TickReport {
   startedAt: string;
@@ -84,17 +105,47 @@ export class Radar {
     return this.busy !== null;
   }
 
-  /** Runs one check. If a check is already running, returns that one instead of starting a second. */
-  tick(): Promise<TickReport> {
+  /**
+   * When the running check last finished a restaurant (or started), or null. A long check is fine while it moves:
+   * with many failing restaurants one check can take ten minutes. Many minutes without progress means it hangs.
+   */
+  progressAt: string | null = null;
+
+  /**
+   * Runs one check of the restaurants that are due (see `pollInterval`), or of all of them with `all`.
+   * If a check is already running, returns that one instead of starting a second.
+   */
+  tick({ all = false }: { all?: boolean } = {}): Promise<TickReport> {
     if (!this.busy) {
-      this.busy = this.run().finally(() => {
+      this.progressAt = this.now().toISOString();
+      this.busy = this.run(all).finally(() => {
         this.busy = null;
+        this.progressAt = null;
       });
     }
     return this.busy;
   }
 
-  private async run(): Promise<TickReport> {
+  /** Milliseconds between reads of this restaurant right now. */
+  intervalFor(restaurantId: string): number {
+    const { store } = this.o;
+    const open = store
+      .listWatches('watching')
+      .filter((w) => w.restaurantId === restaurantId)
+      .reduce((n, w) => n + store.openSightings(w.id).length, 0);
+    const failing = Boolean(store.getRestaurant(restaurantId)?.lastError);
+    return pollInterval(open, failing, this.o.pollSeconds ?? 120);
+  }
+
+  /** Logs a stretch of time in which Seated did not check (process stopped, computer asleep). */
+  noteGap(from: string, to: string, reason: string): void {
+    const minutes = Math.round((Date.parse(to) - Date.parse(from)) / 60_000);
+    const span = minutes >= 90 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min`;
+    const detail = `${reason} for ${span}, ${localTime(new Date(from))}–${localTime(new Date(to))}`;
+    this.o.store.addEvent({ at: to, kind: 'gap', restaurantId: '*', watchId: null, partySize: null, date: null, time: null, detail });
+  }
+
+  private async run(all: boolean): Promise<TickReport> {
     const { store } = this.o;
     const startedAt = this.now().toISOString();
     const report: TickReport = {
@@ -120,6 +171,8 @@ export class Radar {
       const restaurant = store.getRestaurant(restaurantId);
       const platform = restaurant ? this.o.platforms[restaurant.platform] : undefined;
       if (!restaurant) continue;
+      const last = restaurant.lastCheckedAt ? Date.parse(restaurant.lastCheckedAt) : 0;
+      if (!all && this.now().getTime() - last < this.intervalFor(restaurantId)) continue; // not due yet
       if (!platform || !restaurant.platformUid) {
         store.markChecked(restaurantId, this.now().toISOString(), 'Seated cannot read this platform yet');
         continue;
@@ -189,6 +242,7 @@ export class Radar {
               errors.push(`${date}: ${result.message}`);
             }
             cache.set(key, result);
+            this.progressAt = this.now().toISOString(); // one read done: the check is moving
           }
           if (result instanceof Error) continue; // unknown, so leave this date's sightings alone
           checked.add(date);
@@ -202,11 +256,13 @@ export class Radar {
         if (criteria(current) !== criteria(watch)) continue;
 
         const wanted = new Set(datesForWatch(current, today, this.o.horizonDays));
-        const { fresh, created, taken } = this.sync(current, restaurant, platform, today, wanted, checked, found);
+        const { fresh, created, taken, scarce } = this.sync(current, restaurant, platform, today, wanted, checked, found);
         report.newTables += created;
         report.tablesTaken += taken.length;
-        report.bookings += await this.act(current, restaurant, platform, fresh, found, today);
-        if (taken.length) await this.sendTakenNotice(current, restaurant, taken);
+        report.bookings += await this.act(current, restaurant, platform, fresh, found, today, scarce);
+        // Only tables the user was loudly told about: "the table we told you about is gone, don't bother".
+        const told = taken.filter((s) => s.notified === LOUD);
+        if (told.length) await this.sendTakenNotice(current, restaurant, told);
       }
 
       const at = this.now().toISOString();
@@ -215,11 +271,15 @@ export class Radar {
       if (error && !restaurant.lastError) store.addEvent({ ...this.blankEvent(at, 'error', restaurantId), detail: error });
       if (!error && restaurant.lastError) store.addEvent(this.blankEvent(at, 'recovered', restaurantId));
       store.markChecked(restaurantId, at, error);
+      this.progressAt = at;
     }
 
     report.finishedAt = this.now().toISOString();
-    this.lastReport = report;
-    store.addCheck(report);
+    // A tick with nothing due is not a check: it neither moves the heartbeat nor fills the log.
+    if (report.restaurants > 0) {
+      this.lastReport = report;
+      store.addCheck(report);
+    }
     return report;
   }
 
@@ -235,7 +295,7 @@ export class Radar {
     wanted: Set<string>,
     checked: Set<string>,
     found: Slot[],
-  ): { fresh: Fresh[]; created: number; taken: Sighting[] } {
+  ): { fresh: Fresh[]; created: number; taken: Sighting[]; scarce: boolean } {
     const { store } = this.o;
     const now = this.now();
     const nowIso = now.toISOString();
@@ -246,6 +306,8 @@ export class Radar {
       store.addEvent({ ...this.blankEvent(nowIso, kind, restaurant.id), watchId: watch.id, partySize: watch.partySize, date, time });
     // Days already read without error. A table on any other day is not news: it was open before we could see it.
     const known = store.watchCheckedDates(watch.id);
+    // Few open tables before this check: a new one is real news, so it gets a loud push.
+    const scarce = store.openSightings(watch.id).length <= SCARCE_TABLES;
 
     for (const s of store.openSightings(watch.id)) {
       const key = `${s.date}|${s.time}`;
@@ -275,22 +337,26 @@ export class Radar {
       event(!known.has(slot.date) ? 'listed' : previous?.goneAt ? 'reopened' : 'opened', slot.date, slot.time);
       const flicker =
         previous?.goneAt && previous.notified && now.getTime() - Date.parse(previous.goneAt) < QUIET_REOPEN_MS;
-      if (flicker) store.markNotified([sighting.id]); // covered by the earlier push
+      // The first read of a new watch: these tables were open before the user started watching. The dashboard
+      // shows them; a push would be noise (it once sent 13 loud pushes in a minute).
+      const firstRead = known.size === 0;
+      if (flicker) store.markNotified([sighting.id], previous.notified === LOUD ? LOUD : QUIET); // covered by the earlier push
+      else if (firstRead) store.markNotified([sighting.id], QUIET);
       else fresh.push({ sighting, slot });
     }
     const stillKnown = [...new Set([...known, ...checked])].filter((d) => d >= today && wanted.has(d)).sort();
     store.setWatchCheckedDates(watch.id, stillKnown);
-    return { fresh: fresh.sort((a, b) => byDateTime(a.slot, b.slot)), created, taken };
+    return { fresh: fresh.sort((a, b) => byDateTime(a.slot, b.slot)), created, taken, scarce };
   }
 
   private blankEvent(at: string, kind: EventKind, restaurantId: string): Omit<RadarEvent, 'id'> {
     return { at, kind, restaurantId, watchId: null, partySize: null, date: null, time: null, detail: null };
   }
 
-  /** A quiet push when open tables are taken by someone else. Informational, so a failed push is not retried. */
+  /** A quiet push when a table the user was told about is taken. Informational, so a failed push is not retried. */
   private async sendTakenNotice(watch: Watch, restaurant: RestaurantRow, taken: Sighting[]): Promise<void> {
     await this.o.notifier.send({
-      title: taken.length === 1 ? `Taken: ${restaurant.name}` : `${taken.length} tables taken: ${restaurant.name}`,
+      title: taken.length === 1 ? `Gone: ${restaurant.name}` : `${taken.length} tables gone: ${restaurant.name}`,
       body: `${watch.partySize} people
 ${summarize(taken)}`,
       priority: 'low',
@@ -306,6 +372,7 @@ ${summarize(taken)}`,
     fresh: Fresh[],
     found: Slot[],
     today: string,
+    scarce: boolean,
   ): Promise<number> {
     const { store, notifier } = this.o;
     let note = '';
@@ -313,12 +380,16 @@ ${summarize(taken)}`,
     if (watch.autoBook && this.o.autoBookEnabled && platform.book) {
       // Any matching table that is bookable now and that we have not tried before. This also
       // catches a table that was already open but only now became auto-bookable.
-      const candidate = [...found]
-        .sort(byDateTime)
-        .find((s) => s.autoBookable && !store.bookingAttempted(watch.id, s.date, s.time));
+      const untried = [...found].sort(byDateTime).filter((s) => s.autoBookable && !store.bookingAttempted(watch.id, s.date, s.time));
+      // One table per evening: skip evenings that already have one, so another evening can still be booked.
+      const candidate = untried.find((s) => !store.hasBookingOn(s.date));
       const guest = this.guest();
       if (candidate && !guest) {
         note = 'Auto-book is on, but your name, email and phone are missing in Settings.';
+      } else if (!candidate && untried.length > 0) {
+        note = 'Not auto-booked: you already have a table that evening.';
+      } else if (candidate && store.autoBookingsSince(new Date(this.now().getTime() - AUTOBOOK_WINDOW_MS).toISOString()) > 0) {
+        note = 'Not auto-booked: Seated already booked a table in the last 24 hours. Book this one yourself if you want it.';
       } else if (candidate && guest && !store.hasLiveBooking(watch.id, today)) {
         const outcome = await this.book(watch, restaurant, platform, candidate, guest);
         if (outcome === 'booked') return 1;
@@ -337,15 +408,17 @@ ${summarize(taken)}`,
 
     if (fresh.length === 0) return 0;
     const slots = fresh.map((f) => f.slot);
+    // Loud only where a table is scarce. One more table at a restaurant with plenty free is a quiet note.
+    const loud = scarce || note !== '';
     const sent = await notifier.send({
       title: fresh.length === 1 ? `Table open: ${restaurant.name}` : `${fresh.length} tables open: ${restaurant.name}`,
       body: `${watch.partySize} people\n${summarize(slots)}${note ? `\n${note}` : ''}`,
       url: fresh[0]!.sighting.bookingUrl,
-      priority: 'max',
+      priority: loud ? 'max' : 'low',
       tags: ['fork_and_knife'],
     });
     // Unsent pushes stay pending, so the next check tries again while the table is still open.
-    if (sent) store.markNotified(fresh.map((f) => f.sighting.id));
+    if (sent) store.markNotified(fresh.map((f) => f.sighting.id), loud ? LOUD : QUIET);
     return 0;
   }
 

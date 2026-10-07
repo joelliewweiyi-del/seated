@@ -60,7 +60,7 @@ describe('reading availability', () => {
       ],
     ]);
     const slots = await formitable({ fetchImpl: impl, gapMs: 0 }).getSlots(klepel, '2026-10-09', 2);
-    expect(calls).toHaveLength(1);
+    expect(calls.filter((c) => c.url.includes('/availability/'))).toHaveLength(1);
     expect(slots.map((s) => [s.time, s.open, s.autoBookable])).toEqual([
       ['19:00', true, true],
       // A SHORT sitting is bookable by a person, who sees the end time. Seated never auto-books it.
@@ -118,6 +118,19 @@ describe('booking a table', () => {
     ]);
     const result = await formitable({ fetchImpl: impl, gapMs: 0 }).book!(klepel, '2026-10-10', '00:30', 2, guest);
     expect(result).toEqual({ ok: true, reference: 'DEP1', paymentUrl: 'https://pay.example/1' });
+  });
+
+  it('never books a table that costs money to hold: deposit, prepaid menu or no-show fee', async () => {
+    for (const money of [{ deposit: true }, { price: 95 }, { noShowFee: 50 }]) {
+      const { impl, calls } = fakeFetch([
+        [/availability/, () => json(day())],
+        [/product/, () => json([{ uid: 'dinner-1', title: 'Dinner', ...money }])],
+      ]);
+      const result = await formitable({ fetchImpl: impl, gapMs: 0 }).book!(klepel, '2026-10-10', '00:30', 2, guest);
+      expect(result.ok).toBe(false);
+      expect(result.ok === false && result.uncertain).toBeFalsy(); // a clean "no", so the watch keeps going
+      expect(calls.some((c) => c.method === 'POST')).toBe(false);
+    }
   });
 
   it('calls a network failure during the booking request "uncertain", because the table may be booked', async () => {
@@ -198,6 +211,54 @@ describe('month pre-check', () => {
       2,
     );
     expect([...worth].sort()).toEqual(['2026-10-09', '2026-10-12', '2026-11-02']);
-    expect(calls).toHaveLength(2); // one request per month, not per day
+    expect(calls.filter((c) => c.url.includes('monthWeeks'))).toHaveLength(2); // one request per month, not per day
+  });
+});
+
+describe('restaurants that moved to Zenchef', () => {
+  it('refuses to read a restaurant whose Formitable calendar is frozen after a move to Zenchef (De Kas, Oct 2026)', async () => {
+    const { impl, calls } = fakeFetch([
+      [/\/status$/, () => json({ live: true, zenchefId: 386643 })],
+      [/availability/, () => json([slot('19:00', '2026-10-09T17:00:00Z', 'AVAILABLE')])],
+    ]);
+    const platform = formitable({ fetchImpl: impl, gapMs: 0 });
+    await expect(platform.getSlots(klepel, '2026-10-09', 2)).rejects.toThrow(/Zenchef account \(id 386643\)/);
+    await expect(platform.openDates!(klepel, ['2026-10-09'], 2)).rejects.toThrow(/Zenchef/);
+    expect(calls.filter((c) => c.url.includes('/availability/'))).toHaveLength(0); // no false open tables
+    expect(calls.filter((c) => c.url.endsWith('/status'))).toHaveLength(1); // asked once, then remembered
+  });
+
+  it('keeps refusing a moved restaurant when the daily re-check fails, instead of trusting the frozen calendar again', async () => {
+    let clock = 0;
+    let statusDown = false;
+    const { impl } = fakeFetch([
+      [/\/status$/, () => (statusDown ? json({}, 500) : json({ live: true, zenchefId: 386643 }))],
+      [/availability/, () => json([slot('19:00', '2026-10-09T17:00:00Z', 'AVAILABLE')])],
+    ]);
+    const platform = formitable({ fetchImpl: impl, gapMs: 0, now: () => clock });
+    await expect(platform.getSlots(klepel, '2026-10-09', 2)).rejects.toThrow(/Zenchef/);
+    clock += 25 * 60 * 60_000;
+    statusDown = true;
+    await expect(platform.getSlots(klepel, '2026-10-09', 2)).rejects.toThrow(/Zenchef/);
+  });
+
+  it('reads normally when the restaurant has not moved, and asks only once a day', async () => {
+    const { impl, calls } = fakeFetch([
+      [/\/status$/, () => json({ live: false, zenchefId: null })],
+      [/availability/, () => json([slot('19:00', '2026-10-09T17:00:00Z', 'AVAILABLE')])],
+    ]);
+    const platform = formitable({ fetchImpl: impl, gapMs: 0 });
+    await platform.getSlots(klepel, '2026-10-09', 2);
+    await platform.getSlots(klepel, '2026-10-10', 2);
+    expect(calls.filter((c) => c.url.endsWith('/status'))).toHaveLength(1);
+  });
+
+  it('still reads when the status call fails: one flaky call must not hide a real restaurant', async () => {
+    const { impl } = fakeFetch([
+      [/\/status$/, () => json({}, 500)],
+      [/availability/, () => json([slot('19:00', '2026-10-09T17:00:00Z', 'AVAILABLE')])],
+    ]);
+    const slots = await formitable({ fetchImpl: impl, gapMs: 0 }).getSlots(klepel, '2026-10-09', 2);
+    expect(slots[0]!.open).toBe(true);
   });
 });

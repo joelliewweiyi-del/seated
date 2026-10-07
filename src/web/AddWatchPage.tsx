@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, type Restaurant, type State } from './api';
 import { go } from './App';
 import { Button, Card, Field, inputClass, SectionLabel } from './ui';
+import { NO_AUTOBOOK_WHY } from '../shared/platforms';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 /** Lowercase without accents, so "cafe" finds "Café". */
@@ -259,9 +260,7 @@ export function AddWatchPage({ state, refresh }: { state: State; refresh: () => 
                   </span>
                   {!picked.canAutoBook && (
                     <span className="mt-1 block text-xs text-stone-500">
-                      {picked.platform === 'tebi'
-                        ? "Tebi protects its booking form with a captcha, so you book yourself. Seated alerts you and opens the restaurant's Tebi page."
-                        : 'Seated cannot book on this booking system.'}
+                      {NO_AUTOBOOK_WHY[picked.platform] ?? 'Seated cannot book on this booking system.'}
                     </span>
                   )}
                   {picked.canAutoBook && !state.radar.autoBookEnabled && (

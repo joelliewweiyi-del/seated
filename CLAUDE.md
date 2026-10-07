@@ -16,7 +16,7 @@ Seated is a personal table radar. It watches restaurant booking systems and aler
 ## Hard rules
 
 1. **No real bookings in tests, ever.** Use `platforms/demo.ts` or a fake `fetch`.
-2. **Keep live requests small.** `npm run peek` once is fine. No loops against real restaurants. Never poll Esra (Tebi) at all; it is a two-person shop.
+2. **Keep live requests small.** `npm run peek` once is fine. No loops against real restaurants. Esra (Tebi) is a two-person shop: the radar watches it like any restaurant (Joel's choice, Oct 2026), but never use it as a test target (no peeks, no verify runs, no build loops; the CLI refuses it).
 3. **Platform code only in `src/server/platforms/`.**
 4. **Dates are restaurant-local strings** (`YYYY-MM-DD`, `HH:mm`). Use `localDate()`; never `toISOString().slice(0, 10)` for a calendar date.
 5. **Double-booking guards stay**: the watch stops after a booking, `hasLiveBooking` blocks re-booking, and an unclear booking outcome (`uncertain`) pauses the watch. Each has a test in `test/radar.test.ts`. Never weaken one.
@@ -64,7 +64,8 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - `GET /restaurant/{uid}/status`: the `live` flag is **not** a bookability signal. Many bookable restaurants report `live: false`.
 - Deep link (checked in Chrome, Oct 2026): `https://widget.formitable.com/side/en/{uid}/book?partysize=N&date=YYYY-MM-DD&time={minutes}`.
 - Booking: `GET /product/{uid}/search/{slot.time}/{party}/en` for the product, then `POST /booking/{uid}`. The payload is in `formitable.ts`. It booked real tables in June 2026.
-- Risk: restaurants are migrating to Zenchef (the status endpoint shows a `zenchefId`). Toscanini looked "migrated" but had in fact moved to Tebi; check for that first. A Zenchef reader is the most important next platform.
+- **Restaurants are moving to Zenchef, and the old Formitable calendar stays online, frozen.** On 7 Oct 2026 De Kas showed 41 free tables on Formitable and none on Zenchef. The status endpoint's `zenchefId` marks a moved restaurant. `formitable.ts` checks it once a day and refuses to read or book a restaurant that has one (a failed re-check keeps the last answer). `scripts/migrate-zenchef.ts --city Amsterdam --write` moves restaurants whose Zenchef calendar shows open days; it moved 16 in Amsterdam. Toscanini looked "migrated" but had in fact moved to Tebi; check for that first.
+- Auto-book refuses any product with a deposit, price, prepayment or no-show fee (`moneyInvolved()`).
 
 ### Tebi
 
@@ -77,18 +78,45 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - Tebi is also a till and web shop: a `tebi.co` link on a site does not prove Tebi takes the bookings.
 - Writes need reCAPTCHA v3. Do not try to get around it.
 
+### Zenchef
+
+- Read-only, plain GETs on `https://bookings-middleware.zenchef.com`: `getAvailabilitiesSummary?restaurantId&date_begin&date_end` (which days have shifts) and `getAvailabilities` (slots).
+- Party size is not a parameter: each shift and slot lists `possible_guests`. A slot is open only if neither it nor its shift is closed or full and the party fits.
+- A `202` answer is an AWS WAF challenge, not data: it counts as a failed read. Never obtain or forge the WAF token.
+- Deep link: `https://bookings.zenchef.com/results?rid&pid=1001&pax&day`. It has no time parameter.
+
+### SevenRooms
+
+- Read-only: `https://www.sevenrooms.com/api-yoa/availability/ng/widget/range`, with the venue slug as uid. One call covers up to 3 days (7 is refused). Only `book` times in an open shift are tables; `request` times are not.
+- Deep link `explore/{slug}/reservations/create/search/?date&party_size&start_time` pre-fills date, party and time.
+
+### Guestplan
+
+- Read-only: `POST https://api.guestplan.com/api/v2/getAvailability` with `Authorization: AccessKey <key>`. The key is public: every site embeds it (`_gstpln.accessKey`, sometimes URL-encoded).
+- uid is `<accessKey>:<accountId>`: one key can cover several restaurants. A time is a table only when it is open online and bookable for the party.
+- The widget link cannot be pre-filled. Never fake its `rwg_token`.
+
 ## Restaurant data
 
-- `data/restaurants.json`: `hot` (1 to 3) and `hotWhy` mark the hard-to-book list (34 Amsterdam restaurants, researched 6 Oct 2026 from Time Out, Amsterdam Foodie, Your Little Black Book, Michelin and others).
+- `data/restaurants.json`: `hot` (1 to 3) and `hotWhy` mark the hard-to-book list (35 Amsterdam restaurants, 24 readable; researched 6 Oct 2026 from Time Out, Amsterdam Foodie, Your Little Black Book, Michelin and others).
 - On 6 Oct 2026, 29 restaurants listed as Formitable had moved to Tebi; they were switched with ids resolved from their websites.
 - `scripts/detect.ts <url>` finds the booking system on a website.
 
+## Radar behaviour
+
+- **Scarcity polling.** Each restaurant has its own interval: `pollInterval()` in `radar.ts`. ≤ 2 open tables: 0.5 × `POLL_SECONDS`; ≤ 10: 1 ×; more: 2.5 ×; failing: 2 ×. Never under 60 s (`POLITE_FLOOR_SECONDS`). The loop wakes every ~15 s and reads only what is due; "Check now" reads all.
+- **Breaker.** Two failed requests in a row skip the restaurant for the rest of the check. Each read has a 45 s backstop.
+- **Push hygiene.** A first read of a day is silent (`listed`). A loud push (max) only when the watch had ≤ 2 open tables (`SCARCE_TABLES`); otherwise silent (low). "Gone:" goes only for tables that got a loud push. `sightings.notified`: 0 pending, 1 `LOUD`, 2 `QUIET`.
+- **Auto-book guards** (on top of hard rule 5): one table per evening across watches (`hasBookingOn`), at most one auto-booking per 24 h (`autoBookingsSince`), never when money is involved. "I got it" (`POST /api/watches/:id/got-it`) records a booking with source `you` and stops the watch.
+- **Platform switch.** `seedRestaurants` returns restaurants whose platform changed; their watches close their sightings quietly and start fresh. A uid change alone does not reset (Tebi rotates ids).
+- **Health.** `GET /api/health` (no password needed) is 503 when no check finished within max(6 min, slowest interval + 1 min) and no check is making progress, or a check made no progress for 5 min. `HEALTHCHECK_URL` gets a ping at most once a minute. `scripts/watchdog.mjs` (Windows task every 5 min, installed by `windows-autostart.ps1`) restarts Seated and pushes once per outage. Downtime is logged as `gap` events.
+
 ## Activity log
 
-- `events` holds every change: `listed` (open before Seated could see it: first read of a day, or a day that just came into range), `opened`, `reopened`, `taken` (gone from a day that was read without error, before its time), `error` and `recovered` (state changes only).
+- `events` holds every change: `listed` (open before Seated could see it: first read of a day, or a day that just came into range), `opened`, `reopened`, `taken` (gone from a day that was read without error, before its time), `error` and `recovered` (state changes only), and `gap` (Seated was not running or the computer slept; restaurant `*`).
 - `checks` holds one row per check, so a quiet log can be told apart from a stopped radar.
 - Editing, pausing or resuming a watch closes its open tables quietly and forgets its read days (`checked_dates`), so the next check starts fresh.
-- Taken tables get a quiet push (ntfy priority 2: no sound).
+- The Live page also shows `GET /api/stats`: openings per restaurant, how long they stayed free (median), and whether they go faster than Seated reads (`tooSlow`).
 - The Live page (`#/live`, `GET /api/board`) ranks restaurants with a prime-time watch (`src/shared/prime.ts`: Fri and Sat, 18:30–21:30, 2 people) by free prime tables. `GET /api/live` is a server-sent event stream: one `change` message per logged event or finished check, so the page never polls. A day never read shows `?`, not "full".
 
 ## History

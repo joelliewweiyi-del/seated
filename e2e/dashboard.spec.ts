@@ -43,6 +43,7 @@ test('a new user sees an empty radar with one clear next step', async ({ page })
 
 test('adding a watch: pick a restaurant, set party and days, start watching', async ({ page }) => {
   await page.goto('/#/add');
+  await expect(page.getByRole('button', { name: /Café de Klepel/ })).toBeVisible(); // the list has loaded
   await shot(page, '02-add-list');
   // Restaurants on booking systems Seated cannot read yet are listed but cannot be picked.
   await page.getByLabel('Search restaurants').fill('Ciel Bleu');
@@ -124,8 +125,8 @@ test('settings: make a private push topic and save it', async ({ page }) => {
 
 test('auto-book stays locked until the guest details are filled in, then books one table', async ({ page }) => {
   await page.goto('/#/add');
-  await page.getByLabel('Search restaurants').fill('arca');
-  await page.getByRole('button', { name: /^Arca/ }).click();
+  await page.getByLabel('Search restaurants').fill('gertrude');
+  await page.getByRole('button', { name: /^Gertrude/ }).click();
   await expect(page.getByLabel(/Book it for me/)).toBeDisabled();
 
   await page.goto('/#/settings');
@@ -137,24 +138,24 @@ test('auto-book stays locked until the guest details are filled in, then books o
   await expect(page.getByRole('status')).toHaveText('Saved.');
 
   await page.goto('/#/add');
-  await page.getByLabel('Search restaurants').fill('arca');
-  await page.getByRole('button', { name: /^Arca/ }).click();
+  await page.getByLabel('Search restaurants').fill('gertrude');
+  await page.getByRole('button', { name: /^Gertrude/ }).click();
   await page.getByLabel(/Book it for me/).check();
   await page.getByRole('button', { name: 'Start watching' }).click();
   await expect(page).toHaveURL(/#\/$/);
 
   const date = nextWeekday(await today(page), 3);
-  await openTable(page, 'arca', date, '19:00');
-  await openTable(page, 'arca', date, '20:00');
+  await openTable(page, 'gertrude', date, '19:00');
+  await openTable(page, 'gertrude', date, '20:00');
   await checkNow(page);
-  await expect(page.getByRole('heading', { name: 'Booked by Seated' })).toBeVisible();
-  await expect(page.getByText('Confirmed')).toHaveCount(1);
-  const albaRow = page.getByTestId('watch-row').filter({ hasText: 'Arca' });
-  await expect(albaRow).toContainText('Booked');
+  await expect(page.getByRole('heading', { name: 'Your tables' })).toBeVisible();
+  await expect(page.getByText('Booked by Seated', { exact: true })).toHaveCount(1);
+  const bookedRow = page.getByTestId('watch-row').filter({ hasText: 'Gertrude' });
+  await expect(bookedRow).toContainText('Booked');
 
   // A second check must not book a second table.
   await checkNow(page);
-  await expect(page.getByText('Confirmed')).toHaveCount(1);
+  await expect(page.getByText('Booked by Seated', { exact: true })).toHaveCount(1);
   await shot(page, '06-booked');
 });
 
@@ -250,4 +251,26 @@ test('the live board fits a small phone screen', async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
   await shot(page, '12-mobile-live');
+});
+
+test('"I got it" records a table you booked yourself, stops the watch, and counts it as a win', async ({ page }) => {
+  const saturday = nextWeekday(await today(page), 6);
+  await page.goto('/');
+  await openTable(page, 'gitane', saturday, '20:00');
+  await checkNow(page);
+  const table = page.getByTestId('open-table').filter({ hasText: 'Gitane' });
+  await table.getByRole('button', { name: 'I got it' }).click();
+  await table.getByRole('button', { name: 'No' }).click(); // asks first, because it stops the watch
+  await expect(page.getByTestId('watch-row').filter({ hasText: 'Gitane' })).not.toContainText('Booked');
+  await table.getByRole('button', { name: 'I got it' }).click();
+  await table.getByRole('button', { name: 'Yes' }).click();
+  await expect(page.getByText('Booked by you', { exact: true })).toHaveCount(1);
+  await expect(page.getByTestId('watch-row').filter({ hasText: 'Gitane' })).toContainText('Booked');
+  await shot(page, '13-got-it');
+
+  // The Live page counts it, next to how fast Gitane's tables went.
+  await page.goto('/#/live');
+  await expect(page.getByTestId('funnel')).toContainText('1 booked by you');
+  await expect(page.getByTestId('stats').getByText('Gitane')).toBeVisible();
+  await shot(page, '14-live-stats');
 });

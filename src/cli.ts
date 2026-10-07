@@ -1,8 +1,7 @@
 // Look at one restaurant's open tables right now, straight from its booking system.
 //   npm run peek -- klepel            party of 2, next 7 days
 //   npm run peek -- "bistro feline" 4 10
-import { formitable } from './server/platforms/formitable.js';
-import { tebi } from './server/platforms/tebi.js';
+import { createPlatforms } from './server/platforms/index.js';
 import type { Platform } from './server/platforms/types.js';
 import { loadCuratedRestaurants, slugify } from './server/restaurants.js';
 import { addDays, localDate, slotLabel } from './server/time.js';
@@ -15,7 +14,7 @@ if (!query) {
 const partySize = Number(partyArg ?? 2);
 const days = Math.min(Number(daysArg ?? 7), 31);
 
-const platforms: Record<string, Platform> = { formitable: formitable(), tebi: tebi() };
+const platforms: Record<string, Platform> = createPlatforms();
 const needle = slugify(query);
 const matches = loadCuratedRestaurants().filter((r) => r.id.includes(needle));
 const restaurant = matches.find((r) => platforms[r.platform] && r.platformUid);

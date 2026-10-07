@@ -30,6 +30,8 @@ export const config = {
   horizonDays: num(process.env.HORIZON_DAYS, 14),
   autoBookEnabled: !observe && (demo || process.env.AUTOBOOK === 'true'),
   password: process.env.SEATED_PASSWORD || '',
+  /** Optional: a URL pinged after each check (healthchecks.io and similar). If the pings stop, you get an alert. */
+  healthcheckUrl: process.env.HEALTHCHECK_URL || '',
 };
 
 export type Config = typeof config;

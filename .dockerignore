@@ -5,3 +5,4 @@ data/*.db*
 test-results
 playwright-report
 .git
+data/watchdog.*

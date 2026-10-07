@@ -16,3 +16,6 @@ playwright-report/
 
 # Local agent settings
 .claude/
+
+# Watchdog state (scripts/watchdog.mjs)
+data/watchdog.json

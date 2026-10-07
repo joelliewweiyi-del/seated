@@ -28,6 +28,19 @@ export interface FormitableSlot {
 interface FormitableProduct {
   uid: string;
   title: string;
+  // Money involved in booking this product (seen on the product search, Oct 2026).
+  deposit?: boolean;
+  price?: number;
+  fullPrice?: number;
+  noShowFee?: number | null;
+}
+
+/** Why Seated will not book this product by itself, or null. Seated only auto-books tables that cost nothing to hold. */
+export function moneyInvolved(p: FormitableProduct): string | null {
+  if (p.deposit) return 'it needs a deposit';
+  if ((p.price ?? 0) > 0 || (p.fullPrice ?? 0) > 0) return 'it must be paid in advance';
+  if ((p.noShowFee ?? 0) > 0) return `it has a no-show fee of €${p.noShowFee}`;
+  return null;
 }
 
 type Fetch = typeof fetch;
@@ -52,8 +65,12 @@ export function toSlot(date: string, s: FormitableSlot): Slot {
   };
 }
 
-export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS } = {}): Platform {
+/** How long a "has it moved to Zenchef?" answer is trusted. One status request per restaurant per day. */
+const MOVED_CHECK_MS = 24 * 60 * 60_000;
+
+export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS, now = () => Date.now() } = {}): Platform {
   let lastRequestAt = 0;
+  const moved = new Map<string, { at: number; zenchefId: string | null }>();
   async function politeGap(): Promise<void> {
     const wait = lastRequestAt + gapMs - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -70,6 +87,33 @@ export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS } = 
     return (await res.json()) as T;
   }
 
+  /**
+   * Formitable belongs to Zenchef now. A restaurant that moved shows a `zenchefId` on its status, and its Formitable
+   * calendar stops getting bookings: in Oct 2026 De Kas looked nearly empty on Formitable while Zenchef had it full.
+   * So a moved restaurant is an error ("read it on Zenchef"), never a source of false open tables.
+   * If the status call itself fails, the last known answer stands; with no answer yet, the reads go ahead:
+   * one flaky call must not hide a real restaurant.
+   */
+  async function assertNotMoved(r: Restaurant): Promise<void> {
+    const uid = r.platformUid!;
+    let known = moved.get(uid);
+    if (!known || now() - known.at > MOVED_CHECK_MS) {
+      try {
+        const status = await getJson<{ zenchefId?: string | number | null }>(r, `/restaurant/${uid}/status`);
+        known = { at: now(), zenchefId: status?.zenchefId ? String(status.zenchefId) : null };
+        moved.set(uid, known);
+      } catch {
+        if (!known) return;
+      }
+    }
+    if (known.zenchefId) {
+      throw new Error(
+        `Has a Zenchef account (id ${known.zenchefId}), so its Formitable calendar may be frozen. ` +
+          'scripts/migrate-zenchef.ts moves it if Zenchef shows open days; otherwise check where it takes bookings.',
+      );
+    }
+  }
+
   async function daySlots(r: Restaurant, date: string, partySize: number): Promise<FormitableSlot[]> {
     const data = await getJson<unknown>(r, `/availability/${r.platformUid}/day/${date}/${partySize}/en`);
     if (!Array.isArray(data)) throw new Error('Formitable returned an unexpected availability shape');
@@ -81,11 +125,13 @@ export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS } = 
     label: 'Formitable',
 
     async getSlots(restaurant, date, partySize) {
+      await assertNotMoved(restaurant);
       const slots = await daySlots(restaurant, date, partySize);
       return slots.map((s) => toSlot(date, s));
     },
 
     async openDates(restaurant, dates, partySize) {
+      await assertNotMoved(restaurant);
       const months = [...new Set(dates.map((d) => d.slice(0, 7)))];
       const worth = new Set<string>();
       for (const month of months) {
@@ -114,6 +160,7 @@ export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS } = 
     async book(restaurant, date, time, partySize, guest): Promise<BookResult> {
       const uid = restaurant.platformUid;
       try {
+        await assertNotMoved(restaurant); // never book on a calendar the restaurant no longer uses
         // Re-read the day: the slot must still be AVAILABLE right now.
         const slots = await daySlots(restaurant, date, partySize);
         const slot = slots.find((s) => s.timeString === time);
@@ -130,6 +177,8 @@ export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS } = 
         );
         const product = Array.isArray(products) ? products[0] : undefined;
         if (!product) return { ok: false, error: 'The restaurant offers no bookable product for this slot' };
+        const money = moneyInvolved(product);
+        if (money) return { ok: false, error: `Seated did not book it because ${money}. Book it yourself if you want it.` };
 
         // The payload mirrors what the widget sends. It booked real tables in June 2026.
         const payload = {

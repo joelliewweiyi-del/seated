@@ -1,0 +1,15 @@
+# SEATED_PASSWORD=change-me docker compose up -d
+services:
+  seated:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "4310:4310"
+    volumes:
+      - seated-data:/app/var
+    environment:
+      SEATED_PASSWORD: ${SEATED_PASSWORD:?Set SEATED_PASSWORD: the dashboard is reachable from outside the container}
+      AUTOBOOK: ${AUTOBOOK:-false}
+      HEALTHCHECK_URL: ${HEALTHCHECK_URL:-}
+volumes:
+  seated-data:

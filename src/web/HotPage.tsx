@@ -2,18 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, type Restaurant, type State } from './api';
 import { Badge, Card, SectionLabel } from './ui';
 import { coversPrime, PRIME } from '../shared/prime';
+import { platformName } from '../shared/platforms';
 
 const LEVEL = ['', 'Hard to book', 'Very hard to book', 'Nearly impossible'];
-const PLATFORM_NAME: Record<string, string> = {
-  formitable: 'Formitable',
-  tebi: 'Tebi',
-  zenchef: 'Zenchef',
-  sevenrooms: 'SevenRooms',
-  guestplan: 'Guestplan',
-  tablecheck: 'TableCheck',
-  thefork: 'TheFork',
-  other: 'Unknown system',
-};
 
 function Difficulty({ level }: { level: number }) {
   return (
@@ -105,7 +96,7 @@ export function HotPage({ state, refresh }: { state: State; refresh: () => Promi
                           <Difficulty level={r.hot!} />
                         </div>
                         <p className="mt-0.5 text-sm text-stone-500">
-                          <span className="font-mono text-[11px] uppercase tracking-wide text-stone-400">{PLATFORM_NAME[r.platform]}</span>
+                          <span className="font-mono text-[11px] uppercase tracking-wide text-stone-400">{platformName(r.platform)}</span>
                           {r.hotWhy && <> · {r.hotWhy}</>}
                         </p>
                       </div>
@@ -141,7 +132,7 @@ export function HotPage({ state, refresh }: { state: State; refresh: () => Promi
             <span id="not-yet">Not supported yet · {notYet.length}</span>
           </SectionLabel>
           <p className="-mt-1 mb-2 text-xs text-stone-500">
-            These take bookings through systems Seated cannot read yet.
+            Seated cannot read these yet: it cannot read their booking system, or it does not know the restaurant's id there.
           </p>
           <Card>
             <ul className="divide-y divide-stone-100">
@@ -152,7 +143,7 @@ export function HotPage({ state, refresh }: { state: State; refresh: () => Promi
                     <Difficulty level={r.hot!} />
                   </div>
                   <p className="mt-0.5 text-sm text-stone-500">
-                    <span className="font-mono text-[11px] uppercase tracking-wide text-stone-500">{PLATFORM_NAME[r.platform] ?? r.platform}</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wide text-stone-500">{platformName(r.platform)}</span>
                     {r.hotWhy && <> · {r.hotWhy}</>}
                   </p>
                 </li>

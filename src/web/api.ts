@@ -22,7 +22,7 @@ export interface Sighting {
   firstSeenAt: string;
   lastSeenAt: string;
   goneAt: string | null;
-  notified: boolean;
+  notified: number; // 0 = not pushed yet, 1 = loud push, 2 = quiet or no push
 }
 
 export interface Watch {
@@ -53,6 +53,7 @@ export interface Booking {
   paymentUrl: string | null;
   error: string | null;
   createdAt: string;
+  source: 'seated' | 'you';
 }
 
 export interface Settings {
@@ -93,7 +94,7 @@ export interface State {
   settings: Settings;
 }
 
-export type EventKind = 'listed' | 'opened' | 'reopened' | 'taken' | 'error' | 'recovered';
+export type EventKind = 'listed' | 'opened' | 'reopened' | 'taken' | 'error' | 'recovered' | 'gap';
 
 export interface Board {
   dates: string[];
@@ -108,6 +109,7 @@ export interface Board {
     cells: Array<{ date: string; times: string[]; bookingUrl: string | null; known: boolean }>;
     free: number;
     unknown: number;
+    everySeconds: number;
     lastChange: { at: string; kind: EventKind; date: string; time: string } | null;
   }>;
   feed: Array<{
@@ -124,6 +126,25 @@ export interface Board {
   lastCheckAt: string | null;
   nextCheckAt: string | null;
   running: boolean;
+}
+
+export interface Stats {
+  days: number;
+  since: string;
+  restaurants: Array<{
+    id: string;
+    name: string;
+    platform: string;
+    openings: number;
+    gone: number;
+    medianMinutes: number | null;
+    fastestMinutes: number | null;
+    everySeconds: number;
+    tooSlow: boolean;
+  }>;
+  loudAlerts: number;
+  bookedBySeated: number;
+  bookedByYou: number;
 }
 
 export type WatchDraft = Pick<
@@ -147,6 +168,8 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 export const api = {
   state: () => call<State>('GET', '/state'),
   board: () => call<Board>('GET', '/board'),
+  stats: (days = 7) => call<Stats>('GET', `/stats?days=${days}`),
+  gotIt: (watchId: number, date: string, time: string) => call<Booking>('POST', `/watches/${watchId}/got-it`, { date, time }),
   restaurants: () => call<Restaurant[]>('GET', '/restaurants'),
   addRestaurant: (b: { name: string; link: string; city?: string }) => call<Restaurant>('POST', '/restaurants', b),
   createWatch: (w: WatchDraft) => call<Watch>('POST', '/watches', w),

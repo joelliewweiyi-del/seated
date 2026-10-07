@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Store, type WatchInput } from '../src/server/db';
-import { Radar, QUIET_REOPEN_MS, READ_LIMIT_MS } from '../src/server/radar';
+import { AUTOBOOK_WINDOW_MS, POLITE_FLOOR_SECONDS, pollInterval, Radar, QUIET_REOPEN_MS, READ_LIMIT_MS } from '../src/server/radar';
 import { demoPlatform } from '../src/server/platforms/demo';
 import { memoryNotifier } from '../src/server/notify';
 import type { BookResult, Platform, Slot } from '../src/server/platforms/types';
@@ -50,27 +50,27 @@ function setup({ autoBookEnabled = false, platform }: { autoBookEnabled?: boolea
 }
 
 const MIN = 60_000;
-/** Pushes about open tables. "Taken" notices are separate, quiet pushes. */
-const openPushes = (sent: Array<{ title: string }>) => sent.filter((n) => !n.title.includes('aken'));
+/** Pushes about open tables. "Gone" notices are separate, quiet pushes. */
+const openPushes = (sent: Array<{ title: string }>) => sent.filter((n) => !/^(\d+ tables )?[Gg]one/.test(n.title));
 
 describe('alerts', () => {
   it('pushes once when a matching table opens, then stays quiet while it stays open', async () => {
     const { demo, notifier, radar, watch } = setup();
     watch();
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(notifier.sent).toHaveLength(0);
 
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(notifier.sent).toHaveLength(1);
     expect(notifier.sent[0]!.title).toBe('Table open: Café de Klepel');
     expect(notifier.sent[0]!.body).toContain('Fri 9 Oct 19:30');
     expect(notifier.sent[0]!.url).toContain('date=2026-10-09');
 
     // The same table on the next three checks is not news. Repeats would train the user to ignore pushes.
-    await radar.tick();
-    await radar.tick();
-    await radar.tick();
+    await radar.tick({ all: true });
+    await radar.tick({ all: true });
+    await radar.tick({ all: true });
     expect(notifier.sent).toHaveLength(1);
   });
 
@@ -79,17 +79,18 @@ describe('alerts', () => {
     watch({ timeFrom: '19:00', timeTo: '20:00' });
     demo.open('klepel', FRI, '17:30');
     demo.open('klepel', FRI, '21:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(notifier.sent).toHaveLength(0);
   });
 
   it('puts several new tables in one push instead of a burst of pushes', async () => {
     const { demo, notifier, radar, watch } = setup();
     watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', SAT, '20:00');
     demo.open('klepel', FRI, '19:00');
     demo.open('klepel', FRI, '19:15');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(notifier.sent).toHaveLength(1);
     expect(notifier.sent[0]!.title).toBe('3 tables open: Café de Klepel');
     // The tap goes to the earliest table.
@@ -99,31 +100,33 @@ describe('alerts', () => {
   it('pushes again when a table comes back later: a cancellation is a new chance', async () => {
     const { demo, notifier, radar, watch, advance } = setup();
     watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     demo.close('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     advance(QUIET_REOPEN_MS + MIN);
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(openPushes(notifier.sent)).toHaveLength(2);
   });
 
   it('stays quiet when a table flickers closed and open within the quiet window (someone else was mid-checkout)', async () => {
     const { demo, notifier, radar, watch, advance } = setup();
     watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     demo.close('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     demo.open('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(openPushes(notifier.sent)).toHaveLength(1);
-    // The flicker still shows up as a "taken" notice, but a silent one: no sound, no vibration.
-    expect(notifier.sent.filter((n) => n.title.startsWith('Taken')).map((n) => n.priority)).toEqual(['low']);
+    // The flicker still shows up as a "gone" notice, but a silent one: no sound, no vibration.
+    expect(notifier.sent.filter((n) => n.title.startsWith('Gone')).map((n) => n.priority)).toEqual(['low']);
   });
 
   it('keeps open tables open when a read fails, so a network blip does not cause a repeat push', async () => {
@@ -135,17 +138,18 @@ describe('alerts', () => {
     };
     const { store, notifier, radar, watch } = setup({ platform: flaky });
     const w = watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
 
     failing = true;
-    const report = await radar.tick();
+    const report = await radar.tick({ all: true });
     expect(report.failedRequests).toBeGreaterThan(0);
     expect(store.openSightings(w.id)).toHaveLength(1);
     expect(store.getRestaurant('klepel')!.lastError).toMatch(/timeout/);
 
     failing = false;
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(notifier.sent).toHaveLength(1);
   });
 
@@ -154,7 +158,7 @@ describe('alerts', () => {
     const w = watch();
     store.updateWatch(w.id, { status: 'paused' });
     demo.open('klepel', FRI, '19:30');
-    const report = await radar.tick();
+    const report = await radar.tick({ all: true });
     expect(report.requests).toBe(0);
     expect(notifier.sent).toHaveLength(0);
   });
@@ -163,7 +167,7 @@ describe('alerts', () => {
     const { radar, watch } = setup();
     watch({ weekdays: [5] });
     watch({ weekdays: [5], timeFrom: '12:00', timeTo: '14:00' });
-    const report = await radar.tick();
+    const report = await radar.tick({ all: true });
     // Two Fridays in the 14-day horizon; the second watch reuses the first watch's reads.
     expect(report.requests).toBe(2);
   });
@@ -175,7 +179,7 @@ describe('auto-book', () => {
     const w = watch({ autoBook: true });
     demo.open('klepel', FRI, '19:30');
     demo.open('klepel', SAT, '20:00');
-    const report = await radar.tick();
+    const report = await radar.tick({ all: true });
 
     expect(report.bookings).toBe(1);
     expect(demo.bookings).toEqual([{ restaurantId: 'klepel', date: FRI, time: '19:30', partySize: 2 }]);
@@ -184,7 +188,7 @@ describe('auto-book', () => {
 
     // More tables open. The watch already has its table, so nothing happens.
     demo.open('klepel', FRI, '20:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(demo.bookings).toHaveLength(1);
   });
 
@@ -205,7 +209,7 @@ describe('auto-book', () => {
       createdAt: START.toISOString(),
     });
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(demo.bookings).toHaveLength(0);
     expect(store.getWatch(w.id)!.status).toBe('booked');
   });
@@ -213,8 +217,9 @@ describe('auto-book', () => {
   it('only alerts when the server switch is off, even if the watch opted in', async () => {
     const { demo, notifier, radar, watch } = setup({ autoBookEnabled: false });
     watch({ autoBook: true });
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(demo.bookings).toHaveLength(0);
     expect(notifier.sent[0]!.title).toBe('Table open: Café de Klepel');
   });
@@ -223,18 +228,20 @@ describe('auto-book', () => {
     const { store, demo, notifier, radar, watch } = setup({ autoBookEnabled: true });
     store.saveSettings({ guestPhone: '' });
     watch({ autoBook: true });
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(demo.bookings).toHaveLength(0);
     expect(notifier.sent[0]!.body).toContain('missing in Settings');
   });
 
   it('only auto-books slots marked auto-bookable (never a SHORT sitting)', async () => {
     let booked = 0;
+    let open = false;
     const short: Platform = {
       id: 'formitable',
       label: 'test',
-      getSlots: async (_r, date) => (date === FRI ? [{ date, time: '19:30', open: true, autoBookable: false } as Slot] : []),
+      getSlots: async (_r, date) => (open && date === FRI ? [{ date, time: '19:30', open: true, autoBookable: false } as Slot] : []),
       bookingUrl: () => 'https://example.com/book',
       book: async () => {
         booked++;
@@ -243,7 +250,9 @@ describe('auto-book', () => {
     };
     const { notifier, radar, watch } = setup({ autoBookEnabled: true, platform: short });
     watch({ autoBook: true });
-    await radar.tick();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
+    open = true;
+    await radar.tick({ all: true });
     expect(booked).toBe(0);
     expect(notifier.sent[0]!.title).toBe('Table open: Café de Klepel');
   });
@@ -265,8 +274,9 @@ describe('auto-book', () => {
     const f = failingPlatform({ ok: false, error: 'Formitable answered 400: nope' });
     const { store, notifier, radar, watch } = setup({ autoBookEnabled: true, platform: f.platform });
     const w = watch({ autoBook: true });
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     f.demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(notifier.sent[0]!.title).toBe('Table open: Café de Klepel');
     expect(notifier.sent[0]!.body).toContain('Auto-book failed');
     expect(store.getWatch(w.id)!.status).toBe('watching');
@@ -278,7 +288,7 @@ describe('auto-book', () => {
     const { store, notifier, radar, watch, advance } = setup({ autoBookEnabled: true, platform: f.platform });
     const w = watch({ autoBook: true });
     f.demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(store.getWatch(w.id)!.status).toBe('paused');
     expect(notifier.sent.map((n) => n.title)).toContain('Check your email: Café de Klepel');
 
@@ -286,7 +296,7 @@ describe('auto-book', () => {
     store.updateWatch(w.id, { status: 'watching' });
     f.demo.open('klepel', SAT, '19:30');
     advance(5 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(f.attempts()).toBe(1);
     expect(store.getWatch(w.id)!.status).toBe('booked');
   });
@@ -307,7 +317,7 @@ describe('found in review (Codex, Oct 2026)', () => {
     const w = watch({ autoBook: true });
     pauseDuringRead = () => store.updateWatch(w.id, { status: 'paused' });
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(demo.bookings).toHaveLength(0);
     expect(notifier.sent).toHaveLength(0);
   });
@@ -325,14 +335,15 @@ describe('found in review (Codex, Oct 2026)', () => {
       },
     };
     const w = watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(sent).toHaveLength(0);
-    expect(store.openSightings(w.id)[0]!.notified).toBe(false);
+    expect(store.openSightings(w.id)[0]!.notified).toBe(0);
 
     up = true;
-    await radar.tick();
-    await radar.tick();
+    await radar.tick({ all: true });
+    await radar.tick({ all: true });
     expect(sent).toEqual(['Table open: Café de Klepel']);
   });
 
@@ -351,10 +362,10 @@ describe('found in review (Codex, Oct 2026)', () => {
     };
     const { radar, watch } = setup({ autoBookEnabled: true, platform });
     watch({ autoBook: true });
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(booked).toHaveLength(0);
     bookable = true;
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(booked).toEqual([`${FRI} 19:30`]);
   });
 
@@ -371,28 +382,31 @@ describe('found in review (Codex, Oct 2026)', () => {
     const { radar, watch, advance } = setup({ autoBookEnabled: true, platform });
     watch({ autoBook: true });
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(attempts).toBe(1);
   });
 
   it('tells the user when an auto-book on an already-pushed table goes wrong', async () => {
     let bookable = false;
+    let open = false;
     const platform: Platform = {
       id: 'formitable',
       label: 'test',
-      getSlots: async (_r, date) => (date === FRI ? [{ date, time: '19:30', open: true, autoBookable: bookable }] : []),
+      getSlots: async (_r, date) => (open && date === FRI ? [{ date, time: '19:30', open: true, autoBookable: bookable }] : []),
       bookingUrl: () => 'https://example.com/book',
       book: async () => ({ ok: false, uncertain: true, error: 'timeout' }),
     };
     const { notifier, radar, watch, store } = setup({ autoBookEnabled: true, platform });
     const w = watch({ autoBook: true });
-    await radar.tick(); // pushed as an alert, not bookable yet
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
+    open = true;
+    await radar.tick({ all: true }); // pushed as an alert, not bookable yet
     bookable = true;
-    await radar.tick();
+    await radar.tick({ all: true });
     // Exactly one warning, not a warning plus a second "problem" push.
     expect(notifier.sent.map((n) => n.title)).toEqual(['Table open: Café de Klepel', 'Check your email: Café de Klepel']);
     expect(store.getWatch(w.id)!.status).toBe('paused');
@@ -439,7 +453,7 @@ describe('found in review round 2 (Codex, Oct 2026)', () => {
     holder.store = store;
     const w = watch({ autoBook: true });
     demo.open('klepel', FRI, '19:30');
-    await radar.tick().catch(() => undefined);
+    await radar.tick({ all: true }).catch(() => undefined);
     expect(statusDuringRequest).toBe('uncertain');
     expect(store.hasLiveBooking(w.id, '2026-10-06')).toBe(true);
   });
@@ -460,7 +474,7 @@ describe('found in review round 2 (Codex, Oct 2026)', () => {
     holder.store = store;
     watch({ autoBook: true });
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(store.listBookings()[0]).toMatchObject({ status: 'needs_payment', reference: 'KEEP1', watchId: null });
     expect(notifier.sent.map((n) => n.title)).toContain('Held: Café de Klepel. Pay the deposit to confirm');
   });
@@ -474,11 +488,11 @@ describe('found in review round 2 (Codex, Oct 2026)', () => {
     const n = flakyNotifier(radar);
     watch({ autoBook: true });
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(store.listBookings()[0]!.notified).toBe(false);
     n.up();
-    await radar.tick();
-    await radar.tick();
+    await radar.tick({ all: true });
+    await radar.tick({ all: true });
     expect(n.sent.filter((t) => t.startsWith('Held:'))).toHaveLength(1);
   });
 
@@ -486,15 +500,16 @@ describe('found in review round 2 (Codex, Oct 2026)', () => {
     const { demo, radar, watch, advance } = setup();
     const n = flakyNotifier(radar);
     watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick(); // push fails
+    await radar.tick({ all: true }); // push fails
     demo.close('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     n.up();
     demo.open('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(n.sent).toEqual(['Table open: Café de Klepel']);
   });
 });
@@ -516,7 +531,7 @@ describe('found in review round 3 (Codex, Oct 2026)', () => {
     holder.store = store;
     watch({ autoBook: true, timeFrom: '19:00', timeTo: '21:00' });
     demo.open('klepel', FRI, '19:00');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(demo.bookings).toHaveLength(0);
   });
 
@@ -524,10 +539,10 @@ describe('found in review round 3 (Codex, Oct 2026)', () => {
     const { store, demo, radar, watch } = setup();
     const w = watch();
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(store.openSightings(w.id)).toHaveLength(1);
     store.updateWatch(w.id, { weekdays: [6] }); // Saturdays only
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(store.openSightings(w.id)).toHaveLength(0);
   });
 });
@@ -548,13 +563,13 @@ describe('calendar pre-check', () => {
     const { store, radar, watch } = setup({ platform });
     const w = watch();
     demo.open('klepel', FRI, '19:30');
-    const report = await radar.tick();
+    const report = await radar.tick({ all: true });
     expect(reads).toEqual([FRI]);
     expect(report.requests).toBe(2); // one calendar call, one day read
     expect(store.openSightings(w.id)).toHaveLength(1);
 
     calendar = new Set(); // the calendar now says Friday is gone
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(store.openSightings(w.id)).toHaveLength(0);
   });
 
@@ -571,7 +586,7 @@ describe('calendar pre-check', () => {
     const { radar, watch } = setup({ platform });
     watch({ weekdays: [5] });
     watch({ weekdays: [6] });
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(calls).toBe(1);
   });
 
@@ -590,7 +605,7 @@ describe('calendar pre-check', () => {
     };
     const { radar, watch } = setup({ platform });
     watch();
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(reads).toHaveLength(14);
   });
 });
@@ -602,26 +617,27 @@ describe('activity log', () => {
     const { store, demo, radar, watch, advance } = setup();
     watch();
     demo.open('klepel', FRI, '19:00');
-    await radar.tick(); // first check: this table was already open
+    await radar.tick({ all: true }); // first check: this table was already open
     demo.open('klepel', SAT, '20:00');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(kinds(store)).toEqual([`listed ${FRI} 19:00`, `opened ${SAT} 20:00`]);
   });
 
-  it('logs taken and back, and pushes a quiet notice when a table is taken', async () => {
+  it('logs taken and back, and quietly says when a table it pushed is gone', async () => {
     const { store, demo, notifier, radar, watch, advance } = setup();
     watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     demo.close('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     demo.open('klepel', FRI, '19:30');
     advance(30 * MIN);
-    await radar.tick();
-    expect(kinds(store)).toEqual([`listed ${FRI} 19:30`, `taken ${FRI} 19:30`, `reopened ${FRI} 19:30`]);
-    const taken = notifier.sent.find((n) => n.title === 'Taken: Café de Klepel')!;
+    await radar.tick({ all: true });
+    expect(kinds(store)).toEqual([`opened ${FRI} 19:30`, `taken ${FRI} 19:30`, `reopened ${FRI} 19:30`]);
+    const taken = notifier.sent.find((n) => n.title === 'Gone: Café de Klepel')!;
     expect(taken.priority).toBe('low');
     expect(taken.body).toContain('Fri 9 Oct 19:30');
   });
@@ -632,39 +648,40 @@ describe('activity log', () => {
     const flaky: Platform = { ...demo, getSlots: (r, d, p) => (failing ? Promise.reject(new Error('timeout')) : demo.getSlots(r, d, p)) };
     const { store, notifier, radar, watch, advance } = setup({ platform: flaky });
     watch();
+    await radar.tick({ all: true }); // first read: nothing open yet, so later tables are news
     demo.open('klepel', FRI, '19:30');
-    await radar.tick();
+    await radar.tick({ all: true });
     failing = true;
     demo.close('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     advance(2 * MIN);
-    await radar.tick(); // still failing: logged once, not on every check
+    await radar.tick({ all: true }); // still failing: logged once, not on every check
     failing = false;
     advance(2 * MIN);
-    await radar.tick();
-    expect(kinds(store)).toEqual([`listed ${FRI} 19:30`, 'error', `taken ${FRI} 19:30`, 'recovered']);
-    expect(notifier.sent.filter((n) => n.title.startsWith('Taken'))).toHaveLength(1);
+    await radar.tick({ all: true });
+    expect(kinds(store)).toEqual([`opened ${FRI} 19:30`, 'error', `taken ${FRI} 19:30`, 'recovered']);
+    expect(notifier.sent.filter((n) => n.title.startsWith('Gone'))).toHaveLength(1);
   });
 
   it('does not count a table as taken when its time has simply passed', async () => {
     const { store, demo, radar, watch, advance } = setup();
     watch({ timeFrom: '12:00', timeTo: '21:00' });
     demo.open('klepel', '2026-10-06', '12:30'); // today, 12:30; START is 12:00
-    await radar.tick();
+    await radar.tick({ all: true });
     demo.close('klepel', '2026-10-06', '12:30');
     advance(45 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(kinds(store)).toEqual(['listed 2026-10-06 12:30']);
   });
 
   it('logs a table on a day that just came into range as "listed", not as a new opening', async () => {
     const { store, demo, radar, watch, advance } = setup();
     watch();
-    await radar.tick();
+    await radar.tick({ all: true });
     demo.open('klepel', '2026-10-20', '19:30'); // 14 days from Tue 6 Oct: only in range from tomorrow
     advance(24 * 60 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(kinds(store)).toEqual(['listed 2026-10-20 19:30']);
   });
 
@@ -673,10 +690,10 @@ describe('activity log', () => {
     const flaky: Platform = { ...demo, getSlots: (r, d, p) => (d === SAT ? Promise.reject(new Error('timeout')) : demo.getSlots(r, d, p)) };
     const { store, radar, watch, advance } = setup({ platform: flaky });
     watch({ weekdays: [5, 6] });
-    await radar.tick(); // Friday reads fine and is empty; Saturday fails
+    await radar.tick({ all: true }); // Friday reads fine and is empty; Saturday fails
     demo.open('klepel', FRI, '19:30');
     advance(2 * MIN);
-    await radar.tick();
+    await radar.tick({ all: true });
     expect(kinds(store)).toEqual(['error', `opened ${FRI} 19:30`]);
   });
 
@@ -687,7 +704,7 @@ describe('activity log', () => {
       const stuck: Platform = { ...demo, openDates: undefined, getSlots: (r, d, p) => (d === FRI ? new Promise<Slot[]>(() => {}) : demo.getSlots(r, d, p)) };
       const { store, radar, watch } = setup({ platform: stuck });
       watch({ weekdays: [5] });
-      const done = radar.tick();
+      const done = radar.tick({ all: true });
       await vi.advanceTimersByTimeAsync(READ_LIMIT_MS * 3);
       const report = await done;
       expect(report.failedRequests).toBeGreaterThan(0);
@@ -707,7 +724,7 @@ describe('activity log', () => {
     };
     const { store, radar, watch } = setup({ platform: down });
     watch(); // 14 days to read
-    const report = await radar.tick();
+    const report = await radar.tick({ all: true });
     expect(calls).toBe(2); // the calendar and one day, not 15 timeouts
     expect(report.failedRequests).toBe(2);
     expect(store.listChecks(1)).toHaveLength(1);
@@ -716,9 +733,212 @@ describe('activity log', () => {
   it('writes one heartbeat row per check, even when nothing changes', async () => {
     const { store, radar, watch } = setup();
     watch();
-    await radar.tick();
-    await radar.tick();
+    await radar.tick({ all: true });
+    await radar.tick({ all: true });
     expect(store.listChecks(10)).toHaveLength(2);
     expect(store.listChecks(10)[0]).toMatchObject({ restaurants: 1, failedRequests: 0, tablesTaken: 0 });
+  });
+});
+
+describe('scarcity-aware polling', () => {
+  it('reads scarce restaurants often and plentiful ones rarely, never faster than the polite floor', () => {
+    expect(pollInterval(0, false, 120)).toBe(60_000); // a cancellation here is gone in minutes
+    expect(pollInterval(5, false, 120)).toBe(120_000);
+    expect(pollInterval(30, false, 120)).toBe(300_000); // one more table is not news
+    expect(pollInterval(0, true, 120)).toBe(240_000); // failing: back off, do not add to its trouble
+    expect(pollInterval(0, false, 10)).toBe(POLITE_FLOOR_SECONDS * 1000); // no setting can hammer a restaurant
+  });
+
+  it('only reads the restaurants that are due, so scarce ones get the request budget', async () => {
+    const demo = demoPlatform();
+    const reads: string[] = [];
+    const counting: Platform = { ...demo, openDates: undefined, getSlots: (r, d, p) => (reads.push(r.id), demo.getSlots(r, d, p)) };
+    const { radar, watch, advance } = setup({ platform: counting });
+    watch({ weekdays: [5] }); // Klepel: nothing open, scarce
+    watch({ restaurantId: 'alba', weekdays: [5], timeFrom: '12:00', timeTo: '23:00' });
+    for (const t of ['12:00', '12:15', '12:30', '12:45', '13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', '14:45']) {
+      demo.open('alba', FRI, t); // Alba: plenty open
+    }
+    await radar.tick({ all: true });
+    reads.length = 0;
+
+    advance(61_000);
+    await radar.tick();
+    expect(new Set(reads)).toEqual(new Set(['klepel'])); // Klepel due after 60 s, Alba not for 5 min
+
+    reads.length = 0;
+    advance(5 * MIN);
+    await radar.tick();
+    expect(new Set(reads)).toEqual(new Set(['klepel', 'alba']));
+  });
+
+  it('does not write a heartbeat row when nothing was due', async () => {
+    const { store, radar, watch } = setup();
+    watch();
+    await radar.tick({ all: true });
+    await radar.tick(); // same instant: nothing due
+    expect(store.listChecks(10)).toHaveLength(1);
+  });
+});
+
+describe('push hygiene', () => {
+  it('does not push the tables that were already open when the user started watching', async () => {
+    const { store, demo, notifier, radar, watch } = setup();
+    const w = watch();
+    demo.open('klepel', FRI, '19:30');
+    demo.open('klepel', SAT, '20:00');
+    await radar.tick({ all: true });
+    expect(notifier.sent).toHaveLength(0); // the dashboard shows them; a push would be noise
+    expect(store.openSightings(w.id).map((s) => s.notified)).toEqual([2, 2]);
+  });
+
+  it('pushes loudly when a scarce restaurant opens a table, quietly when it has plenty', async () => {
+    const { demo, notifier, radar, watch, advance } = setup();
+    watch();
+    await radar.tick({ all: true });
+    demo.open('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(notifier.sent.at(-1)!.priority).toBe('max'); // nothing was open: this is the news
+
+    for (const t of ['19:00', '19:15', '19:45']) demo.open('klepel', SAT, t);
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    demo.open('klepel', SAT, '20:00');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(notifier.sent.at(-1)!.priority).toBe('low'); // four open already: one more is not worth a sound
+  });
+
+  it('says "gone" only for tables it pushed loudly, not for every table that fills up', async () => {
+    const { demo, notifier, radar, watch, advance } = setup();
+    watch();
+    demo.open('klepel', SAT, '20:00'); // open from the start: never pushed
+    await radar.tick({ all: true });
+    demo.open('klepel', FRI, '19:30'); // new and scarce: pushed loudly
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    demo.close('klepel', SAT, '20:00');
+    demo.close('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    const gone = notifier.sent.filter((n) => n.title.startsWith('Gone'));
+    expect(gone).toHaveLength(1);
+    expect(gone[0]!.body).toContain('Fri 9 Oct 19:30');
+    expect(gone[0]!.body).not.toContain('Sat');
+  });
+
+  it('pushes a table on a day that just came into range: restaurants release new dates at midnight', async () => {
+    const { demo, notifier, radar, watch, advance } = setup();
+    watch();
+    await radar.tick({ all: true });
+    demo.open('klepel', '2026-10-20', '19:30'); // 14 days out from tomorrow
+    advance(24 * 60 * MIN);
+    await radar.tick({ all: true });
+    expect(notifier.sent.map((n) => n.title)).toEqual(['Table open: Café de Klepel']);
+  });
+});
+
+describe('auto-book guards', () => {
+  const bookedRow = (date: string, createdAt: string) => ({
+    watchId: null,
+    restaurantId: 'alba',
+    restaurantName: 'Alba',
+    date,
+    time: '19:00',
+    partySize: 2,
+    status: 'booked' as const,
+    reference: 'X1',
+    paymentUrl: null,
+    error: null,
+    createdAt,
+  });
+
+  it('never books a second table on an evening the user already has one', async () => {
+    const { store, demo, notifier, radar, watch, advance } = setup({ autoBookEnabled: true });
+    watch({ autoBook: true });
+    await radar.tick({ all: true });
+    store.addBooking({ ...bookedRow(FRI, '2026-09-01T10:00:00Z'), source: 'you' });
+    demo.open('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(demo.bookings).toHaveLength(0);
+    expect(notifier.sent.at(-1)!.body).toContain('already have a table that evening');
+  });
+
+  it('books another evening when the first open table falls on an evening the user already has', async () => {
+    const { store, demo, radar, watch, advance } = setup({ autoBookEnabled: true });
+    watch({ autoBook: true });
+    await radar.tick({ all: true });
+    store.addBooking({ ...bookedRow(FRI, '2026-09-01T10:00:00Z'), source: 'you' });
+    demo.open('klepel', FRI, '19:30'); // sorts first, but Friday is taken care of
+    demo.open('klepel', SAT, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(demo.bookings.map((b) => b.date)).toEqual([SAT]);
+  });
+
+  it('auto-books at most one table per 24 hours across all watches', async () => {
+    const { store, demo, notifier, radar, watch, advance } = setup({ autoBookEnabled: true });
+    watch({ autoBook: true });
+    await radar.tick({ all: true });
+    store.addBooking(bookedRow(SAT, new Date(START.getTime() - AUTOBOOK_WINDOW_MS / 2).toISOString())); // Seated booked 12 h ago
+    demo.open('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(demo.bookings).toHaveLength(0);
+    expect(notifier.sent.at(-1)!.body).toContain('last 24 hours');
+  });
+
+  it('a table the user booked themselves ("I got it") does not count toward the auto-book limit', async () => {
+    const { store, demo, radar, watch, advance } = setup({ autoBookEnabled: true });
+    watch({ autoBook: true });
+    await radar.tick({ all: true });
+    store.addBooking({ ...bookedRow(SAT, START.toISOString()), source: 'you' });
+    demo.open('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(demo.bookings).toHaveLength(1);
+  });
+});
+
+describe('gaps', () => {
+  it('logs the time Seated was not checking, so a quiet log is never mistaken for a quiet restaurant', () => {
+    const { store, radar } = setup();
+    radar.noteGap('2026-10-07T21:10:00Z', '2026-10-08T05:02:00Z', 'Seated was not checking');
+    const [e] = store.listEvents(1);
+    expect(e).toMatchObject({ kind: 'gap', restaurantId: '*' });
+    expect(e!.detail).toBe('Seated was not checking for 7 h 52 min, 23:10–07:02'); // Amsterdam time
+  });
+});
+
+describe('a restaurant that changes booking system', () => {
+  it('starts its watches fresh instead of logging every old open table as taken', async () => {
+    const { store, demo, radar, watch, advance } = setup();
+    const w = watch();
+    await radar.tick({ all: true });
+    demo.open('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick({ all: true });
+    expect(store.openSightings(w.id)).toHaveLength(1);
+
+    // Klepel moves from Formitable to Zenchef (as it did in Oct 2026).
+    const moved = store.seedRestaurants([
+      { id: 'klepel', name: 'Café de Klepel', platform: 'zenchef', platformUid: '382832', website: null, city: 'Amsterdam', address: null },
+    ]);
+    expect(moved).toEqual(['klepel']);
+    expect(store.openSightings(w.id)).toHaveLength(0);
+    expect(store.watchCheckedDates(w.id).size).toBe(0); // the next read is a first read: no pushes, no "taken"
+    expect(store.listEvents(10).filter((e) => e.kind === 'taken')).toHaveLength(0);
+  });
+
+  it('keeps the watch state when only the id changed (Tebi rotates ids on every start)', () => {
+    const { store, watch } = setup();
+    const w = watch();
+    store.addSighting(w.id, FRI, '19:30', 'https://example.com', START.toISOString());
+    store.seedRestaurants([
+      { id: 'klepel', name: 'Café de Klepel', platform: 'formitable', platformUid: 'ffffffff', website: null, city: 'Amsterdam', address: null },
+    ]);
+    expect(store.openSightings(w.id)).toHaveLength(1);
   });
 });

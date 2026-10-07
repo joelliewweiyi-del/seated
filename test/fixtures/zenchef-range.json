@@ -1,0 +1,529 @@
+[
+  {
+    "date": "2026-10-05",
+    "bookable_from": null,
+    "bookable_to": null,
+    "isOpen": false,
+    "shifts": []
+  },
+  {
+    "date": "2026-10-06",
+    "bookable_from": "2026-07-08 12:00:00",
+    "bookable_to": "2026-10-06 21:00:00",
+    "isOpen": false,
+    "shifts": [
+      {
+        "id": 494748,
+        "name": "Lunch",
+        "name_translations": {
+          "en": "Lunch",
+          "nl": "Lunch"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": true,
+        "bookable_from": "2026-07-08 12:00:00",
+        "bookable_to": "2026-10-06 13:45:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118785,
+            "possible_guests": [],
+            "bookable_from": "2026-07-08 12:00:00",
+            "bookable_to": "2026-10-06 13:45:00"
+          }
+        ]
+      },
+      {
+        "id": 494747,
+        "name": "Diner",
+        "name_translations": {
+          "en": "Dinner",
+          "nl": "Diner"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": true,
+        "bookable_from": "2026-07-08 18:00:00",
+        "bookable_to": "2026-10-06 21:00:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118787,
+            "possible_guests": [],
+            "bookable_from": "2026-07-08 18:00:00",
+            "bookable_to": "2026-10-06 18:15:00"
+          },
+          {
+            "id": 118786,
+            "possible_guests": [],
+            "bookable_from": "2026-07-08 18:00:00",
+            "bookable_to": "2026-10-06 21:00:00"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-07",
+    "bookable_from": "2026-07-09 12:00:00",
+    "bookable_to": "2026-10-07 21:00:00",
+    "isOpen": true,
+    "shifts": [
+      {
+        "id": 494748,
+        "name": "Lunch",
+        "name_translations": {
+          "en": "Lunch",
+          "nl": "Lunch"
+        },
+        "possible_guests": [
+          2
+        ],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-09 12:00:00",
+        "bookable_to": "2026-10-07 13:45:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118785,
+            "possible_guests": [
+              2
+            ],
+            "bookable_from": "2026-07-09 12:00:00",
+            "bookable_to": "2026-10-07 13:45:00"
+          }
+        ]
+      },
+      {
+        "id": 494747,
+        "name": "Diner",
+        "name_translations": {
+          "en": "Dinner",
+          "nl": "Diner"
+        },
+        "possible_guests": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-09 18:00:00",
+        "bookable_to": "2026-10-07 21:00:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118787,
+            "possible_guests": [],
+            "bookable_from": "2026-07-09 18:00:00",
+            "bookable_to": "2026-10-07 18:15:00"
+          },
+          {
+            "id": 118786,
+            "possible_guests": [
+              2,
+              3,
+              4,
+              5
+            ],
+            "bookable_from": "2026-07-09 18:00:00",
+            "bookable_to": "2026-10-07 21:00:00"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-08",
+    "bookable_from": "2026-07-10 12:00:00",
+    "bookable_to": "2026-10-08 21:00:00",
+    "isOpen": true,
+    "shifts": [
+      {
+        "id": 494748,
+        "name": "Lunch",
+        "name_translations": {
+          "en": "Lunch",
+          "nl": "Lunch"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-10 12:00:00",
+        "bookable_to": "2026-10-08 13:45:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118785,
+            "possible_guests": [],
+            "bookable_from": "2026-07-10 12:00:00",
+            "bookable_to": "2026-10-08 13:45:00"
+          }
+        ]
+      },
+      {
+        "id": 494747,
+        "name": "Diner",
+        "name_translations": {
+          "en": "Dinner",
+          "nl": "Diner"
+        },
+        "possible_guests": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-10 18:00:00",
+        "bookable_to": "2026-10-08 21:00:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118787,
+            "possible_guests": [],
+            "bookable_from": "2026-07-10 18:00:00",
+            "bookable_to": "2026-10-08 18:15:00"
+          },
+          {
+            "id": 118786,
+            "possible_guests": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "bookable_from": "2026-07-10 18:00:00",
+            "bookable_to": "2026-10-08 21:00:00"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-09",
+    "bookable_from": "2026-07-11 12:00:00",
+    "bookable_to": "2026-10-09 21:00:00",
+    "isOpen": true,
+    "shifts": [
+      {
+        "id": 500609,
+        "name": "Lunch",
+        "name_translations": {
+          "en": "Lunch",
+          "nl": "Lunch"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-11 12:00:00",
+        "bookable_to": "2026-10-09 13:45:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118785,
+            "possible_guests": [],
+            "bookable_from": "2026-07-11 12:00:00",
+            "bookable_to": "2026-10-09 13:45:00"
+          }
+        ]
+      },
+      {
+        "id": 499178,
+        "name": "Diner",
+        "name_translations": {
+          "en": "Dinner",
+          "nl": "Diner"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-11 18:00:00",
+        "bookable_to": "2026-10-09 21:00:00",
+        "is_voucher_codes_active": true,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118787,
+            "possible_guests": [],
+            "bookable_from": "2026-07-11 18:00:00",
+            "bookable_to": "2026-10-09 18:15:00"
+          },
+          {
+            "id": 118786,
+            "possible_guests": [],
+            "bookable_from": "2026-07-11 18:00:00",
+            "bookable_to": "2026-10-09 21:00:00"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-10",
+    "bookable_from": "2026-07-12 12:00:00",
+    "bookable_to": "2026-10-10 21:00:00",
+    "isOpen": true,
+    "shifts": [
+      {
+        "id": 500609,
+        "name": "Lunch",
+        "name_translations": {
+          "en": "Lunch",
+          "nl": "Lunch"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-12 12:00:00",
+        "bookable_to": "2026-10-10 13:45:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118785,
+            "possible_guests": [],
+            "bookable_from": "2026-07-12 12:00:00",
+            "bookable_to": "2026-10-10 13:45:00"
+          }
+        ]
+      },
+      {
+        "id": 499178,
+        "name": "Diner",
+        "name_translations": {
+          "en": "Dinner",
+          "nl": "Diner"
+        },
+        "possible_guests": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "waitlist_possible_guests": [],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-12 18:00:00",
+        "bookable_to": "2026-10-10 21:00:00",
+        "is_voucher_codes_active": true,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118787,
+            "possible_guests": [],
+            "bookable_from": "2026-07-12 18:00:00",
+            "bookable_to": "2026-10-10 18:15:00"
+          },
+          {
+            "id": 118786,
+            "possible_guests": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "bookable_from": "2026-07-12 18:00:00",
+            "bookable_to": "2026-10-10 21:00:00"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-11",
+    "bookable_from": null,
+    "bookable_to": null,
+    "isOpen": false,
+    "shifts": []
+  },
+  {
+    "date": "2026-10-12",
+    "bookable_from": "2026-07-14 12:00:00",
+    "bookable_to": "2026-10-12 21:00:00",
+    "isOpen": true,
+    "shifts": [
+      {
+        "id": 494748,
+        "name": "Lunch",
+        "name_translations": {
+          "en": "Lunch",
+          "nl": "Lunch"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-14 12:00:00",
+        "bookable_to": "2026-10-12 13:45:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118785,
+            "possible_guests": [],
+            "bookable_from": "2026-07-14 12:00:00",
+            "bookable_to": "2026-10-12 13:45:00"
+          }
+        ]
+      },
+      {
+        "id": 494747,
+        "name": "Diner",
+        "name_translations": {
+          "en": "Dinner",
+          "nl": "Diner"
+        },
+        "possible_guests": [],
+        "waitlist_possible_guests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "is_offer_required": true,
+        "offer_required_from_pax": null,
+        "closed": false,
+        "bookable_from": "2026-07-14 18:00:00",
+        "bookable_to": "2026-10-12 21:00:00",
+        "is_voucher_codes_active": false,
+        "is_voucher_codes_limit_reached": false,
+        "offers": [
+          {
+            "id": 118787,
+            "possible_guests": [],
+            "bookable_from": "2026-07-14 18:00:00",
+            "bookable_to": "2026-10-12 18:15:00"
+          },
+          {
+            "id": 118786,
+            "possible_guests": [],
+            "bookable_from": "2026-07-14 18:00:00",
+            "bookable_to": "2026-10-12 21:00:00"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -34,7 +34,10 @@ export function RadarPage({ state, refresh }: { state: State; refresh: () => Pro
   const rank = (w: Watch) =>
     w.status === 'watching' && w.openTables.length > 0 ? 0 : w.status === 'watching' ? 1 : w.status === 'paused' ? 2 : 3;
   const sorted = [...watches].sort((a, b) => rank(a) - rank(b) || a.id - b.id);
-  const history = recent.filter((s) => s.goneAt);
+  // A table you booked is not "gone": leave it out, so it does not look as if someone else took it.
+  const yours = new Set(bookings.filter((b) => b.status !== 'failed').map((b) => `${b.watchId} ${b.date} ${b.time}`));
+  const history = recent.filter((s) => s.goneAt && !yours.has(`${s.watchId} ${s.date} ${s.time}`));
+  const watching = new Set(watches.filter((w) => w.status === 'watching').map((w) => w.id));
 
   return (
     <div className="space-y-10">
@@ -80,19 +83,26 @@ export function RadarPage({ state, refresh }: { state: State; refresh: () => Pro
                     </p>
                     <p className="mt-0.5 text-xs text-stone-500">Spotted {ago(table.firstSeenAt)}</p>
                   </div>
-                  <a
-                    href={table.bookingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg bg-copper-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-copper-700 sm:py-1.5"
-                  >
-                    Book now →
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <GotIt watchId={watch.id} date={table.date} time={table.time} refresh={refresh} />
+                    <a
+                      href={table.bookingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 rounded-lg bg-copper-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-copper-700 sm:flex-none sm:py-1.5"
+                    >
+                      Book now →
+                    </a>
+                  </div>
                 </li>
               ))}
             </ul>
           </Card>
-          <p className="mt-2 text-xs text-stone-500">Booking opens the restaurant's own page with your date, time and party size filled in.</p>
+          <p className="mt-2 text-xs text-stone-500">
+            Book now opens the restaurant's own booking page. Formitable and SevenRooms fill in your date and time; on Tebi and
+            Guestplan you pick them yourself. Got the table? Tap <strong className="font-medium">I got it</strong> and Seated stops
+            that watch.
+          </p>
         </section>
       )}
 
@@ -144,15 +154,20 @@ export function RadarPage({ state, refresh }: { state: State; refresh: () => Pro
           <SectionLabel>
             <span id="history">Recently gone</span>
           </SectionLabel>
-          <p className="-mt-1 mb-2 text-xs text-stone-500">How long tables stayed open before someone took them.</p>
+          <p className="-mt-1 mb-2 text-xs text-stone-500">
+            How long tables stayed open before someone took them. Was it you? Tap <strong className="font-medium">I got it</strong>.
+          </p>
           <Card>
             <ul className="divide-y divide-stone-100 text-sm">
               {history.slice(0, 12).map((s) => (
-                <li key={s.id} className="flex flex-wrap justify-between gap-x-4 px-4 py-2">
+                <li key={s.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2" data-testid="gone-row">
                   <span className="text-ink">
                     {s.restaurantName} · {dayLabel(s.date)} <span className="font-mono">{s.time}</span>
                   </span>
-                  <span className="text-stone-500">open for {duration(s.firstSeenAt, s.goneAt!)}</span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-stone-500">open for {duration(s.firstSeenAt, s.goneAt!)}</span>
+                    {watching.has(s.watchId) && <GotIt watchId={s.watchId} date={s.date} time={s.time} refresh={refresh} />}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -250,13 +265,45 @@ function WatchRow({ watch: w, refresh, horizonHint }: { watch: Watch; refresh: (
   );
 }
 
+/** "I got it": the user booked this table. Asks once, inline, because it stops the watch. */
+function GotIt({ watchId, date, time, refresh }: { watchId: number; date: string; time: string; refresh: () => Promise<void> }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  if (!asking) {
+    return (
+      <Button onClick={() => setAsking(true)} className="whitespace-nowrap">
+        I got it
+      </Button>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5 text-sm">
+      <span className="whitespace-nowrap text-stone-600">Stop this watch?</span>
+      <Button
+        variant="primary"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          await api.gotIt(watchId, date, time).finally(() => setBusy(false));
+          await refresh();
+        }}
+      >
+        Yes
+      </Button>
+      <Button variant="ghost" onClick={() => setAsking(false)}>
+        No
+      </Button>
+    </span>
+  );
+}
+
 function BookingsSection({ bookings, refresh }: { bookings: Booking[]; refresh: () => Promise<void> }) {
   const shown = bookings.filter((b) => b.status !== 'failed').slice(0, 10);
   if (shown.length === 0) return null;
   return (
     <section aria-labelledby="bookings">
       <SectionLabel>
-        <span id="bookings">Booked by Seated</span>
+        <span id="bookings">Your tables</span>
       </SectionLabel>
       <Card>
         <ul className="divide-y divide-stone-100">
@@ -268,7 +315,7 @@ function BookingsSection({ bookings, refresh }: { bookings: Booking[]; refresh: 
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-ink">{b.restaurantName}</p>
                 <p className="text-sm text-stone-600">
-                  {dayLabel(b.date)} · <span className="font-mono">{b.time}</span> · {b.partySize} people
+                  {dayLabel(b.date)} · <span className="font-mono">{b.time}</span> · <span className="whitespace-nowrap">{b.partySize} people</span>
                 </p>
                 {b.reference && <p className="font-mono text-xs text-stone-500">Ref {b.reference}</p>}
                 {b.status === 'uncertain' && (
@@ -277,7 +324,7 @@ function BookingsSection({ bookings, refresh }: { bookings: Booking[]; refresh: 
                   </p>
                 )}
               </div>
-              {b.status === 'booked' && <Badge tone="green">Confirmed</Badge>}
+              {b.status === 'booked' && <Badge tone="green">{b.source === 'you' ? 'Booked by you' : 'Booked by Seated'}</Badge>}
               {b.status === 'needs_payment' && b.paymentUrl && (
                 <a href={b.paymentUrl} target="_blank" rel="noreferrer" className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white">
                   Pay deposit →

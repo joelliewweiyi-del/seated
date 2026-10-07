@@ -7,9 +7,8 @@ import { config } from './config.js';
 import { Store } from './db.js';
 import { createApi } from './api.js';
 import { Radar } from './radar.js';
-import { formitable } from './platforms/formitable.js';
 import { demoPlatform } from './platforms/demo.js';
-import { tebi } from './platforms/tebi.js';
+import { createPlatforms, demoPlatforms } from './platforms/index.js';
 import type { Platform } from './platforms/types.js';
 import { memoryNotifier, ntfyNotifier } from './notify.js';
 import { loadCuratedRestaurants } from './restaurants.js';
@@ -20,8 +19,8 @@ store.seedRestaurants(loadCuratedRestaurants());
 
 const demo = config.demo ? demoPlatform() : null;
 const platforms: Record<string, Platform> = demo
-  ? { formitable: demo, tebi: { ...demo, id: 'tebi', label: 'Tebi (demo)', book: undefined } }
-  : { formitable: formitable(), tebi: tebi({ onUidChange: (id, uid) => store.updateRestaurantUid(id, uid) }) };
+  ? demoPlatforms(demo)
+  : createPlatforms({ onUidChange: (id, uid) => store.updateRestaurantUid(id, uid) });
 const notifier = demo || config.observe ? memoryNotifier({ quiet: config.observe }) : ntfyNotifier(() => store.getSettings());
 const radar = new Radar({
   store,
@@ -29,28 +28,65 @@ const radar = new Radar({
   notifier,
   horizonDays: config.horizonDays,
   autoBookEnabled: config.autoBookEnabled,
+  pollSeconds: config.pollSeconds,
 });
 
 // ── the check loop ─────────────────────────────────────────────────────────
+// The loop wakes every ~15 s and reads the restaurants that are due. Each restaurant has its own
+// interval (scarce ones every minute, plentiful ones every few minutes; see pollInterval in radar.ts).
+const LOOP_MS = 15_000;
+/** A loop that wakes this late was not running in between: the process stalled or the computer slept. */
+const GAP_MS = 5 * 60_000;
 let nextCheckAt: number | null = null;
+let lastLoopAt = Date.now();
+let lastPingAt = 0;
+/** Did the last check that read anything get at least one answer? Idle loops keep this, so they cannot hide an outage. */
+let lastReadsOk = true;
+
+/** Optional dead man's switch: at most one ping a minute while the loop runs. If the pings stop, the service (e.g. healthchecks.io) alerts you. */
+async function pingHealthcheck(): Promise<void> {
+  if (!config.healthcheckUrl || Date.now() - lastPingAt < 60_000) return;
+  lastPingAt = Date.now();
+  await fetch(config.healthcheckUrl, { signal: AbortSignal.timeout(10_000) }).catch((err: Error) =>
+    console.warn(`[health] ping failed: ${err.message}`),
+  );
+}
 
 function scheduleNext(delayMs: number): void {
   nextCheckAt = Date.now() + delayMs;
   setTimeout(async () => {
     nextCheckAt = null;
+    const now = Date.now();
+    if (now - lastLoopAt > GAP_MS) {
+      radar.noteGap(new Date(lastLoopAt).toISOString(), new Date(now).toISOString(), 'Seated was paused (computer asleep?)');
+    }
+    lastLoopAt = now;
     try {
       const r = await radar.tick();
-      const failed = r.failedRequests ? `, ${r.failedRequests} failed` : '';
-      console.log(
-        `[radar] ${r.watches} watches, ${r.requests} requests${failed}, ${r.newTables} new tables, ${r.bookings} booked`,
-      );
+      if (r.restaurants > 0) {
+        const failed = r.failedRequests ? `, ${r.failedRequests} failed` : '';
+        console.log(
+          `[radar] ${r.restaurants} restaurants, ${r.requests} requests${failed}, ${r.newTables} new tables, ${r.bookings} booked`,
+        );
+      }
+      // An idle loop (all watches paused, or nothing due) pings too, unless the last real reads all failed.
+      if (r.restaurants > 0) lastReadsOk = r.requests === 0 || r.failedRequests < r.requests;
+      if (lastReadsOk) await pingHealthcheck();
     } catch (err) {
       console.error('[radar] check crashed:', err);
     }
-    // ±10% jitter so we never hit the platform on an exact beat.
-    const base = config.pollSeconds * 1000;
-    scheduleNext(base * (0.9 + Math.random() * 0.2));
+    lastLoopAt = Date.now();
+    // ±20% jitter so we never hit a platform on an exact beat.
+    scheduleNext(LOOP_MS * (0.8 + Math.random() * 0.4));
   }, delayMs);
+}
+
+/** On start: if the last check is long ago, Seated was not running. Say so in the log. */
+function noteDowntime(): void {
+  const [last] = store.listChecks(1);
+  if (last && Date.now() - Date.parse(last.finishedAt) > GAP_MS) {
+    radar.noteGap(last.finishedAt, new Date().toISOString(), 'Seated was not running');
+  }
 }
 
 // ── demo data ──────────────────────────────────────────────────────────────
@@ -73,7 +109,9 @@ async function seedDemo(): Promise<void> {
 const app = new Hono();
 
 if (config.password) {
-  app.use('*', basicAuth({ username: 'seated', password: config.password }));
+  const auth = basicAuth({ username: 'seated', password: config.password });
+  // The health check stays open so uptime monitors and Docker can reach it. It shows no personal data.
+  app.use('*', (c, next) => (c.req.path === '/api/health' ? next() : auth(c, next)));
 } else if (config.host !== '127.0.0.1' && config.host !== 'localhost') {
   console.warn('[seated] Listening beyond localhost without SEATED_PASSWORD: the API answers only requests to localhost.');
 }
@@ -111,7 +149,7 @@ serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => 
       : '';
   console.log(`[seated] dashboard on http://${config.host}:${info.port}${mode}`);
   console.log(
-    `[seated] checks every ${config.pollSeconds}s, auto-book ${config.autoBookEnabled ? 'ENABLED' : 'off'}`,
+    `[seated] reads each restaurant every ${Math.max(60, config.pollSeconds / 2)}-${config.pollSeconds * 2.5}s (scarce ones most often), auto-book ${config.autoBookEnabled ? 'ENABLED' : 'off'}`,
   );
 });
 
@@ -119,5 +157,6 @@ if (config.demo) {
   if (config.seedDemo) await seedDemo();
   // Demo mode checks only when you press "Check now", so tests stay deterministic.
 } else {
+  noteDowntime();
   scheduleNext(3000);
 }

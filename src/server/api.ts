@@ -3,7 +3,7 @@ import type { Store, Watch, WatchInput, WatchStatus } from './db.js';
 import type { Platform } from './platforms/types.js';
 import type { DemoPlatform } from './platforms/demo.js';
 import type { Notifier } from './notify.js';
-import type { Radar } from './radar.js';
+import { pollInterval, type Radar } from './radar.js';
 import { resolveFormitableUid, slugify } from './restaurants.js';
 import { addDays, localDate } from './time.js';
 import { coversPrime, isPrime, isPrimeDay, PRIME } from '../shared/prime.js';
@@ -68,6 +68,9 @@ function parseWatch(body: Record<string, unknown>, partial: boolean): Partial<Wa
   return out;
 }
 
+/** No finished check for this long (with watches to check) means the radar has stopped. */
+const HEALTH_STALE_SECONDS = 6 * 60;
+
 interface BoardRow {
   id: string;
   name: string;
@@ -80,10 +83,13 @@ interface BoardRow {
   cells: Array<{ date: string; times: string[]; bookingUrl: string | null; known: boolean }>;
   free: number;
   unknown: number;
+  /** Seconds between reads of this restaurant right now (scarce restaurants are read more often). */
+  everySeconds: number;
   lastChange: { at: string; kind: string; date: string; time: string } | null;
 }
 
 export function createApi(d: ApiDeps): Hono {
+  const startedAt = Date.now();
   const { store } = d;
   const api = new Hono();
 
@@ -111,6 +117,22 @@ export function createApi(d: ApiDeps): Hono {
 
   const supported = (platform: string, uid: string | null) => Boolean(d.platforms[platform] && uid);
 
+  // For uptime monitors and Docker: 503 when the radar has stopped checking or a check hangs.
+  api.get('/health', (c) => {
+    const watching = store.listWatches('watching').length;
+    const [last] = store.listChecks(1);
+    const now = Date.now();
+    const ageSeconds = last ? Math.round((now - Date.parse(last.finishedAt)) / 1000) : null;
+    const hungSeconds = d.radar.progressAt ? Math.round((now - Date.parse(d.radar.progressAt)) / 1000) : 0;
+    const moving = d.radar.progressAt !== null && hungSeconds <= 300; // a long check that still makes progress
+    // The slowest schedule (many open tables) reads a restaurant every 2.5 × POLL_SECONDS; allow that plus a minute.
+    const staleAfter = Math.max(HEALTH_STALE_SECONDS, Math.round(pollInterval(Infinity, false, d.pollSeconds) / 1000) + 60);
+    const sinceSeconds = ageSeconds ?? Math.round((now - startedAt) / 1000); // no check yet: count from start
+    const stale = watching > 0 && !d.demo && sinceSeconds > staleAfter && !moving;
+    const ok = !stale && hungSeconds <= 300;
+    return c.json({ ok, watching, lastCheckAt: last?.finishedAt ?? null, ageSeconds, secondsWithoutProgress: hungSeconds }, ok ? 200 : 503);
+  });
+
   // The live board: hard-to-book restaurants with a prime-time watch, ranked by free prime tables (fewest first).
   api.get('/board', (c) => {
     const today = localDate(new Date());
@@ -132,6 +154,7 @@ export function createApi(d: ApiDeps): Hono {
         cells: dates.map((date) => ({ date, times: [] as string[], bookingUrl: null as string | null, known: false })),
         free: 0,
         unknown: 0,
+        everySeconds: Math.round(d.radar.intervalFor(r.id) / 1000),
         lastChange: null as { at: string; kind: string; date: string; time: string } | null,
       };
       const read = store.watchCheckedDates(w.id);
@@ -161,9 +184,9 @@ export function createApi(d: ApiDeps): Hono {
       (a, b) => neverRead(a) - neverRead(b) || a.free - b.free || (b.hot ?? 0) - (a.hot ?? 0) || a.name.localeCompare(b.name),
     );
     const feed = events
-      .filter((e) => rows.has(e.restaurantId) && (e.kind === 'error' || e.kind === 'recovered' || primeChange(e)))
+      .filter((e) => e.kind === 'gap' || (rows.has(e.restaurantId) && (e.kind === 'error' || e.kind === 'recovered' || primeChange(e))))
       .slice(0, 40)
-      .map((e) => ({ ...e, restaurantName: rows.get(e.restaurantId)!.name }));
+      .map((e) => ({ ...e, restaurantName: rows.get(e.restaurantId)?.name ?? 'Seated' }));
     const [lastCheck] = store.listChecks(1);
     return c.json({
       dates,
@@ -314,13 +337,104 @@ export function createApi(d: ApiDeps): Hono {
     return ok ? c.body(null, 204) : c.json({ error: 'Watch not found.' }, 404);
   });
 
+  // The user booked a table themselves. Counts as a win, and stops the watch like any booking would.
+  api.post('/watches/:id/got-it', async (c) => {
+    const id = Number(c.req.param('id'));
+    const body = await c.req.json<{ date?: unknown; time?: unknown }>();
+    const watch = store.getWatch(id);
+    if (!watch) return c.json({ error: 'Watch not found.' }, 404);
+    if (watch.status === 'booked') return c.json({ error: 'This watch already has its table.' }, 409);
+    if (typeof body.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequest('Date must look like 2026-10-09.');
+    if (typeof body.time !== 'string' || !/^\d{2}:\d{2}$/.test(body.time)) throw new BadRequest('Time must look like 19:30.');
+    const restaurant = store.getRestaurant(watch.restaurantId);
+    const booking = store.addBooking({
+      watchId: id,
+      restaurantId: watch.restaurantId,
+      restaurantName: restaurant?.name ?? watch.restaurantId,
+      date: body.date,
+      time: body.time,
+      partySize: watch.partySize,
+      status: 'booked',
+      reference: null,
+      paymentUrl: null,
+      error: null,
+      createdAt: new Date().toISOString(),
+      source: 'you',
+      notified: true, // the user told us; no push needed
+    });
+    store.updateWatch(id, { status: 'booked' });
+    store.closeAllSightings(id, new Date().toISOString());
+    return c.json(booking);
+  });
+
+  // How the radar is doing: openings per restaurant, how long they last, and what turned into a table.
+  api.get('/stats', (c) => {
+    const days = Math.min(90, Math.max(1, Number(c.req.query('days') ?? 7) || 7));
+    const since = new Date(Date.now() - days * 86_400_000).toISOString();
+    const restaurants = new Map(store.listRestaurants().map((r) => [r.id, r]));
+    const events = store.listEvents(20_000).filter((e) => e.at >= since).reverse(); // oldest first
+    const rows = new Map<string, { id: string; name: string; platform: string; openings: number; lifetimes: number[]; everySeconds: number }>();
+    const row = (id: string) => {
+      let r = rows.get(id);
+      if (!r) {
+        const restaurant = restaurants.get(id);
+        r = { id, name: restaurant?.name ?? id, platform: restaurant?.platform ?? '?', openings: 0, lifetimes: [], everySeconds: Math.round(d.radar.intervalFor(id) / 1000) };
+        rows.set(id, r);
+      }
+      return r;
+    };
+    for (const w of store.listWatches('watching')) row(w.restaurantId);
+    // Pair each opening with the moment the same table was taken, to learn how long tables last.
+    const openSince = new Map<string, string>();
+    for (const e of events) {
+      const key = `${e.watchId}|${e.date}|${e.time}`;
+      if (e.kind === 'opened' || e.kind === 'reopened') {
+        row(e.restaurantId).openings++;
+        openSince.set(key, e.at);
+      } else if (e.kind === 'taken' && openSince.has(key)) {
+        row(e.restaurantId).lifetimes.push((Date.parse(e.at) - Date.parse(openSince.get(key)!)) / 60_000);
+        openSince.delete(key);
+      }
+    }
+    const median = (xs: number[]) => {
+      if (xs.length === 0) return null;
+      const s = [...xs].sort((a, b) => a - b);
+      return Math.round(s[Math.floor(s.length / 2)]!);
+    };
+    // Only confirmed tables are wins: an uncertain or unpaid booking may not exist.
+    const bookings = store.listBookings(500).filter((b) => b.createdAt >= since && b.status === 'booked');
+    const pushed = store.db
+      .prepare('SELECT COUNT(*) AS n FROM sightings WHERE first_seen_at >= ? AND notified = 1')
+      .get(since) as { n: number };
+    return c.json({
+      days,
+      since,
+      restaurants: [...rows.values()]
+        .map(({ lifetimes, ...r }) => {
+          const medianMinutes = median(lifetimes);
+          return {
+            ...r,
+            gone: lifetimes.length,
+            medianMinutes,
+            fastestMinutes: lifetimes.length ? Math.round(Math.min(...lifetimes)) : null,
+            // Tables vanish faster than we look: the user misses some, and a shorter interval would help.
+            tooSlow: medianMinutes !== null && medianMinutes * 60 < r.everySeconds,
+          };
+        })
+        .sort((a, b) => b.openings - a.openings || a.name.localeCompare(b.name)),
+      loudAlerts: pushed.n,
+      bookedBySeated: bookings.filter((b) => b.source === 'seated').length,
+      bookedByYou: bookings.filter((b) => b.source === 'you').length,
+    });
+  });
+
   // The user checked their email after an unclear auto-book: no booking was made.
   api.post('/bookings/:id/not-booked', (c) => {
     const ok = store.resolveUncertainBooking(Number(c.req.param('id')));
     return ok ? c.json({ ok }) : c.json({ error: 'Only an unclear booking can be marked as not booked.' }, 400);
   });
 
-  api.post('/check', async (c) => c.json(await d.radar.tick()));
+  api.post('/check', async (c) => c.json(await d.radar.tick({ all: true })));
 
   api.put('/settings', async (c) => c.json(store.saveSettings(await c.req.json())));
 

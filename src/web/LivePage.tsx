@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, type Board, type EventKind } from './api';
+import { api, type Board, type EventKind, type Stats } from './api';
 import { ago, Badge, Card, dayLabel, SectionLabel } from './ui';
 import { PRIME } from '../shared/prime';
+import { platformName } from '../shared/platforms';
 
 const TOP = 10;
 /** No finished check for this long means the radar has probably stopped. */
 const STALE_MS = 6 * 60_000;
 const LEVEL = ['', 'Hard to book', 'Very hard to book', 'Nearly impossible'];
-const PLATFORM: Record<string, string> = { tebi: 'Tebi', formitable: 'Formitable', demo: 'Demo' };
 const KIND: Partial<Record<EventKind, { label: string; tone: 'amber' | 'stone' | 'red' | 'green' }>> = {
   opened: { label: 'Opened', tone: 'amber' },
   reopened: { label: 'Back', tone: 'amber' },
   taken: { label: 'Taken', tone: 'stone' },
   error: { label: 'Error', tone: 'red' },
   recovered: { label: 'Recovered', tone: 'green' },
+  gap: { label: 'Not checking', tone: 'red' },
 };
+
+/** "every 1 min", "every 5 min", "every 90 s". */
+const every = (seconds: number) => (seconds === 60 ? 'every minute' : seconds % 60 === 0 ? `every ${seconds / 60} min` : `every ${seconds} s`);
 const VERB: Partial<Record<EventKind, string>> = { opened: 'Opened', reopened: 'Back', taken: 'Taken' };
 
 const shortDay = (date: string) => dayLabel(date).split(' ').slice(0, 2).join(' '); // "Fri 9"
@@ -34,6 +38,7 @@ function Difficulty({ level }: { level: number }) {
 /** Hard-to-book restaurants, ranked live by free prime-time tables. Updates the moment the radar sees a change. */
 export function LivePage() {
   const [board, setBoard] = useState<Board | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [changed, setChanged] = useState<Set<string>>(new Set());
@@ -42,6 +47,7 @@ export function LivePage() {
   const requests = useRef({ sent: 0, applied: 0 });
 
   const load = useCallback(() => {
+    api.stats().then(setStats, () => undefined); // the board matters more; stats can wait for the next change
     const id = ++requests.current.sent;
     api.board().then(
       (b) => {
@@ -163,7 +169,7 @@ export function LivePage() {
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <span className="font-medium text-ink">{r.name}</span>
                       {r.hot && <Difficulty level={r.hot} />}
-                      <span className="font-mono text-[11px] uppercase tracking-wide text-stone-500">{PLATFORM[r.platform] ?? r.platform}</span>
+                      <span className="font-mono text-[11px] uppercase tracking-wide text-stone-500">{platformName(r.platform)}</span>
                     </p>
                     <p className="mt-0.5 text-xs text-stone-500">
                       {r.lastError ? (
@@ -175,6 +181,7 @@ export function LivePage() {
                       ) : (
                         'No change seen yet'
                       )}
+                      {!r.lastError && <span className="whitespace-nowrap"> · read {every(r.everySeconds)}</span>}
                     </p>
                   </div>
                   <div className="flex w-full flex-wrap items-center gap-3 pl-8 sm:w-auto sm:pl-0">
@@ -223,6 +230,8 @@ export function LivePage() {
         </section>
       )}
 
+      {stats && <StatsSection stats={stats} />}
+
       <section aria-labelledby="feed">
         <SectionLabel aside={<span className="text-xs text-stone-500">Prime-time changes only</span>}>
           <span id="feed">Live feed</span>
@@ -236,7 +245,7 @@ export function LivePage() {
                 <li
                   key={e.id}
                   data-testid="feed-row"
-                  className={`${e.kind === 'opened' || e.kind === 'reopened' ? 'edge-open' : e.kind === 'error' ? 'edge-urgent' : e.kind === 'recovered' ? 'edge-booked' : 'edge-neutral'} ${changed.has(`feed-${e.id}`) ? 'just-changed' : ''} flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm`}
+                  className={`${e.kind === 'opened' || e.kind === 'reopened' ? 'edge-open' : e.kind === 'error' || e.kind === 'gap' ? 'edge-urgent' : e.kind === 'recovered' ? 'edge-booked' : 'edge-neutral'} ${changed.has(`feed-${e.id}`) ? 'just-changed' : ''} flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm`}
                 >
                   <span className="w-11 font-mono text-xs text-stone-500">{clock(e.at)}</span>
                   <Badge tone={KIND[e.kind]?.tone ?? 'stone'}>{KIND[e.kind]?.label ?? e.kind}</Badge>
@@ -254,5 +263,49 @@ export function LivePage() {
         </Card>
       </section>
     </div>
+  );
+}
+
+/** How fast tables go, and what the alerts turned into. Tells the user whether Seated looks often enough. */
+function StatsSection({ stats }: { stats: Stats }) {
+  const seen = stats.restaurants.filter((r) => r.openings > 0);
+  const quiet = stats.restaurants.filter((r) => r.openings === 0);
+  return (
+    <section aria-labelledby="stats">
+      <SectionLabel aside={<span className="text-xs text-stone-500">All your watches · last {stats.days} days</span>}>
+        <span id="stats">How fast tables go</span>
+      </SectionLabel>
+      <Card>
+        <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600" data-testid="funnel">
+          <strong className="font-medium text-ink">{stats.loudAlerts}</strong> {stats.loudAlerts === 1 ? 'table' : 'tables'} buzzed your phone →{' '}
+          <strong className="font-medium text-ink">{stats.bookedByYou}</strong> booked by you,{' '}
+          <strong className="font-medium text-ink">{stats.bookedBySeated}</strong> by Seated
+        </p>
+        {seen.length === 0 ? (
+          <p className="px-4 py-4 text-sm text-stone-500">No table has opened yet. Each opening is timed here: how long it stayed free before someone took it.</p>
+        ) : (
+          <ul className="divide-y divide-stone-100" data-testid="stats">
+            {seen.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-2 text-sm">
+                <span className="w-full font-medium text-ink sm:w-auto sm:min-w-0 sm:flex-1">{r.name}</span>
+                <span className="text-stone-600">
+                  {r.openings} {r.openings === 1 ? 'opening' : 'openings'}
+                  {r.medianMinutes !== null && (
+                    <> · {r.medianMinutes === 0 ? 'usually gone within a minute' : `usually gone after ${r.medianMinutes} min`}</>
+                  )}
+                </span>
+                <span className="w-full text-xs text-stone-500 sm:w-auto">
+                  read {every(r.everySeconds)}
+                  {r.tooSlow && <span className="text-amber-800"> · tables go faster than Seated looks</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {quiet.length > 0 && (
+          <p className="border-t border-stone-100 px-4 py-2 text-xs text-stone-500">No openings yet: {quiet.map((r) => r.name).join(', ')}.</p>
+        )}
+      </Card>
+    </section>
   );
 }
