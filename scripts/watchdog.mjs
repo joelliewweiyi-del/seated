@@ -39,9 +39,16 @@ async function main() {
   const statePath = 'data/watchdog.json';
   const log = (line) => appendFileSync('data/watchdog.log', `${new Date().toISOString()} ${line}\n`);
 
-  const health = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(10_000) })
-    .then((r) => r.json())
-    .catch(() => null);
+  const ask = () =>
+    fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(20_000) })
+      .then((r) => r.json())
+      .catch(() => null);
+  let health = await ask();
+  if (health?.ok !== true) {
+    // Ask again before calling it an outage: a slow start of this script once timed out on a healthy Seated (Oct 2026).
+    await new Promise((r) => setTimeout(r, 30_000));
+    health = await ask();
+  }
   const before = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { downSince: null, told: false };
   const now = new Date().toISOString();
   const { state, actions } = decide(health, before, now);

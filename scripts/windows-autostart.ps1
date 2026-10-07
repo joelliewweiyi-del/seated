@@ -28,10 +28,11 @@ Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settin
 
 # The watchdog runs through a tiny VBScript so no console window flashes every 5 minutes.
 $node = (Get-Command node).Source
-$check = "`"$node`" --disable-warning=ExperimentalWarning scripts\watchdog.mjs --restart-task `"$name`""
-$wdAction = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$repo\scripts\windows-hidden.vbs`" `"$($check.Replace('"', '""'))`"" -WorkingDirectory $repo
+$wdArgs = "`"$repo\scripts\windows-hidden.vbs`" `"$node`" --disable-warning=ExperimentalWarning scripts\watchdog.mjs --restart-task `"$name`""
+$wdAction = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument $wdArgs -WorkingDirectory $repo
 $wdTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5)
-$wdSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -MultipleInstances IgnoreNew -StartWhenAvailable
+# Priority 4 for the same reason as the radar: at the default, node took 40 s to start and the health request timed out.
+$wdSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -MultipleInstances IgnoreNew -StartWhenAvailable -Priority 4
 Register-ScheduledTask -TaskName $watchdog -Action $wdAction -Trigger $wdTrigger -Settings $wdSettings -Force | Out-Null
 
 Write-Output "Seated now starts at login, and '$watchdog' checks on it every 5 minutes."
