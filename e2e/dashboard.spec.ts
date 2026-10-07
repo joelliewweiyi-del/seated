@@ -220,3 +220,26 @@ test('the hot list fits a small phone screen', async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(0);
   await shot(page, '10-mobile-hot');
 });
+
+test('the activity log shows every change and one heartbeat bar per check', async ({ page }) => {
+  await page.goto('/#/activity');
+  await expect(page.getByTestId('heartbeat')).toContainText('Last check');
+  // The Klepel table opened and was taken earlier in this run: both changes are in the log.
+  const klepel = page.getByTestId('log-row').filter({ hasText: 'Café de Klepel' });
+  await expect(klepel.filter({ hasText: 'Taken' })).toHaveCount(1);
+  await expect(klepel.filter({ hasText: /Opened|Open at start/ })).not.toHaveCount(0);
+  await shot(page, '11-activity');
+
+  // Tapping a watched restaurant shows only its changes (Klepel's watch was removed earlier; Gitane is still watched).
+  await page.getByRole('button', { name: /Gitane/ }).click();
+  await expect(page.getByTestId('log-row').filter({ hasNotText: 'Gitane' })).toHaveCount(0);
+});
+
+test('the activity log fits a small phone screen', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/#/activity');
+  await expect(page.getByTestId('heartbeat')).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await shot(page, '12-mobile-activity');
+});

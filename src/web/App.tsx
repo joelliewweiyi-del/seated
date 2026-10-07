@@ -5,12 +5,13 @@ import { RadarPage } from './RadarPage';
 import { AddWatchPage } from './AddWatchPage';
 import { SettingsPage } from './SettingsPage';
 import { HotPage } from './HotPage';
+import { ActivityPage } from './ActivityPage';
 
-type Route = 'radar' | 'hot' | 'add' | 'settings';
+type Route = 'radar' | 'hot' | 'activity' | 'add' | 'settings';
 
 function routeFromHash(): Route {
   const h = window.location.hash.replace('#/', '');
-  return h === 'add' || h === 'settings' || h === 'hot' ? h : 'radar';
+  return h === 'add' || h === 'settings' || h === 'hot' || h === 'activity' ? h : 'radar';
 }
 
 export function go(route: Route): void {
@@ -84,6 +85,7 @@ export function App() {
               [
                 ['radar', 'Radar', 'Radar'],
                 ['hot', 'Hot list', 'Hot'],
+                ['activity', 'Activity', 'Log'],
                 ['add', 'Add watch', 'Add'],
                 ['settings', 'Settings', 'Settings'],
               ] as const
@@ -127,6 +129,7 @@ export function App() {
         )}
         {state && route === 'radar' && <RadarPage state={state} refresh={refresh} />}
         {state && route === 'hot' && <HotPage state={state} refresh={refresh} />}
+        {state && route === 'activity' && <ActivityPage />}
         {state && route === 'add' && <AddWatchPage state={state} refresh={refresh} />}
         {state && route === 'settings' && <SettingsPage state={state} refresh={refresh} />}
       </main>

@@ -32,6 +32,7 @@ npm run demo        # fake restaurants, in-memory DB, http://127.0.0.1:4310
 SEATED_DB=data/observe.db PORT=4311 npx tsx src/server/main.ts --observe
 npm start           # real mode, data/seated.db
 npm run peek -- klepel
+npx tsx scripts/verify-radar.ts   # compare the radar's open tables with a direct read (skips Esra)
 npm run typecheck && npm test && npm run test:e2e
 ```
 
@@ -81,6 +82,13 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - `data/restaurants.json`: `hot` (1 to 3) and `hotWhy` mark the hard-to-book list (34 Amsterdam restaurants, researched 6 Oct 2026 from Time Out, Amsterdam Foodie, Your Little Black Book, Michelin and others).
 - On 6 Oct 2026, 29 restaurants listed as Formitable had moved to Tebi; they were switched with ids resolved from their websites.
 - `scripts/detect.ts <url>` finds the booking system on a website.
+
+## Activity log
+
+- `events` holds every change: `listed` (open before Seated could see it: first read of a day, or a day that just came into range), `opened`, `reopened`, `taken` (gone from a day that was read without error, before its time), `error` and `recovered` (state changes only).
+- `checks` holds one row per check, so a quiet log can be told apart from a stopped radar.
+- Editing, pausing or resuming a watch closes its open tables quietly and forgets its read days (`checked_dates`), so the next check starts fresh.
+- Taken tables get a quiet push (ntfy priority 2: no sound).
 
 ## History
 

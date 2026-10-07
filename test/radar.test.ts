@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Store, type WatchInput } from '../src/server/db';
-import { Radar, QUIET_REOPEN_MS } from '../src/server/radar';
+import { Radar, QUIET_REOPEN_MS, READ_LIMIT_MS } from '../src/server/radar';
 import { demoPlatform } from '../src/server/platforms/demo';
 import { memoryNotifier } from '../src/server/notify';
 import type { BookResult, Platform, Slot } from '../src/server/platforms/types';
@@ -50,6 +50,8 @@ function setup({ autoBookEnabled = false, platform }: { autoBookEnabled?: boolea
 }
 
 const MIN = 60_000;
+/** Pushes about open tables. "Taken" notices are separate, quiet pushes. */
+const openPushes = (sent: Array<{ title: string }>) => sent.filter((n) => !n.title.includes('aken'));
 
 describe('alerts', () => {
   it('pushes once when a matching table opens, then stays quiet while it stays open', async () => {
@@ -105,7 +107,7 @@ describe('alerts', () => {
     advance(QUIET_REOPEN_MS + MIN);
     demo.open('klepel', FRI, '19:30');
     await radar.tick();
-    expect(notifier.sent).toHaveLength(2);
+    expect(openPushes(notifier.sent)).toHaveLength(2);
   });
 
   it('stays quiet when a table flickers closed and open within the quiet window (someone else was mid-checkout)', async () => {
@@ -119,7 +121,9 @@ describe('alerts', () => {
     demo.open('klepel', FRI, '19:30');
     advance(2 * MIN);
     await radar.tick();
-    expect(notifier.sent).toHaveLength(1);
+    expect(openPushes(notifier.sent)).toHaveLength(1);
+    // The flicker still shows up as a "taken" notice, but a silent one: no sound, no vibration.
+    expect(notifier.sent.filter((n) => n.title.startsWith('Taken')).map((n) => n.priority)).toEqual(['low']);
   });
 
   it('keeps open tables open when a read fails, so a network blip does not cause a repeat push', async () => {
@@ -588,5 +592,117 @@ describe('calendar pre-check', () => {
     watch();
     await radar.tick();
     expect(reads).toHaveLength(14);
+  });
+});
+
+describe('activity log', () => {
+  const kinds = (store: Store) => store.listEvents(100).reverse().map((e) => `${e.kind} ${e.date ?? ''} ${e.time ?? ''}`.trim());
+
+  it('tells "open at start" apart from a table that opens later, so the log shows real news', async () => {
+    const { store, demo, radar, watch, advance } = setup();
+    watch();
+    demo.open('klepel', FRI, '19:00');
+    await radar.tick(); // first check: this table was already open
+    demo.open('klepel', SAT, '20:00');
+    advance(2 * MIN);
+    await radar.tick();
+    expect(kinds(store)).toEqual([`listed ${FRI} 19:00`, `opened ${SAT} 20:00`]);
+  });
+
+  it('logs taken and back, and pushes a quiet notice when a table is taken', async () => {
+    const { store, demo, notifier, radar, watch, advance } = setup();
+    watch();
+    demo.open('klepel', FRI, '19:30');
+    await radar.tick();
+    demo.close('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick();
+    demo.open('klepel', FRI, '19:30');
+    advance(30 * MIN);
+    await radar.tick();
+    expect(kinds(store)).toEqual([`listed ${FRI} 19:30`, `taken ${FRI} 19:30`, `reopened ${FRI} 19:30`]);
+    const taken = notifier.sent.find((n) => n.title === 'Taken: Café de Klepel')!;
+    expect(taken.priority).toBe('low');
+    expect(taken.body).toContain('Fri 9 Oct 19:30');
+  });
+
+  it('never calls a table taken when its day could not be read: a failed read is not news', async () => {
+    const demo = demoPlatform();
+    let failing = false;
+    const flaky: Platform = { ...demo, getSlots: (r, d, p) => (failing ? Promise.reject(new Error('timeout')) : demo.getSlots(r, d, p)) };
+    const { store, notifier, radar, watch, advance } = setup({ platform: flaky });
+    watch();
+    demo.open('klepel', FRI, '19:30');
+    await radar.tick();
+    failing = true;
+    demo.close('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick();
+    advance(2 * MIN);
+    await radar.tick(); // still failing: logged once, not on every check
+    failing = false;
+    advance(2 * MIN);
+    await radar.tick();
+    expect(kinds(store)).toEqual([`listed ${FRI} 19:30`, 'error', `taken ${FRI} 19:30`, 'recovered']);
+    expect(notifier.sent.filter((n) => n.title.startsWith('Taken'))).toHaveLength(1);
+  });
+
+  it('does not count a table as taken when its time has simply passed', async () => {
+    const { store, demo, radar, watch, advance } = setup();
+    watch({ timeFrom: '12:00', timeTo: '21:00' });
+    demo.open('klepel', '2026-10-06', '12:30'); // today, 12:30; START is 12:00
+    await radar.tick();
+    demo.close('klepel', '2026-10-06', '12:30');
+    advance(45 * MIN);
+    await radar.tick();
+    expect(kinds(store)).toEqual(['listed 2026-10-06 12:30']);
+  });
+
+  it('logs a table on a day that just came into range as "listed", not as a new opening', async () => {
+    const { store, demo, radar, watch, advance } = setup();
+    watch();
+    await radar.tick();
+    demo.open('klepel', '2026-10-20', '19:30'); // 14 days from Tue 6 Oct: only in range from tomorrow
+    advance(24 * 60 * MIN);
+    await radar.tick();
+    expect(kinds(store)).toEqual(['listed 2026-10-20 19:30']);
+  });
+
+  it('a day that keeps failing does not hide real openings on the days that do load', async () => {
+    const demo = demoPlatform();
+    const flaky: Platform = { ...demo, getSlots: (r, d, p) => (d === SAT ? Promise.reject(new Error('timeout')) : demo.getSlots(r, d, p)) };
+    const { store, radar, watch, advance } = setup({ platform: flaky });
+    watch({ weekdays: [5, 6] });
+    await radar.tick(); // Friday reads fine and is empty; Saturday fails
+    demo.open('klepel', FRI, '19:30');
+    advance(2 * MIN);
+    await radar.tick();
+    expect(kinds(store)).toEqual(['error', `opened ${FRI} 19:30`]);
+  });
+
+  it('gives up on a read that never answers, so one silent call cannot stop the radar', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const demo = demoPlatform();
+      const stuck: Platform = { ...demo, openDates: undefined, getSlots: (r, d, p) => (d === FRI ? new Promise<Slot[]>(() => {}) : demo.getSlots(r, d, p)) };
+      const { store, radar, watch } = setup({ platform: stuck });
+      watch({ weekdays: [5] });
+      const done = radar.tick();
+      await vi.advanceTimersByTimeAsync(READ_LIMIT_MS * 3);
+      const report = await done;
+      expect(report.failedRequests).toBeGreaterThan(0);
+      expect(store.listChecks(1)).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('writes one heartbeat row per check, even when nothing changes', async () => {
+    const { store, radar, watch } = setup();
+    watch();
+    await radar.tick();
+    await radar.tick();
+    expect(store.listChecks(10)).toHaveLength(2);
+    expect(store.listChecks(10)[0]).toMatchObject({ restaurants: 1, failedRequests: 0, tablesTaken: 0 });
   });
 });

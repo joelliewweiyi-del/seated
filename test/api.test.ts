@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createApi } from '../src/server/api';
 import { Store } from '../src/server/db';
 import { Radar } from '../src/server/radar';
+import { addDays, localDate } from '../src/server/time';
 import { demoPlatform } from '../src/server/platforms/demo';
 import { memoryNotifier } from '../src/server/notify';
 
@@ -33,7 +34,7 @@ function app({ localOnly = false } = {}) {
       headers: { 'Content-Type': 'application/json', ...headers },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-  return { store, call };
+  return { store, call, demo, radar };
 }
 
 const valid = {
@@ -110,5 +111,22 @@ describe('protection against other websites (found in review round 3)', () => {
     const { call } = app({ localOnly: true });
     expect((await call('GET', '/state', undefined, { Host: 'evil.example:4310' })).status).toBe(403);
     expect((await call('GET', '/state', undefined, { Host: '127.0.0.1:4310' })).status).toBe(200);
+  });
+});
+
+describe('activity log and watch edits', () => {
+  it('does not report tables as taken when the user narrows a watch or changes the party size', async () => {
+    const { store, call, demo, radar } = app();
+    const watch = (await (await call('POST', '/watches', valid)).json()) as { id: number };
+    const friday = addDays(localDate(new Date()), 7);
+    demo.open('klepel', friday, '19:30');
+    await radar.tick();
+    await call('PATCH', `/watches/${watch.id}`, { timeFrom: '20:00' }); // 19:30 no longer matches
+    await radar.tick();
+    await call('PATCH', `/watches/${watch.id}`, { timeFrom: '19:00', partySize: 4 });
+    await radar.tick();
+    const kinds = store.listEvents(50).map((e) => e.kind);
+    expect(kinds).not.toContain('taken');
+    expect(kinds).not.toContain('opened'); // after an edit, what is open is "open at start" again
   });
 });

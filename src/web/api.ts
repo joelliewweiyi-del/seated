@@ -72,6 +72,7 @@ export interface TickReport {
   requests: number;
   failedRequests: number;
   newTables: number;
+  tablesTaken: number;
   bookings: number;
 }
 
@@ -90,6 +91,24 @@ export interface State {
   recent: Array<Sighting & { restaurantName: string; partySize: number | null }>;
   bookings: Booking[];
   settings: Settings;
+}
+
+export type EventKind = 'listed' | 'opened' | 'reopened' | 'taken' | 'error' | 'recovered';
+
+export interface Activity {
+  events: Array<{
+    id: number;
+    at: string;
+    kind: EventKind;
+    restaurantId: string;
+    restaurantName: string;
+    partySize: number | null;
+    date: string | null;
+    time: string | null;
+    detail: string | null;
+  }>;
+  checks: Array<Pick<TickReport, 'startedAt' | 'finishedAt' | 'restaurants' | 'requests' | 'failedRequests' | 'newTables' | 'tablesTaken'> & { id: number }>;
+  restaurants: Array<{ id: string; name: string; platform: string; lastCheckedAt: string | null; lastError: string | null; openNow: number }>;
 }
 
 export type WatchDraft = Pick<
@@ -112,6 +131,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 
 export const api = {
   state: () => call<State>('GET', '/state'),
+  activity: () => call<Activity>('GET', '/activity'),
   restaurants: () => call<Restaurant[]>('GET', '/restaurants'),
   addRestaurant: (b: { name: string; link: string; city?: string }) => call<Restaurant>('POST', '/restaurants', b),
   createWatch: (w: WatchDraft) => call<Watch>('POST', '/watches', w),

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { Store, WatchInput, WatchStatus } from './db.js';
+import type { Store, Watch, WatchInput, WatchStatus } from './db.js';
 import type { Platform } from './platforms/types.js';
 import type { DemoPlatform } from './platforms/demo.js';
 import type { Notifier } from './notify.js';
@@ -93,6 +93,21 @@ export function createApi(d: ApiDeps): Hono {
   });
 
   const supported = (platform: string, uid: string | null) => Boolean(d.platforms[platform] && uid);
+
+  // The activity log: every change, a heartbeat per check, and where each watched restaurant stands.
+  api.get('/activity', (c) => {
+    const restaurants = new Map(store.listRestaurants().map((r) => [r.id, r]));
+    const events = store.listEvents(1000).map((e) => ({ ...e, restaurantName: restaurants.get(e.restaurantId)?.name ?? e.restaurantId }));
+    const watched = new Map<string, { id: string; name: string; platform: string; lastCheckedAt: string | null; lastError: string | null; openNow: number }>();
+    for (const w of store.listWatches('watching')) {
+      const r = restaurants.get(w.restaurantId);
+      if (!r) continue;
+      const row = watched.get(r.id) ?? { id: r.id, name: r.name, platform: r.platform, lastCheckedAt: r.lastCheckedAt, lastError: r.lastError, openNow: 0 };
+      row.openNow += store.openSightings(w.id).length;
+      watched.set(r.id, row);
+    }
+    return c.json({ events, checks: store.listChecks(120), restaurants: [...watched.values()] });
+  });
 
   api.get('/state', (c) => {
     const restaurants = new Map(store.listRestaurants().map((r) => [r.id, r]));
@@ -203,7 +218,13 @@ export function createApi(d: ApiDeps): Hono {
       throw new BadRequest('This watch already has a table booked. Add a new watch to look for another one.');
     }
     const watch = store.updateWatch(id, patch)!;
-    if (watch.status !== 'watching') store.closeAllSightings(id, new Date().toISOString());
+    const fields = (w: Watch) => JSON.stringify([w.partySize, w.dateFrom, w.dateTo, w.weekdays, w.timeFrom, w.timeTo]);
+    if (watch.status !== 'watching' || fields(watch) !== fields(existing) || existing.status !== 'watching') {
+      // Paused, edited or resumed: the open tables no longer describe this watch. Close them quietly and
+      // let the next check start fresh, so the activity log does not report them as taken or new.
+      store.closeAllSightings(id, new Date().toISOString());
+      store.setWatchCheckedDates(id, null);
+    }
     return c.json(watch);
   });
 

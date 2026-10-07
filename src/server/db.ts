@@ -53,6 +53,40 @@ export interface Booking {
   notified: boolean;
 }
 
+/**
+ * One change the radar saw, for the activity log.
+ *   listed   - open when the watch was first checked, or on a day that just came into range
+ *   opened   - a new table on a day that was already watched
+ *   reopened - a table that was taken earlier and is open again
+ *   taken    - an open table disappeared on a day that was read successfully
+ *   error    - reading this restaurant started to fail; recovered - it works again
+ */
+export type EventKind = 'listed' | 'opened' | 'reopened' | 'taken' | 'error' | 'recovered';
+
+export interface RadarEvent {
+  id: number;
+  at: string;
+  kind: EventKind;
+  restaurantId: string;
+  watchId: number | null;
+  partySize: number | null;
+  date: string | null;
+  time: string | null;
+  detail: string | null;
+}
+
+/** One finished check, so a quiet log can be told apart from a radar that stopped. */
+export interface CheckRow {
+  id: number;
+  startedAt: string;
+  finishedAt: string;
+  restaurants: number;
+  requests: number;
+  failedRequests: number;
+  newTables: number;
+  tablesTaken: number;
+}
+
 export interface Settings {
   ntfyServer: string;
   ntfyTopic: string;
@@ -128,6 +162,27 @@ CREATE TABLE IF NOT EXISTS bookings (
   payment_url TEXT,
   error TEXT,
   created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  at TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  restaurant_id TEXT NOT NULL,
+  watch_id INTEGER REFERENCES watches(id) ON DELETE SET NULL,
+  party_size INTEGER,
+  date TEXT,
+  time TEXT,
+  detail TEXT
+);
+CREATE TABLE IF NOT EXISTS checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at TEXT NOT NULL,
+  finished_at TEXT NOT NULL,
+  restaurants INTEGER NOT NULL,
+  requests INTEGER NOT NULL,
+  failed_requests INTEGER NOT NULL,
+  new_tables INTEGER NOT NULL,
+  tables_taken INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
@@ -205,6 +260,8 @@ export class Store {
     this.addColumnIfMissing('bookings', 'notified', 'INTEGER NOT NULL DEFAULT 0');
     this.addColumnIfMissing('restaurants', 'hot', 'INTEGER');
     this.addColumnIfMissing('restaurants', 'hot_why', 'TEXT');
+    // Days of this watch that have been read without error, so a new table there is news. Null = none yet.
+    this.addColumnIfMissing('watches', 'checked_dates', 'TEXT');
   }
 
   // ── restaurants ──────────────────────────────────────────────────────────
@@ -330,6 +387,17 @@ export class Store {
     return this.getWatch(id);
   }
 
+  watchCheckedDates(id: number): Set<string> {
+    const row = this.db.prepare('SELECT checked_dates FROM watches WHERE id = ?').get(id);
+    const value = row?.checked_dates as string | null | undefined;
+    return new Set(value ? value.split(',') : []);
+  }
+
+  /** null forgets every day, so the next check starts fresh (after the user edits or resumes a watch). */
+  setWatchCheckedDates(id: number, dates: string[] | null): void {
+    this.db.prepare('UPDATE watches SET checked_dates = ? WHERE id = ?').run(dates?.length ? dates.join(',') : null, id);
+  }
+
   deleteWatch(id: number): boolean {
     return Number(this.db.prepare('DELETE FROM watches WHERE id = ?').run(id).changes) > 0;
   }
@@ -380,6 +448,58 @@ export class Store {
 
   recentSightings(limit: number): Sighting[] {
     return this.db.prepare('SELECT * FROM sightings ORDER BY id DESC LIMIT ?').all(limit).map(toSighting);
+  }
+
+  // ── activity log ─────────────────────────────────────────────────────────
+
+  addEvent(e: Omit<RadarEvent, 'id'>): void {
+    this.db
+      .prepare(
+        `INSERT INTO events (at, kind, restaurant_id, watch_id, party_size, date, time, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(e.at, e.kind, e.restaurantId, e.watchId, e.partySize, e.date, e.time, e.detail);
+  }
+
+  listEvents(limit: number): RadarEvent[] {
+    return this.db
+      .prepare('SELECT * FROM events ORDER BY id DESC LIMIT ?')
+      .all(limit)
+      .map((r) => ({
+        id: r.id as number,
+        at: r.at as string,
+        kind: r.kind as EventKind,
+        restaurantId: r.restaurant_id as string,
+        watchId: (r.watch_id as number | null) ?? null,
+        partySize: (r.party_size as number | null) ?? null,
+        date: (r.date as string | null) ?? null,
+        time: (r.time as string | null) ?? null,
+        detail: (r.detail as string | null) ?? null,
+      }));
+  }
+
+  addCheck(c: Omit<CheckRow, 'id'>): void {
+    this.db
+      .prepare(
+        `INSERT INTO checks (started_at, finished_at, restaurants, requests, failed_requests, new_tables, tables_taken)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(c.startedAt, c.finishedAt, c.restaurants, c.requests, c.failedRequests, c.newTables, c.tablesTaken);
+  }
+
+  listChecks(limit: number): CheckRow[] {
+    return this.db
+      .prepare('SELECT * FROM checks ORDER BY id DESC LIMIT ?')
+      .all(limit)
+      .map((r) => ({
+        id: r.id as number,
+        startedAt: r.started_at as string,
+        finishedAt: r.finished_at as string,
+        restaurants: r.restaurants as number,
+        requests: r.requests as number,
+        failedRequests: r.failed_requests as number,
+        newTables: r.new_tables as number,
+        tablesTaken: r.tables_taken as number,
+      }));
   }
 
   // ── bookings ─────────────────────────────────────────────────────────────

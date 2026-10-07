@@ -1,11 +1,25 @@
-import type { RestaurantRow, Sighting, Store, Watch } from './db.js';
+import type { EventKind, RadarEvent, RestaurantRow, Sighting, Store, Watch } from './db.js';
 import type { Guest, Platform, Slot } from './platforms/types.js';
 import type { Notifier } from './notify.js';
 import { datesForWatch, matchingSlots } from './match.js';
-import { localDate, slotLabel } from './time.js';
+import { localDate, localTime, slotLabel } from './time.js';
 
 /** A table that closes and reopens within this window is a flicker, not news: no second push. */
 export const QUIET_REOPEN_MS = 15 * 60_000;
+
+/**
+ * Backstop for a platform read that never answers. Each request has its own fetch timeout; this
+ * catches anything that still hangs, so one silent call cannot stop every later check.
+ */
+export const READ_LIMIT_MS = 45_000;
+
+function limited<T>(work: Promise<T>, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const limit = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what}: no answer in ${READ_LIMIT_MS / 1000} s`)), READ_LIMIT_MS);
+  });
+  return Promise.race([work, limit]).finally(() => clearTimeout(timer));
+}
 
 export interface RadarOptions {
   store: Store;
@@ -24,6 +38,7 @@ export interface TickReport {
   requests: number;
   failedRequests: number;
   newTables: number;
+  tablesTaken: number;
   bookings: number;
 }
 
@@ -90,6 +105,7 @@ export class Radar {
       requests: 0,
       failedRequests: 0,
       newTables: 0,
+      tablesTaken: 0,
       bookings: 0,
     };
 
@@ -124,7 +140,7 @@ export class Radar {
           ].sort();
           report.requests++;
           try {
-            calendar.set(partySize, all.length ? await platform.openDates(restaurant, all, partySize) : new Set());
+            calendar.set(partySize, all.length ? await limited(platform.openDates(restaurant, all, partySize), 'calendar') : new Set());
           } catch (err) {
             report.failedRequests++;
             errors.push(`calendar: ${err instanceof Error ? err.message : err}`);
@@ -157,7 +173,7 @@ export class Radar {
           if (!result) {
             report.requests++;
             try {
-              result = await platform.getSlots(restaurant, date, watch.partySize);
+              result = await limited(platform.getSlots(restaurant, date, watch.partySize), date);
             } catch (err) {
               result = err instanceof Error ? err : new Error(String(err));
               report.failedRequests++;
@@ -177,17 +193,24 @@ export class Radar {
         if (criteria(current) !== criteria(watch)) continue;
 
         const wanted = new Set(datesForWatch(current, today, this.o.horizonDays));
-        const { fresh, created } = this.sync(current, restaurant, platform, today, wanted, checked, found);
+        const { fresh, created, taken } = this.sync(current, restaurant, platform, today, wanted, checked, found);
         report.newTables += created;
+        report.tablesTaken += taken.length;
         report.bookings += await this.act(current, restaurant, platform, fresh, found, today);
+        if (taken.length) await this.sendTakenNotice(current, restaurant, taken);
       }
 
       const at = this.now().toISOString();
-      store.markChecked(restaurantId, at, errors.length ? `${errors.length} failed: ${errors[0]}` : null);
+      const error = errors.length ? `${errors.length} failed: ${errors[0]}` : null;
+      // Log only the change of state, not every failing check.
+      if (error && !restaurant.lastError) store.addEvent({ ...this.blankEvent(at, 'error', restaurantId), detail: error });
+      if (!error && restaurant.lastError) store.addEvent(this.blankEvent(at, 'recovered', restaurantId));
+      store.markChecked(restaurantId, at, error);
     }
 
     report.finishedAt = this.now().toISOString();
     this.lastReport = report;
+    store.addCheck(report);
     return report;
   }
 
@@ -203,12 +226,17 @@ export class Radar {
     wanted: Set<string>,
     checked: Set<string>,
     found: Slot[],
-  ): { fresh: Fresh[]; created: number } {
+  ): { fresh: Fresh[]; created: number; taken: Sighting[] } {
     const { store } = this.o;
     const now = this.now();
     const nowIso = now.toISOString();
     const pending = new Map(found.map((s) => [`${s.date}|${s.time}`, s]));
     const fresh: Fresh[] = [];
+    const taken: Sighting[] = [];
+    const event = (kind: 'listed' | 'opened' | 'reopened' | 'taken', date: string, time: string) =>
+      store.addEvent({ ...this.blankEvent(nowIso, kind, restaurant.id), watchId: watch.id, partySize: watch.partySize, date, time });
+    // Days already read without error. A table on any other day is not news: it was open before we could see it.
+    const known = store.watchCheckedDates(watch.id);
 
     for (const s of store.openSightings(watch.id)) {
       const key = `${s.date}|${s.time}`;
@@ -220,6 +248,12 @@ export class Radar {
       } else if (s.date < today || checked.has(s.date) || !wanted.has(s.date)) {
         // Gone, past, or no longer wanted after the user edited the watch.
         store.closeSighting(s.id, nowIso);
+        // Only a table that vanished from a day we just read, before its time, was taken by someone.
+        const expired = s.date < today || (s.date === today && s.time <= localTime(now));
+        if (!expired && checked.has(s.date) && wanted.has(s.date)) {
+          event('taken', s.date, s.time);
+          taken.push(s);
+        }
       }
     }
 
@@ -229,12 +263,30 @@ export class Radar {
       const url = platform.bookingUrl(restaurant, slot.date, slot.time, watch.partySize);
       const sighting = store.addSighting(watch.id, slot.date, slot.time, url, nowIso);
       created++;
+      event(!known.has(slot.date) ? 'listed' : previous?.goneAt ? 'reopened' : 'opened', slot.date, slot.time);
       const flicker =
         previous?.goneAt && previous.notified && now.getTime() - Date.parse(previous.goneAt) < QUIET_REOPEN_MS;
       if (flicker) store.markNotified([sighting.id]); // covered by the earlier push
       else fresh.push({ sighting, slot });
     }
-    return { fresh: fresh.sort((a, b) => byDateTime(a.slot, b.slot)), created };
+    const stillKnown = [...new Set([...known, ...checked])].filter((d) => d >= today && wanted.has(d)).sort();
+    store.setWatchCheckedDates(watch.id, stillKnown);
+    return { fresh: fresh.sort((a, b) => byDateTime(a.slot, b.slot)), created, taken };
+  }
+
+  private blankEvent(at: string, kind: EventKind, restaurantId: string): Omit<RadarEvent, 'id'> {
+    return { at, kind, restaurantId, watchId: null, partySize: null, date: null, time: null, detail: null };
+  }
+
+  /** A quiet push when open tables are taken by someone else. Informational, so a failed push is not retried. */
+  private async sendTakenNotice(watch: Watch, restaurant: RestaurantRow, taken: Sighting[]): Promise<void> {
+    await this.o.notifier.send({
+      title: taken.length === 1 ? `Taken: ${restaurant.name}` : `${taken.length} tables taken: ${restaurant.name}`,
+      body: `${watch.partySize} people
+${summarize(taken)}`,
+      priority: 'low',
+      tags: ['x'],
+    });
   }
 
   /** Auto-books if allowed, then pushes the tables that need a push. Returns tables booked (0 or 1). */

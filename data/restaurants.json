@@ -944,7 +944,9 @@
     "platformUid": "967051_159a2cf8aa419dae59ae7357420c09e514426dcf621b567dc37f001b746d6127",
     "website": "https://www.esra.amsterdam",
     "city": "Amsterdam",
-    "address": "C van Eesterenlaan 35, 1019 JK Amsterdam"
+    "address": "C van Eesterenlaan 35, 1019 JK Amsterdam",
+    "hot": 2,
+    "hotWhy": "Tiny two-person kitchen with very few tables. On Joel's own list."
   },
   {
     "id": "euro-pizza",
