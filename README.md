@@ -35,7 +35,7 @@ The hard part of getting a table is not booking it. Booking takes 30 seconds. Th
 
 Seated books only where a booking system allows it without a captcha or another bot check. It never works around one.
 
-The list in [data/restaurants.json](data/restaurants.json) has 293 restaurants in the Netherlands, 115 in Amsterdam. 35 of them carry a hard-to-book score (1 to 3) from food guides and reviews. Seated can read 24 of those 35. They are on the **Hot list** page. You can add any other Formitable restaurant from the dashboard by pasting its website.
+The list in [data/restaurants.json](data/restaurants.json) has 297 restaurants in the Netherlands, 119 in Amsterdam. 35 of them carry a hard-to-book score (1 to 3) from food guides and reviews. Seated can read 24 of those 35. They are on the **Hot list** page. You can add any other Formitable restaurant from the dashboard by pasting its website.
 
 ### What we learned watching Amsterdam's hardest tables
 

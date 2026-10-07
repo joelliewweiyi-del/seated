@@ -2705,5 +2705,41 @@
     "website": "http://www.zoutencitroen.nl",
     "city": "Oosterhout",
     "address": "Ridderstraat 86, 4902 AC Oosterhout"
+  },
+  {
+    "id": "weinlokal-stern",
+    "name": "Weinlokal Stern",
+    "platform": "tebi",
+    "platformUid": "457025_40d57d4fc432c152a9c2807d9d9cd52c21b4b758e9281f268df5e23ce7a3da69",
+    "website": "https://www.weinlokalstern.nl",
+    "city": "Amsterdam",
+    "address": "Singel 210, 1016 AB Amsterdam"
+  },
+  {
+    "id": "kamer-bar",
+    "name": "Kamer",
+    "platform": "tebi",
+    "platformUid": "248187_880ead8f20e108201507f2ea4e1f16817924034bf1d79a50736e577dcf95a66f",
+    "website": "https://www.kamer.bar",
+    "city": "Amsterdam",
+    "address": "Westerstraat, Amsterdam"
+  },
+  {
+    "id": "kid-amsterdam",
+    "name": "KID",
+    "platform": "tebi",
+    "platformUid": "834216_06827a027e56c54934b6df41d34a1aa1f012f051aacd92fca981752a06d8b78e",
+    "website": "https://kidamsterdam.com",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "september",
+    "name": "September",
+    "platform": "tebi",
+    "platformUid": "726034_429d4a5f8478662e2da1d2cd50edbf2d0114d4aa85d3915003dc66fee1f9de8b",
+    "website": "https://septemberamsterdam.nl",
+    "city": "Amsterdam",
+    "address": null
   }
 ]
