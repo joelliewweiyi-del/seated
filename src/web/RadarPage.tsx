@@ -124,15 +124,9 @@ export function RadarPage({ state, refresh }: { state: State; refresh: () => Pro
           <Card className="px-6 py-10 text-center">
             <p className="font-medium text-ink">No watches yet</p>
             <p className="mx-auto mt-1 max-w-md text-balance text-sm text-stone-500">
-              Start from Amsterdam's <span className="whitespace-nowrap">hard-to-book</span> list, or add any restaurant yourself.
+              Search for a restaurant at the top and tap <strong className="font-medium">+ Watch</strong>, or add one by its website.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <a
-                href="#/hot"
-                className="inline-block rounded-lg bg-copper-600 px-4 py-2 text-sm font-medium text-white hover:bg-copper-700"
-              >
-                See the hard-to-book list
-              </a>
               <a href="#/add" className="inline-block rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50">
                 Add your first watch
               </a>

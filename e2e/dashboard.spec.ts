@@ -192,40 +192,46 @@ test('Tebi restaurants can be watched, but Seated explains it cannot book them f
   await expect(page.getByText(/Tebi protects its booking form with a captcha/)).toBeVisible();
 });
 
-test('the hot list ranks the hardest tables and watches Friday and Saturday dinners in one tap', async ({ page }) => {
-  await page.goto('/#/hot');
-  const rows = page.getByTestId('hot-row');
-  await expect(rows.first()).toBeVisible();
-  // Nearly impossible restaurants come first.
-  await expect(rows.first().getByLabel('Nearly impossible')).toBeVisible();
-  await shot(page, '09-hot-list');
-
-  const gitane = rows.filter({ has: page.getByText('Gitane', { exact: true }) });
-  await gitane.getByRole('button', { name: /Watch Friday and Saturday dinners/ }).click();
-  await expect(gitane.getByText('Watching')).toBeVisible();
-
-  // Restaurants on other systems say why they cannot be watched.
-  const notYet = page.getByRole('region', { name: /Not supported yet/ });
-  await expect(notYet.getByTestId('hot-row').filter({ hasText: 'Ciel Bleu' })).toContainText('TableCheck');
-
+test('search finds any restaurant and watches Friday and Saturday dinners in one tap', async ({ page }) => {
   await page.goto('/');
+  const search = page.getByLabel('Find a restaurant');
+  await search.fill('gitane');
+  const result = page.getByTestId('search-result').filter({ hasText: 'Gitane' });
+  await result.getByRole('button', { name: /Watch Friday and Saturday dinners/ }).click();
+  await expect(result.getByText('Watching')).toBeVisible();
+  await shot(page, '09-search');
+
+  // A restaurant Seated cannot read says so, instead of offering a watch.
+  await search.fill('ciel bleu');
+  await expect(page.getByTestId('search-result').filter({ hasText: 'Ciel Bleu' })).toContainText('Cannot read yet');
+
+  await search.press('Escape');
   await expect(page.getByTestId('watch-row').filter({ hasText: 'Gitane' })).toContainText(/Fri, Sat\s*·\s*18:30–21:30/);
 });
 
-test('the hot list fits a small phone screen', async ({ page }) => {
+test('"Other times" opens the full form with the restaurant already picked', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Find a restaurant').fill('massalia');
+  await page.getByTestId('search-result').filter({ hasText: 'Massalia' }).getByRole('link', { name: 'Other times' }).click();
+  await expect(page).toHaveURL(/#\/add\?r=/);
+  await expect(page.getByTestId('picked')).toHaveText('Restobar Massalia');
+});
+
+test('the header and search fit a small phone screen', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
-  await page.goto('/#/hot');
-  await expect(page.getByTestId('hot-row').first()).toBeVisible();
-  // Nothing may stick out sideways at 360px, including the four-item header.
+  await page.goto('/');
+  await page.getByLabel('Find a restaurant').fill('bar');
+  await expect(page.getByTestId('search-result').first()).toBeVisible();
+  // Nothing may stick out sideways at 360px.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
-  await shot(page, '10-mobile-hot');
+  await shot(page, '10-mobile-search');
 });
 
 test('the live board updates by itself when a table opens or is taken, without a reload', async ({ page }) => {
   await page.goto('/#/live');
   await expect(page.getByTestId('live-status')).toContainText('Live');
-  // Gitane got a Friday-and-Saturday watch from the hot list test above.
+  // Gitane got a Friday-and-Saturday watch from the search test above.
   const gitane = page.getByTestId('board-row').filter({ hasText: 'Gitane' });
   await expect(gitane.getByTestId('free')).toHaveText('0');
 

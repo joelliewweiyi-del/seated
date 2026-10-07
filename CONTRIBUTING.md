@@ -38,7 +38,7 @@ All three must pass. CI runs the same commands.
 4. Register it in `src/server/platforms/index.ts` (both `createPlatforms` and `demoPlatforms`) and give it a name in `src/shared/platforms.ts`.
 5. Add tests with a fake `fetch` and a fixture taken from one real answer. Strip tokens and personal data from the fixture.
 
-Good next platforms: **TableCheck** and **TheFork**. The Hot list page shows which hard-to-book restaurants Seated cannot read yet.
+Good next platforms: **TableCheck** and **TheFork**. The search box marks restaurants Seated cannot read yet.
 
 To find out which system a restaurant uses: `npx tsx scripts/detect.ts https://restaurant.nl`. Some sites load their widget with JavaScript only; open those in a browser and watch the network requests.
 

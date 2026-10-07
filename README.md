@@ -35,11 +35,11 @@ The hard part of getting a table is not booking it. Booking takes 30 seconds. Th
 
 Seated books only where a booking system allows it without a captcha or another bot check. It never works around one.
 
-The list in [data/restaurants.json](data/restaurants.json) has 297 restaurants in the Netherlands, 119 in Amsterdam. 40 of them carry a hard-to-book score (1 to 3): 35 from food guides and reviews, 5 added by hand. Seated can read 29 of those 40. They are on the **Hot list** page. You can add any other Formitable restaurant from the dashboard by pasting its website.
+The list in [data/restaurants.json](data/restaurants.json) has 297 restaurants in the Netherlands, 119 in Amsterdam. 40 of them carry a hard-to-book score (1 to 3): 35 from food guides and reviews, 5 added by hand. Seated can read 29 of those 40; the search box ranks them first. You can add any other Formitable restaurant from the dashboard by pasting its website.
 
 ### What we learned watching Amsterdam's hardest tables
 
-- **The scarce thing is Friday and Saturday evening.** On 6 October 2026 most hard-to-book restaurants had plenty of weekday tables. CUE, Rijsel and Toscanini had none on Friday or Saturday, and Vuurtoreneiland had nothing at all. That is why the Hot list's one-tap watch covers Friday and Saturday dinners.
+- **The scarce thing is Friday and Saturday evening.** On 6 October 2026 most hard-to-book restaurants had plenty of weekday tables. CUE, Rijsel and Toscanini had none on Friday or Saturday, and Vuurtoreneiland had nothing at all. That is why the one-tap **+ Watch** in the search box covers Friday and Saturday dinners.
 - **Formitable restaurants are moving to Zenchef, and the old calendar stays online.** Zenchef owns Formitable. A restaurant that moved keeps a Formitable calendar that no longer takes bookings, so it looks empty. On 7 October 2026 De Kas showed 41 free tables on Formitable and none on Zenchef. 16 Amsterdam restaurants had moved. Seated now refuses to read a Formitable calendar that names a Zenchef id. `scripts/migrate-zenchef.ts` moves such restaurants in the list.
 
 ## Run it
@@ -58,7 +58,7 @@ Open http://127.0.0.1:4310. Then:
 1. Go to **Settings** and press **Generate** to make a private alert topic.
 2. Install the free [ntfy](https://ntfy.sh) app on your phone and subscribe to that topic.
 3. Press **Save and send test alert**. Your phone should buzz.
-4. Go to **Add watch**, pick a restaurant and your evenings, and press **Start watching**. Or go to **Hot** and watch Friday and Saturday dinners at a hard-to-book restaurant in one tap.
+4. Type a restaurant in the search box at the top. Tap **+ Watch** for Friday and Saturday dinners, or **Other times** to pick your own party, days and hours.
 
 The **Live** page shows the hot restaurants you watch, ranked by free Friday and Saturday tables, and a feed of every table that opens or is taken. It updates by itself.
 

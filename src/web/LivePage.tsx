@@ -137,8 +137,7 @@ export function LivePage() {
       {top.length === 0 ? (
         <Card className="p-6">
           <p className="text-sm text-stone-600">
-            Nothing to rank yet. Open the <a href="#/hot" className="font-medium text-copper-700 hover:underline">Hot list</a> and tap{' '}
-            <strong className="font-medium">+ Watch</strong> on the places you want here.
+            Nothing to rank yet. Search for a restaurant at the top and tap <strong className="font-medium">+ Watch</strong>.
           </p>
         </Card>
       ) : (

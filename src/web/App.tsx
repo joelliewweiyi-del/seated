@@ -4,15 +4,15 @@ import { ago, Button } from './ui';
 import { RadarPage } from './RadarPage';
 import { AddWatchPage } from './AddWatchPage';
 import { SettingsPage } from './SettingsPage';
-import { HotPage } from './HotPage';
 import { LivePage } from './LivePage';
+import { RestaurantSearch } from './Search';
 
-type Route = 'radar' | 'live' | 'hot' | 'add' | 'settings';
+type Route = 'radar' | 'live' | 'add' | 'settings';
 
 function routeFromHash(): Route {
-  const h = window.location.hash.replace('#/', '');
+  const h = window.location.hash.replace('#/', '').split('?')[0];
   if (h === 'activity') return 'live'; // the old name of the live page
-  return h === 'add' || h === 'settings' || h === 'hot' || h === 'live' ? h : 'radar';
+  return h === 'add' || h === 'settings' || h === 'live' ? h : 'radar'; // the old Hot list is now the search box
 }
 
 export function go(route: Route): void {
@@ -72,7 +72,7 @@ export function App() {
         </div>
       )}
       <header className="border-b border-stone-200 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center gap-x-3 px-4 py-3 sm:gap-x-6">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:gap-x-5">
           <a href="#/" className="flex items-center gap-2 text-ink" aria-label="Seated home">
             <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
               <rect width="32" height="32" rx="7" fill="#0f766e" />
@@ -84,10 +84,8 @@ export function App() {
           <nav className="flex items-center gap-0.5 text-sm sm:gap-1" aria-label="Main">
             {(
               [
-                ['radar', 'Radar', 'Radar'],
+                ['radar', 'Watchlist', 'Watchlist'],
                 ['live', 'Live', 'Live'],
-                ['hot', 'Hot list', 'Hot'],
-                ['add', 'Add watch', 'Add'],
                 ['settings', 'Settings', 'Settings'],
               ] as const
             ).map(([r, label, short]) => (
@@ -95,14 +93,19 @@ export function App() {
                 key={r}
                 href={r === 'radar' ? '#/' : `#/${r}`}
                 aria-current={route === r ? 'page' : undefined}
-                className={`whitespace-nowrap rounded-lg px-1.5 py-1.5 text-[13px] sm:px-2.5 sm:text-sm ${route === r ? 'bg-stone-100 font-medium text-ink' : 'text-stone-500 hover:text-ink'}`}
+                className={`whitespace-nowrap rounded-lg px-1.5 py-1.5 text-[13px] sm:px-2.5 sm:text-sm ${route === r || (route === 'add' && r === 'radar') ? 'bg-stone-100 font-medium text-ink' : 'text-stone-500 hover:text-ink'}`}
               >
                 <span className="sm:hidden">{short}</span>
                 <span className="max-sm:hidden">{label}</span>
               </a>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+          {state && route !== 'add' && ( // the Add page has its own search
+            <div className="order-last w-full sm:order-none sm:ml-auto sm:w-auto">
+              <RestaurantSearch state={state} refresh={refresh} />
+            </div>
+          )}
+          <div className={`ml-auto flex items-center gap-3 ${route === 'add' ? '' : 'sm:ml-0'}`}>
             <span className="hidden text-xs text-stone-500 sm:inline" data-testid="last-check">
               {checking || state?.radar.running ? 'Checking…' : lastCheck ? `Checked ${ago(lastCheck)}` : 'Not checked yet'}
             </span>
@@ -129,9 +132,8 @@ export function App() {
           </p>
         )}
         {state && route === 'radar' && <RadarPage state={state} refresh={refresh} />}
-        {state && route === 'hot' && <HotPage state={state} refresh={refresh} />}
         {state && route === 'live' && <LivePage />}
-        {state && route === 'add' && <AddWatchPage state={state} refresh={refresh} />}
+        {state && route === 'add' && <AddWatchPage key={window.location.hash} state={state} refresh={refresh} />}
         {state && route === 'settings' && <SettingsPage state={state} refresh={refresh} />}
       </main>
     </div>

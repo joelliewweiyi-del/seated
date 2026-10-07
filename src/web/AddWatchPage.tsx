@@ -31,7 +31,13 @@ export function AddWatchPage({ state, refresh }: { state: State; refresh: () => 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.restaurants().then(setRestaurants, (e: Error) => setError(e.message));
+    // "Other times" in the search box opens this page with the restaurant already picked: #/add?r=<id>
+    const preset = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('r');
+    api.restaurants().then((list) => {
+      setRestaurants(list);
+      const r = preset ? list.find((x) => x.id === preset && x.supported) : undefined;
+      if (r) setPicked(r);
+    }, (e: Error) => setError(e.message));
   }, []);
 
   const cities = useMemo(() => {
