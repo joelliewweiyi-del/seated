@@ -29,6 +29,7 @@ const radar = new Radar({
   horizonDays: config.horizonDays,
   autoBookEnabled: config.autoBookEnabled,
   pollSeconds: config.pollSeconds,
+  quietHours: config.quietHours,
 });
 
 // ── the check loop ─────────────────────────────────────────────────────────

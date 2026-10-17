@@ -105,6 +105,7 @@ An alert is only useful if it is rare. Seated pushes loudly only when a table op
 | A new watch finds tables that were already open | None (they are listed, not "new") |
 | A table you were alerted about is taken | Silent: "Gone: …" |
 | Seated was not running for a while | None. The feed shows the gap. |
+| Anything above between 00:00 and 08:00 | Held until 08:00, and sent only if the table is still open |
 
 ## How often Seated looks
 
@@ -151,6 +152,7 @@ Copy `.env.example` to `.env`. Every value is optional.
 | `HORIZON_DAYS` | `14` | How far ahead an open-ended watch looks |
 | `AUTOBOOK` | `false` | Master switch for auto-book |
 | `SEATED_PASSWORD` | empty | Turns on basic auth (user `seated`) |
+| `QUIET_HOURS` | `00:00-08:00` | No table pushes in this window (Amsterdam time). A table that opens at night is pushed at the end of it, if it is still open. `off` turns it off. |
 | `HEALTHCHECK_URL` | empty | A URL that Seated calls after each check, for example from [healthchecks.io](https://healthchecks.io). If the calls stop, that service alerts you. |
 
 ## Hosting

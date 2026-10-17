@@ -29,6 +29,8 @@ export interface RadarOptions {
   autoBookEnabled: boolean;
   /** Base seconds between reads of one restaurant. Scarce restaurants are read more often, plentiful ones less. */
   pollSeconds?: number;
+  /** Restaurant-local "HH:mm" window without table pushes, e.g. 00:00–08:00. Held tables are pushed when it ends, if still open. */
+  quietHours?: { from: string; to: string } | null;
   now?: () => Date;
 }
 
@@ -306,8 +308,9 @@ export class Radar {
       store.addEvent({ ...this.blankEvent(nowIso, kind, restaurant.id), watchId: watch.id, partySize: watch.partySize, date, time });
     // Days already read without error. A table on any other day is not news: it was open before we could see it.
     const known = store.watchCheckedDates(watch.id);
-    // Few open tables before this check: a new one is real news, so it gets a loud push.
-    const scarce = store.openSightings(watch.id).length <= SCARCE_TABLES;
+    // Few open tables the user already knows of: a new one is real news, so it gets a loud push.
+    // Tables still waiting for their push (held in quiet hours, or a failed send) are not known yet.
+    const scarce = store.openSightings(watch.id).filter((s) => s.notified !== 0).length <= SCARCE_TABLES;
 
     for (const s of store.openSightings(watch.id)) {
       const key = `${s.date}|${s.time}`;
@@ -409,6 +412,8 @@ ${summarize(taken)}`,
     }
 
     if (fresh.length === 0) return 0;
+    // Quiet hours: no push. The tables stay pending and are pushed when quiet hours end, if they are still open.
+    if (this.inQuietHours()) return 0;
     const slots = fresh.map((f) => f.slot);
     // Loud only where a table is scarce. One more table at a restaurant with plenty free is a quiet note.
     const loud = scarce || note !== '';
@@ -422,6 +427,13 @@ ${summarize(taken)}`,
     // Unsent pushes stay pending, so the next check tries again while the table is still open.
     if (sent) store.markNotified(fresh.map((f) => f.sighting.id), loud ? LOUD : QUIET);
     return 0;
+  }
+
+  private inQuietHours(): boolean {
+    const q = this.o.quietHours;
+    if (!q) return false;
+    const t = localTime(this.now());
+    return q.from <= q.to ? t >= q.from && t < q.to : t >= q.from || t < q.to; // 23:00–07:00 wraps midnight
   }
 
   /**

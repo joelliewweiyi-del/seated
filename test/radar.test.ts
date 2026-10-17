@@ -10,7 +10,11 @@ const START = new Date('2026-10-06T10:00:00Z');
 const FRI = '2026-10-09';
 const SAT = '2026-10-10';
 
-function setup({ autoBookEnabled = false, platform }: { autoBookEnabled?: boolean; platform?: Platform } = {}) {
+function setup({
+  autoBookEnabled = false,
+  platform,
+  quietHours = null,
+}: { autoBookEnabled?: boolean; platform?: Platform; quietHours?: { from: string; to: string } | null } = {}) {
   const store = new Store(':memory:');
   store.seedRestaurants([
     { id: 'klepel', name: 'Café de Klepel', platform: 'formitable', platformUid: 'd94c781e', website: null, city: 'Amsterdam', address: null },
@@ -26,6 +30,7 @@ function setup({ autoBookEnabled = false, platform }: { autoBookEnabled?: boolea
     notifier,
     horizonDays: 14,
     autoBookEnabled,
+    quietHours,
     now: () => now,
   });
   const watch = (over: Partial<WatchInput> = {}) =>
@@ -962,5 +967,56 @@ describe('a restaurant that changes booking system', () => {
       { id: 'klepel', name: 'Café de Klepel', platform: 'formitable', platformUid: 'ffffffff', website: null, city: 'Amsterdam', address: null },
     ]);
     expect(store.openSightings(w.id)).toHaveLength(1);
+  });
+});
+
+describe('quiet hours', () => {
+  const HOUR = 60 * MIN;
+  const NIGHT = { from: '00:00', to: '08:00' };
+  const tablePushes = (n: ReturnType<typeof memoryNotifier>) => n.sent.filter((p) => /open:/.test(p.title));
+
+  it('holds a table that opens at night and pushes it once at 08:00, while it is still open', async () => {
+    const { demo, notifier, radar, watch, advance } = setup({ quietHours: NIGHT });
+    watch();
+    await radar.tick({ all: true }); // first read, Tuesday 12:00
+    advance(14 * HOUR); // Wednesday 02:00
+    demo.open('klepel', FRI, '19:30');
+    await radar.tick({ all: true });
+    expect(tablePushes(notifier)).toHaveLength(0); // no buzz at 02:00
+
+    advance(6 * HOUR + 5 * MIN); // 08:05
+    await radar.tick({ all: true });
+    expect(tablePushes(notifier)).toHaveLength(1);
+    expect(tablePushes(notifier)[0]!.priority).toBe('max');
+    await radar.tick({ all: true });
+    expect(tablePushes(notifier)).toHaveLength(1); // once, not again
+  });
+
+  it('stays silent about a table that opened and went during the night: nobody was told, so no "Gone" either', async () => {
+    const { demo, notifier, radar, watch, advance } = setup({ quietHours: NIGHT });
+    watch();
+    await radar.tick({ all: true });
+    advance(14 * HOUR);
+    demo.open('klepel', FRI, '19:30');
+    await radar.tick({ all: true });
+    advance(2 * HOUR);
+    demo.close('klepel', FRI, '19:30');
+    await radar.tick({ all: true });
+    advance(5 * HOUR); // 09:00
+    await radar.tick({ all: true });
+    expect(notifier.sent).toHaveLength(0);
+  });
+
+  it('still pushes loudly at 08:00 when several tables opened at night: the user knew of none of them', async () => {
+    const { demo, notifier, radar, watch, advance } = setup({ quietHours: NIGHT });
+    watch();
+    await radar.tick({ all: true });
+    advance(14 * HOUR);
+    for (const t of ['19:00', '19:30', '20:00']) demo.open('klepel', FRI, t);
+    await radar.tick({ all: true });
+    advance(6 * HOUR + 5 * MIN);
+    await radar.tick({ all: true });
+    expect(tablePushes(notifier)).toHaveLength(1);
+    expect(tablePushes(notifier)[0]!.priority).toBe('max');
   });
 });
