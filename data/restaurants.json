@@ -1317,8 +1317,8 @@
   {
     "id": "ikaria-park",
     "name": "Ikaria Park",
-    "platform": "formitable",
-    "platformUid": "89b86924",
+    "platform": "zenchef",
+    "platformUid": "382911",
     "website": "https://www.ikariapark.nl",
     "city": "Amsterdam",
     "address": null
