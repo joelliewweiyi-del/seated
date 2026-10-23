@@ -78,6 +78,8 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - Tebi is also a till and web shop: a `tebi.co` link on a site does not prove Tebi takes the bookings.
 - Writes need reCAPTCHA v3. Seated books through Tebi's own booking page in headless Chrome (`tebi-browser.ts`, Joel's decision, 23 Oct 2026), so the page runs the captcha as for any guest. Never fake, reuse or hide from the captcha (no stealth flags, no token tricks).
 - The booker picks the first open option that is not a bar or counter seat, refuses any page with money or a waitlist, and lets exactly one write reach the reservation API after it presses submit. Test ids (`widget-reserve-*`) were read on 23 Oct 2026. The create answer is `{ reservation, paymentPageInput, problem }`; a refusal is a 4xx with `validation[].key` (for example `NothingAvailable`).
+- The page has two layouts: separate date and time buttons, or one combined `widget-reserve-datetime-selector` (Café Parlotte). Options with a description open a detail page first, with `widget-reserve-details-button` to continue. An error names the step that failed.
+- Deposits are common. On 23 Oct 2026, every dinner option for the next evening at KID, Bacalar, Café Parlotte, Scheepskameel and Weinlokal Stern asked one (€10 to €35 per guest), so the booker refused them all.
 - Not yet proven: whether Tebi's reCAPTCHA accepts the headless browser. The first real booking settles it.
 
 ### Zenchef

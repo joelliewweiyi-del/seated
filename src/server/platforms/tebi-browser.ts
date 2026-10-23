@@ -86,6 +86,7 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
     return { ok: false, error: `Could not start Chrome: ${(e as Error).message.split('\n')[0]}` };
   }
   let submitted = false;
+  let step = 'open the booking page';
   try {
     const page = await (await browser.newContext({ locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' })).newPage();
     page.setDefaultTimeout(STEP_MS);
@@ -113,6 +114,7 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
 
     await page.goto(`${BOOKING_PAGE}/${uid}`, { waitUntil: 'networkidle', timeout: 30_000 });
 
+    step = 'choose the party size';
     const party = page.getByTestId('widget-reserve-groupsize-selector');
     if (!(await party.innerText()).includes(`${partySize} `)) {
       await party.click();
@@ -121,7 +123,10 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
       if (await confirm.isVisible().catch(() => false)) await confirm.click();
     }
 
-    await page.getByTestId('widget-reserve-date-selector').click();
+    step = 'choose the date';
+    // Some restaurants show one combined "date and time" button instead of two (Café Parlotte, Oct 2026).
+    const dateButton = page.getByTestId('widget-reserve-date-selector');
+    await ((await dateButton.count()) ? dateButton : page.getByTestId('widget-reserve-datetime-selector')).click();
     const dialog = page.locator('[role=dialog]');
     for (let i = 0; i < 3 && !(await dialog.locator('h2', { hasText: monthLabel(date) }).count()); i++) {
       await page.getByTestId('widget-reserve-date-button-next-month').click();
@@ -130,12 +135,15 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
     if ((await day.getAttribute('data-disabled')) === 'true') return { ok: false, error: 'Tebi shows this date as fully booked' };
     await day.click();
 
+    step = 'choose the time';
     // After a date the time list sometimes opens by itself and sometimes not.
     const timeButton = page.getByTestId(`widget-reserve-time-button-${time}`);
-    if (!(await timeButton.isVisible().catch(() => false))) await page.getByTestId('widget-reserve-time-selector').click();
+    const listOpened = await timeButton.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true, () => false);
+    if (!listOpened) await page.getByTestId('widget-reserve-time-selector').click();
     if (!(await timeButton.count())) return { ok: false, error: `Tebi does not offer ${time} on this date` };
     await timeButton.click();
 
+    step = 'choose the seating';
     const optionButtons = page.locator('button[data-testid^="widget-reserve-option-"]');
     await optionButtons.first().waitFor();
     const options = await optionButtons.evaluateAll((bs) =>
@@ -145,15 +153,26 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
     if (!option) return { ok: false, error: `No table at ${time}, only: ${options.map((o) => o.name).join(', ')}` };
     await optionButtons.nth(options.indexOf(option)).click();
 
+    // Options with a description open a detail page first, with its own continue button.
+    step = 'open the guest page';
     const firstName = page.locator('input[name=firstName]');
-    await firstName.waitFor();
-    const why = refusal(await page.innerText('body'));
+    const details = page.getByTestId('widget-reserve-details-button');
+    await firstName.or(details).first().waitFor();
+    let why = refusal(await page.innerText('body'));
     if (why) return { ok: false, error: why };
+    if (await details.isVisible().catch(() => false)) {
+      await details.click();
+      await firstName.waitFor();
+      why = refusal(await page.innerText('body'));
+      if (why) return { ok: false, error: why };
+    }
+    step = 'fill in the guest details';
     await firstName.fill(guest.firstName);
     await page.locator('input[name=lastName]').fill(guest.lastName);
     await page.locator('input[name=email]').fill(guest.email);
     await page.locator('input[name=phone]').fill(phone);
 
+    step = 'submit';
     submitted = true;
     await page.locator('button[type=submit]').click();
     const deadline = Date.now() + ANSWER_MS + 5_000;
@@ -166,7 +185,7 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
     // Before submit nothing was sent, so a failure there is a clear "not booked".
     return submitted
       ? { ok: false, uncertain: true, error: `Tebi page failed after submit: ${msg}` }
-      : { ok: false, error: `Tebi page failed: ${msg}` };
+      : { ok: false, error: `Tebi page failed at "${step}": ${msg}` };
   } finally {
     await browser.close().catch(() => {});
   }
