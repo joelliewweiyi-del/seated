@@ -6,13 +6,13 @@ import { zenchef } from './zenchef.js';
 import type { Platform } from './types.js';
 
 /** Every booking system Seated can read. The key is the `platform` value in data/restaurants.json. */
-export function createPlatforms({ onUidChange }: { onUidChange?: (restaurantId: string, uid: string) => void } = {}): Record<
-  string,
-  Platform
-> {
+export function createPlatforms({
+  onUidChange,
+  maxDepositCents = 0,
+}: { onUidChange?: (restaurantId: string, uid: string) => void; maxDepositCents?: number } = {}): Record<string, Platform> {
   return {
     formitable: formitable(),
-    tebi: tebi({ onUidChange }),
+    tebi: tebi({ onUidChange, maxDepositCents }),
     sevenrooms: sevenrooms(),
     guestplan: guestplan(),
     zenchef: zenchef(),

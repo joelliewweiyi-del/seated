@@ -29,7 +29,7 @@ The hard part of getting a table is not booking it. Booking takes 30 seconds. Th
 | Formitable | Yes | Pre-filled: date, time, party | Yes, opt-in |
 | Zenchef | Yes | Pre-filled: date, party | No |
 | SevenRooms | Yes | Pre-filled: date, time, party | No |
-| Tebi | Yes | The restaurant's Tebi page | Yes, through its booking page in Chrome (table seats only, never with a deposit) |
+| Tebi | Yes | The restaurant's Tebi page | Yes, through its booking page in Chrome (table seats only; a deposit only up to `AUTOBOOK_MAX_DEPOSIT`) |
 | Guestplan | Yes | The restaurant's Guestplan page | No |
 | TableCheck, TheFork | Not yet | | |
 
@@ -133,7 +133,7 @@ Seated has these guards against bookings you did not want:
 - If the booking system does not answer clearly (for example, a timeout), Seated assumes the booking may exist. It pauses the watch and asks you to check your email.
 - Seated books at most one table per evening, across all watches.
 - Seated makes at most one automatic booking in 24 hours.
-- Seated never books a table that asks for a deposit, a prepayment or a no-show fee. It alerts you instead.
+- Seated never books a table that asks for a deposit, a prepayment or a no-show fee, with one exception. On Tebi, set `AUTOBOOK_MAX_DEPOSIT` (euros for the whole party) to let Seated book a table with a deposit up to that amount. Tebi then holds the table until you pay. The push opens the payment page, and Seated never pays itself.
 
 `POST /api/watches/:id/got-it` records a table you booked yourself: Seated stops the watch and counts the table as a win.
 
@@ -151,6 +151,7 @@ Copy `.env.example` to `.env`. Every value is optional.
 | `POLL_SECONDS` | `120` | Base time between reads of one restaurant. Seated adjusts it per restaurant (see above). The minimum is 60. |
 | `HORIZON_DAYS` | `14` | How far ahead an open-ended watch looks |
 | `AUTOBOOK` | `false` | Master switch for auto-book |
+| `AUTOBOOK_MAX_DEPOSIT` | `0` | Highest Tebi deposit auto-book may agree to, in euros for the whole party. You pay it from the push. `0` = never |
 | `SEATED_PASSWORD` | empty | Turns on basic auth (user `seated`) |
 | `QUIET_HOURS` | `00:00-08:00` | No table pushes in this window (Amsterdam time). A table that opens at night is pushed at the end of it, if it is still open. `off` turns it off. |
 | `HEALTHCHECK_URL` | empty | A URL that Seated calls after each check, for example from [healthchecks.io](https://healthchecks.io). If the calls stop, that service alerts you. |

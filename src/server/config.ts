@@ -35,6 +35,8 @@ export const config = {
   pollSeconds: Math.max(60, num(process.env.POLL_SECONDS, 120)),
   horizonDays: num(process.env.HORIZON_DAYS, 14),
   autoBookEnabled: !observe && (demo || process.env.AUTOBOOK === 'true'),
+  /** The highest deposit auto-book may agree to for one booking, in euros (Tebi). 0 = never. You pay it from the push. */
+  maxDepositCents: Math.round(num(process.env.AUTOBOOK_MAX_DEPOSIT, 0) * 100),
   password: process.env.SEATED_PASSWORD || '',
   /** Optional: a URL pinged after each check (healthchecks.io and similar). If the pings stop, you get an alert. */
   healthcheckUrl: process.env.HEALTHCHECK_URL || '',

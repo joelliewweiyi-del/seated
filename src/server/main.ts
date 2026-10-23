@@ -20,7 +20,7 @@ store.seedRestaurants(loadCuratedRestaurants());
 const demo = config.demo ? demoPlatform() : null;
 const platforms: Record<string, Platform> = demo
   ? demoPlatforms(demo)
-  : createPlatforms({ onUidChange: (id, uid) => store.updateRestaurantUid(id, uid) });
+  : createPlatforms({ onUidChange: (id, uid) => store.updateRestaurantUid(id, uid), maxDepositCents: config.maxDepositCents });
 const notifier = demo || config.observe ? memoryNotifier({ quiet: config.observe }) : ntfyNotifier(() => store.getSettings());
 const radar = new Radar({
   store,

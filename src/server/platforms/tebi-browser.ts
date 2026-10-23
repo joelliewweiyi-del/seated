@@ -11,24 +11,67 @@ const ANSWER_MS = 30_000;
 
 /** Bar seats are not a table. Joel wants a seat at a table (23 Oct 2026). */
 const NOT_A_TABLE = /\bbar\b|cocktail|counter|toog/i;
-/** Any money on the page means Seated stops: a deposit, a prepayment or a card hold. */
+/** Money on a page whose option has no deposit is unexpected, so Seated stops. */
 const MONEY = /€|aanbetaling|vooruitbeta|deposit|prepay|creditcard|credit card/i;
 const WAITLIST = /wachtlijst|waitlist/i;
 
+/** One seating option at one time, as Tebi's API describes it. */
 export interface TebiOption {
   name: string;
-  disabled: boolean;
+  status: string; // Available | Waitlist | ...
+  /** The deposit for the whole party, in cents. 0 when there is none. */
+  depositCents: number;
+  currency: string;
 }
 
-/** The first open option that is a seat at a table, or null. */
-export function chooseOption(options: TebiOption[]): TebiOption | null {
-  return options.find((o) => !o.disabled && !NOT_A_TABLE.test(o.name)) ?? null;
+const euros = (cents: number) => `€${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+
+/**
+ * Joins `reservation-options` (status and deposit per service) with `reservation-settings`
+ * (the service names, which the page uses in its button test ids).
+ */
+export function readOptions(optionsBody: unknown, settingsBody: unknown, time: string): TebiOption[] {
+  const names = new Map<string, string>();
+  for (const s of (settingsBody as { services?: { id?: string; name?: string }[] })?.services ?? []) {
+    if (s?.id && typeof s.name === 'string') names.set(s.id, s.name.trim());
+  }
+  const options = (optionsBody as { options?: Record<string, unknown>[] })?.options ?? [];
+  return options
+    .filter((o) => o.startTime === time && typeof o.serviceId === 'string' && names.has(o.serviceId))
+    .map((o) => {
+      const price = o.totalPrepaymentPrice as { minorUnits?: number; currencyCode?: string } | null | undefined;
+      return {
+        name: names.get(o.serviceId as string)!,
+        status: String(o.status),
+        depositCents: Number(price?.minorUnits ?? 0) || 0,
+        currency: price?.currencyCode ?? 'EUR',
+      };
+    });
 }
 
-/** Why Seated must not submit this guest page, or null when it may. */
-export function refusal(pageText: string): string | null {
+/** Why Seated skips this option, or null when it may book it. */
+function skipReason(o: TebiOption, maxDepositCents: number): string | null {
+  if (o.status !== 'Available') return o.status.toLowerCase();
+  if (NOT_A_TABLE.test(o.name)) return 'bar seat';
+  if (o.depositCents > 0 && o.currency !== 'EUR') return `deposit in ${o.currency}`;
+  if (o.depositCents > maxDepositCents) return `${euros(o.depositCents)} deposit, limit ${euros(maxDepositCents)}`;
+  return null;
+}
+
+/** The first available table seat with a deposit within the limit, or null. */
+export function chooseOption(options: TebiOption[], maxDepositCents: number): TebiOption | null {
+  return options.find((o) => skipReason(o, maxDepositCents) === null) ?? null;
+}
+
+/** Why no option was chosen, for the push: "Restaurant (€20 deposit, limit €0), Bar (bar seat)". */
+export function whyNone(options: TebiOption[], maxDepositCents: number): string {
+  return options.map((o) => `${o.name} (${skipReason(o, maxDepositCents)})`).join(', ') || 'no options';
+}
+
+/** Why Seated must not submit this page, or null when it may. */
+export function refusal(pageText: string, depositCents: number): string | null {
   if (WAITLIST.test(pageText)) return 'Tebi offers only the waitlist for this time';
-  if (MONEY.test(pageText)) return 'Tebi asks for a deposit or payment for this table';
+  if (depositCents === 0 && MONEY.test(pageText)) return 'Tebi asks for money that its option list did not show';
   return null;
 }
 
@@ -41,8 +84,9 @@ export function dutchPhone(phone: string): string | null {
 /**
  * Reads Tebi's answer to the one create request. `status` is null when no answer came.
  * A clear refusal (4xx with reasons) means no booking exists. Anything unclear is `uncertain`.
+ * With a deposit, Tebi holds the table until it is paid; `paymentUrl` is the page where you pay.
  */
-export function readAnswer(status: number | null, body: string): BookResult {
+export function readAnswer(status: number | null, body: string, paymentUrl: string | null = null): BookResult {
   if (status === null) return { ok: false, uncertain: true, error: 'No answer from Tebi after submitting' };
   let data: Record<string, unknown> | null = null;
   try {
@@ -53,9 +97,13 @@ export function readAnswer(status: number | null, body: string): BookResult {
   if (status >= 200 && status < 300) {
     const reservation = data?.reservation as Record<string, unknown> | undefined;
     if (!reservation) return { ok: false, uncertain: true, error: 'Tebi accepted the request but sent no reservation' };
-    if (data?.paymentPageInput) return { ok: false, uncertain: true, error: 'Tebi made the reservation but asks for a payment' };
     const ref = reservation.id ?? reservation.reference ?? reservation.reservationNumber;
-    return { ok: true, reference: ref ? String(ref) : 'Tebi', paymentUrl: null };
+    const reference = ref ? String(ref) : 'Tebi';
+    if (data?.paymentPageInput) {
+      if (!paymentUrl) return { ok: false, uncertain: true, error: 'Tebi holds the table until the deposit is paid, but Seated found no payment link' };
+      return { ok: true, reference, paymentUrl };
+    }
+    return { ok: true, reference, paymentUrl: null };
   }
   if (status >= 400 && status < 500) {
     const reasons = Array.isArray(data?.validation) ? (data.validation as { key?: string }[]).map((v) => v.key).filter(Boolean) : [];
@@ -74,7 +122,14 @@ export function monthLabel(date: string): string {
 type Answer = { status: number | null; body: string };
 
 /** Books one table on Tebi's booking page. Never throws: every outcome is a BookResult. */
-export async function bookInBrowser(uid: string, date: string, time: string, partySize: number, guest: Guest): Promise<BookResult> {
+export async function bookInBrowser(
+  uid: string,
+  date: string,
+  time: string,
+  partySize: number,
+  guest: Guest,
+  maxDepositCents = 0,
+): Promise<BookResult> {
   const phone = dutchPhone(guest.phone);
   if (!phone) return { ok: false, error: 'Tebi auto-book needs a Dutch phone number (+31) in Settings' };
 
@@ -112,6 +167,18 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
       await answer;
     });
 
+    // The page's own reads tell which service each button is, and its deposit.
+    let settingsBody: unknown = null;
+    let optionsBody: unknown = null;
+    page.on('response', async (res) => {
+      const url = new URL(res.url());
+      if (res.request().method() !== 'GET' || !res.ok()) return;
+      if (url.pathname.endsWith('/reservation-settings')) settingsBody = await res.json().catch(() => null);
+      if (url.pathname.endsWith('/reservation-options') && url.searchParams.get('date') === date) {
+        optionsBody = await res.json().catch(() => null);
+      }
+    });
+
     await page.goto(`${BOOKING_PAGE}/${uid}`, { waitUntil: 'networkidle', timeout: 30_000 });
 
     step = 'choose the party size';
@@ -146,24 +213,27 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
     step = 'choose the seating';
     const optionButtons = page.locator('button[data-testid^="widget-reserve-option-"]');
     await optionButtons.first().waitFor();
-    const options = await optionButtons.evaluateAll((bs) =>
-      bs.map((b) => ({ name: (b.getAttribute('data-testid') ?? '').replace('widget-reserve-option-', '').trim(), disabled: (b as HTMLButtonElement).disabled })),
+    const options = readOptions(optionsBody, settingsBody, time);
+    const option = chooseOption(options, maxDepositCents);
+    if (!option) return { ok: false, error: `No table Seated may book at ${time}: ${whyNone(options, maxDepositCents)}` };
+    const buttonNames = await optionButtons.evaluateAll((bs) =>
+      bs.map((b) => (b.getAttribute('data-testid') ?? '').replace('widget-reserve-option-', '').trim()),
     );
-    const option = chooseOption(options);
-    if (!option) return { ok: false, error: `No table at ${time}, only: ${options.map((o) => o.name).join(', ')}` };
-    await optionButtons.nth(options.indexOf(option)).click();
+    const index = buttonNames.indexOf(option.name);
+    if (index < 0) return { ok: false, error: `Tebi shows no button for "${option.name}"` };
+    await optionButtons.nth(index).click();
 
     // Options with a description open a detail page first, with its own continue button.
     step = 'open the guest page';
     const firstName = page.locator('input[name=firstName]');
     const details = page.getByTestId('widget-reserve-details-button');
     await firstName.or(details).first().waitFor();
-    let why = refusal(await page.innerText('body'));
+    let why = refusal(await page.innerText('body'), option.depositCents);
     if (why) return { ok: false, error: why };
     if (await details.isVisible().catch(() => false)) {
       await details.click();
       await firstName.waitFor();
-      why = refusal(await page.innerText('body'));
+      why = refusal(await page.innerText('body'), option.depositCents);
       if (why) return { ok: false, error: why };
     }
     step = 'fill in the guest details';
@@ -179,7 +249,12 @@ export async function bookInBrowser(uid: string, date: string, time: string, par
     while (!answer && Date.now() < deadline) await page.waitForTimeout(250);
     if (!answer) return { ok: false, uncertain: true, error: 'Seated pressed submit but saw no request to Tebi' };
     const { status, body } = await (answer as Promise<Answer>);
-    return readAnswer(status, body);
+    // With a deposit, the page moves to the new reservation with a payment token. That page is the payment link.
+    let paymentUrl: string | null = null;
+    if (option.depositCents > 0 && status !== null && status < 300) {
+      paymentUrl = await page.waitForURL(/[?&]token=/, { timeout: 15_000 }).then(() => page.url(), () => null);
+    }
+    return readAnswer(status, body, paymentUrl);
   } catch (e) {
     const msg = (e as Error).message.split('\n')[0];
     // Before submit nothing was sent, so a failure there is a clear "not booked".

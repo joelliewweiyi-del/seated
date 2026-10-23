@@ -39,9 +39,17 @@ export interface TebiOptions {
   onUidChange?: (restaurantId: string, uid: string) => void;
   /** Books through the booking page. Tests pass a fake: they never open Chrome or book. */
   bookImpl?: typeof bookInBrowser;
+  /** The highest deposit Seated may agree to for one booking, in cents. 0 means never. */
+  maxDepositCents?: number;
 }
 
-export function tebi({ fetchImpl = fetch, gapMs = MIN_GAP_MS, onUidChange, bookImpl = bookInBrowser }: TebiOptions = {}): Platform {
+export function tebi({
+  fetchImpl = fetch,
+  gapMs = MIN_GAP_MS,
+  onUidChange,
+  bookImpl = bookInBrowser,
+  maxDepositCents = 0,
+}: TebiOptions = {}): Platform {
   let lastRequestAt = 0;
   const current = new Map<string, string>(); // restaurant id -> latest known ledger id
 
@@ -125,7 +133,7 @@ export function tebi({ fetchImpl = fetch, gapMs = MIN_GAP_MS, onUidChange, bookI
     },
 
     book(restaurant, date, time, partySize, guest) {
-      return bookImpl(uidOf(restaurant), date, time, partySize, guest);
+      return bookImpl(uidOf(restaurant), date, time, partySize, guest, maxDepositCents);
     },
   };
 }

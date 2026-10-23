@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { findTebiUid, tebi, toSlots } from '../src/server/platforms/tebi';
-import { chooseOption, dutchPhone, monthLabel, readAnswer, refusal } from '../src/server/platforms/tebi-browser';
+import { chooseOption, dutchPhone, monthLabel, readAnswer, readOptions, refusal, whyNone } from '../src/server/platforms/tebi-browser';
 import type { Restaurant } from '../src/server/platforms/types';
 
 // Recorded from Bacalar (Amsterdam) on 6 Oct 2026. Tests never call Tebi.
@@ -51,27 +51,66 @@ describe('Tebi booking', () => {
   it('books on the current ledger id, because Tebi rotates ids and an old one answers 400', async () => {
     const calls: string[] = [];
     const platform = tebi({
-      bookImpl: async (uid, date, time, party) => {
-        calls.push(`${uid} ${date} ${time} ${party}`);
+      maxDepositCents: 4000,
+      bookImpl: async (uid, date, time, party, _guest, cap) => {
+        calls.push(`${uid} ${date} ${time} ${party} cap=${cap}`);
         return { ok: true, reference: 'R1', paymentUrl: null };
       },
     });
     expect(await platform.book!(bacalar, '2026-10-24', '20:30', 2, guest)).toEqual({ ok: true, reference: 'R1', paymentUrl: null });
-    expect(calls).toEqual([`${OLD} 2026-10-24 20:30 2`]);
+    expect(calls).toEqual([`${OLD} 2026-10-24 20:30 2 cap=4000`]);
   });
 
-  it('skips bar and counter seats: Joel wants a seat at a table', () => {
-    const pick = (names: [string, boolean][]) => chooseOption(names.map(([name, disabled]) => ({ name, disabled })))?.name ?? null;
-    expect(pick([['Cocktailbar', false], ['Restaurant', false]])).toBe('Restaurant');
-    expect(pick([['Dinner @the bar', false], ['Dinner', true]])).toBeNull(); // September, 29 Oct 2026
-    expect(pick([['Counter', false], ['Toog', false]])).toBeNull();
-    expect(pick([['Communal Table', false]])).toBe('Communal Table');
+  it('never agrees to a deposit unless the limit is set: the default is 0', async () => {
+    const caps: number[] = [];
+    await tebi({ bookImpl: async (...a) => (caps.push(a[5]!), { ok: false, error: 'x' }) }).book!(bacalar, '2026-10-24', '20:30', 2, guest);
+    expect(caps).toEqual([0]);
   });
 
-  it('never submits when money or a waitlist is on the page', () => {
-    expect(refusal('€ 10,00 aanbetaling per gast')).toMatch(/deposit/); // KID, 24 Oct 2026
-    expect(refusal('Inschrijven op de wachtlijst')).toMatch(/waitlist/); // Toscanini, 29 Oct 2026
-    expect(refusal('Bevestig je reservering. Door te reserveren ga je akkoord met onze Algemene voorwaarden')).toBeNull();
+  // Recorded from Bacalar on 23 Oct 2026, for 24 Oct at 20:30, 2 people.
+  const SETTINGS = {
+    services: [
+      { id: 'rest', name: 'Bacalar - restaurant', prepaymentPrice: { minorUnits: 1000, currencyCode: 'EUR' } },
+      { id: 'bar', name: 'Bacalar - bar seats ', prepaymentPrice: { minorUnits: 1000, currencyCode: 'EUR' } },
+    ],
+  };
+  const OPTIONS = {
+    options: [
+      { serviceId: 'rest', startTime: '20:30', status: 'Available', totalPrepaymentPrice: { minorUnits: 2000, currencyCode: 'EUR' } },
+      { serviceId: 'bar', startTime: '20:30', status: 'Waitlist', totalPrepaymentPrice: { minorUnits: 2000, currencyCode: 'EUR' } },
+    ],
+  };
+
+  it('reads each option\'s name and the deposit for the whole party from Tebi\'s own answers', () => {
+    expect(readOptions(OPTIONS, SETTINGS, '20:30')).toEqual([
+      { name: 'Bacalar - restaurant', status: 'Available', depositCents: 2000, currency: 'EUR' },
+      { name: 'Bacalar - bar seats', status: 'Waitlist', depositCents: 2000, currency: 'EUR' },
+    ]);
+    expect(readOptions(OPTIONS, SETTINGS, '21:00')).toEqual([]);
+    expect(readOptions(null, null, '20:30')).toEqual([]);
+  });
+
+  it('books a deposit only up to the limit, because Joel pays it', () => {
+    const options = readOptions(OPTIONS, SETTINGS, '20:30');
+    expect(chooseOption(options, 0)).toBeNull();
+    expect(chooseOption(options, 1999)).toBeNull();
+    expect(chooseOption(options, 2000)?.name).toBe('Bacalar - restaurant');
+    expect(whyNone(options, 0)).toBe('Bacalar - restaurant (€20 deposit, limit €0), Bacalar - bar seats (waitlist)');
+  });
+
+  it('skips bar and counter seats even when free: Joel wants a seat at a table', () => {
+    const o = (name: string) => ({ name, status: 'Available', depositCents: 0, currency: 'EUR' });
+    expect(chooseOption([o('Cocktailbar'), o('Restaurant')], 0)?.name).toBe('Restaurant');
+    expect(chooseOption([o('Dinner @the bar')], 0)).toBeNull(); // September, 29 Oct 2026
+    expect(chooseOption([o('Counter'), o('Toog')], 0)).toBeNull();
+    expect(chooseOption([o('Communal Table')], 0)?.name).toBe('Communal Table');
+  });
+
+  it('never submits a waitlist, and stops when the page asks money its option list did not show', () => {
+    expect(refusal('Inschrijven op de wachtlijst', 2000)).toMatch(/waitlist/); // Toscanini, 29 Oct 2026
+    expect(refusal('€ 10,00 aanbetaling per gast', 0)).toMatch(/money/);
+    expect(refusal('€ 10,00 aanbetaling per gast', 2000)).toBeNull();
+    expect(refusal('Bevestig je reservering. Door te reserveren ga je akkoord met onze Algemene voorwaarden', 0)).toBeNull();
   });
 
   it('fills the nine digits after the fixed +31 prefix, and refuses other countries before anything is sent', () => {
@@ -83,9 +122,18 @@ describe('Tebi booking', () => {
   it('calls only a reservation in the answer a booking; anything unclear is uncertain so the watch pauses', () => {
     expect(readAnswer(201, JSON.stringify({ reservation: { id: 'abc' } }))).toEqual({ ok: true, reference: 'abc', paymentUrl: null });
     expect(readAnswer(200, '{}')).toMatchObject({ ok: false, uncertain: true });
-    expect(readAnswer(200, JSON.stringify({ reservation: { id: 'x' }, paymentPageInput: { a: 1 } }))).toMatchObject({ ok: false, uncertain: true });
     expect(readAnswer(null, '')).toMatchObject({ ok: false, uncertain: true });
     expect(readAnswer(502, 'Bad gateway')).toMatchObject({ ok: false, uncertain: true });
+  });
+
+  it('a deposit booking is held until paid: it needs the payment link, or it counts as unclear', () => {
+    const held = JSON.stringify({ reservation: { id: 'x' }, paymentPageInput: 'tok' });
+    expect(readAnswer(200, held, 'https://live.tebi.co/ecom/r/x?token=tok')).toEqual({
+      ok: true,
+      reference: 'x',
+      paymentUrl: 'https://live.tebi.co/ecom/r/x?token=tok',
+    });
+    expect(readAnswer(200, held, null)).toMatchObject({ ok: false, uncertain: true });
   });
 
   it('treats a 4xx with reasons as a clear "not booked", so a later table can still be tried', () => {
