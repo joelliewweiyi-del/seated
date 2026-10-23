@@ -29,7 +29,7 @@ The hard part of getting a table is not booking it. Booking takes 30 seconds. Th
 | Formitable | Yes | Pre-filled: date, time, party | Yes, opt-in |
 | Zenchef | Yes | Pre-filled: date, party | No |
 | SevenRooms | Yes | Pre-filled: date, time, party | No |
-| Tebi | Yes | The restaurant's Tebi page | No: its booking form has a captcha |
+| Tebi | Yes | The restaurant's Tebi page | Yes, through its booking page in Chrome (table seats only, never with a deposit) |
 | Guestplan | Yes | The restaurant's Guestplan page | No |
 | TableCheck, TheFork | Not yet | | |
 
@@ -122,7 +122,7 @@ Nothing is ever read more often than once a minute. After two failed requests in
 
 ## Auto-book
 
-Auto-book is off by default, and the dashboard has no switch for it since the one-screen redesign (October 2026). The server still supports it, with all the guards below: set `AUTOBOOK=true`, save your guest details through `PUT /api/settings`, and create a watch with `"autoBook": true` through `POST /api/watches`. Only Formitable restaurants can be booked.
+Auto-book is off by default, and the dashboard has no switch for it since the one-screen redesign (October 2026). The server still supports it, with all the guards below: set `AUTOBOOK=true`, save your guest details through `PUT /api/settings`, and create a watch with `"autoBook": true` through `POST /api/watches`. Formitable and Tebi restaurants can be booked. Tebi needs Google Chrome on the machine that runs Seated.
 
 Seated then books the first table that fits and stops that watch. The restaurant sends its confirmation to your email.
 

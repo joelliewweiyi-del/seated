@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { findTebiUid, tebi, toSlots } from '../src/server/platforms/tebi';
+import { chooseOption, dutchPhone, monthLabel, readAnswer, refusal } from '../src/server/platforms/tebi-browser';
 import type { Restaurant } from '../src/server/platforms/types';
 
 // Recorded from Bacalar (Amsterdam) on 6 Oct 2026. Tests never call Tebi.
@@ -38,9 +39,63 @@ describe('Tebi slots', () => {
     expect(slots.find((s) => s.time === '19:00')).toMatchObject({ open: false }); // Unavailable
   });
 
-  it('never marks a Tebi slot auto-bookable, because Tebi bookings sit behind a captcha', () => {
-    expect(toSlots('2026-10-09', DAY.timeslots).every((s) => !s.autoBookable)).toBe(true);
-    expect(tebi().book).toBeUndefined();
+  it('offers only open slots for auto-book; bar seats and deposits are checked on the booking page', () => {
+    const slots = toSlots('2026-10-09', DAY.timeslots);
+    expect(slots.every((s) => s.autoBookable === s.open)).toBe(true);
+  });
+});
+
+describe('Tebi booking', () => {
+  const guest = { firstName: 'Test', lastName: 'Droog', email: 'test@example.com', phone: '+31612345678' };
+
+  it('books on the current ledger id, because Tebi rotates ids and an old one answers 400', async () => {
+    const calls: string[] = [];
+    const platform = tebi({
+      bookImpl: async (uid, date, time, party) => {
+        calls.push(`${uid} ${date} ${time} ${party}`);
+        return { ok: true, reference: 'R1', paymentUrl: null };
+      },
+    });
+    expect(await platform.book!(bacalar, '2026-10-24', '20:30', 2, guest)).toEqual({ ok: true, reference: 'R1', paymentUrl: null });
+    expect(calls).toEqual([`${OLD} 2026-10-24 20:30 2`]);
+  });
+
+  it('skips bar and counter seats: Joel wants a seat at a table', () => {
+    const pick = (names: [string, boolean][]) => chooseOption(names.map(([name, disabled]) => ({ name, disabled })))?.name ?? null;
+    expect(pick([['Cocktailbar', false], ['Restaurant', false]])).toBe('Restaurant');
+    expect(pick([['Dinner @the bar', false], ['Dinner', true]])).toBeNull(); // September, 29 Oct 2026
+    expect(pick([['Counter', false], ['Toog', false]])).toBeNull();
+    expect(pick([['Communal Table', false]])).toBe('Communal Table');
+  });
+
+  it('never submits when money or a waitlist is on the page', () => {
+    expect(refusal('€ 10,00 aanbetaling per gast')).toMatch(/deposit/); // KID, 24 Oct 2026
+    expect(refusal('Inschrijven op de wachtlijst')).toMatch(/waitlist/); // Toscanini, 29 Oct 2026
+    expect(refusal('Bevestig je reservering. Door te reserveren ga je akkoord met onze Algemene voorwaarden')).toBeNull();
+  });
+
+  it('fills the nine digits after the fixed +31 prefix, and refuses other countries before anything is sent', () => {
+    expect(dutchPhone('+31 6 12345678')).toBe('612345678');
+    expect(dutchPhone('0612345678')).toBe('612345678');
+    expect(dutchPhone('+32470123456')).toBeNull();
+  });
+
+  it('calls only a reservation in the answer a booking; anything unclear is uncertain so the watch pauses', () => {
+    expect(readAnswer(201, JSON.stringify({ reservation: { id: 'abc' } }))).toEqual({ ok: true, reference: 'abc', paymentUrl: null });
+    expect(readAnswer(200, '{}')).toMatchObject({ ok: false, uncertain: true });
+    expect(readAnswer(200, JSON.stringify({ reservation: { id: 'x' }, paymentPageInput: { a: 1 } }))).toMatchObject({ ok: false, uncertain: true });
+    expect(readAnswer(null, '')).toMatchObject({ ok: false, uncertain: true });
+    expect(readAnswer(502, 'Bad gateway')).toMatchObject({ ok: false, uncertain: true });
+  });
+
+  it('treats a 4xx with reasons as a clear "not booked", so a later table can still be tried', () => {
+    const r = readAnswer(400, JSON.stringify({ message: 'invalid', validation: [{ key: 'NothingAvailable' }] }));
+    expect(r).toEqual({ ok: false, error: 'Tebi refused the booking (400): NothingAvailable' });
+  });
+
+  it('names the month the way Tebi\'s date page shows it', () => {
+    expect(monthLabel('2026-10-24')).toBe('oktober 2026');
+    expect(monthLabel('2026-11-02')).toBe('november 2026');
   });
 });
 

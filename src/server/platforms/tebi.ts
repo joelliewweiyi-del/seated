@@ -1,8 +1,9 @@
+import { bookInBrowser } from './tebi-browser.js';
 import type { Platform, Restaurant, Slot } from './types.js';
 
 // Tebi (live.tebi.co) shows availability to anyone with plain GET requests; no captcha.
-// Only creating a reservation is behind reCAPTCHA, so Seated never books on Tebi:
-// it alerts and links to the restaurant's Tebi booking page, where the user books.
+// Only creating a reservation is behind reCAPTCHA, so Seated books on Tebi through Tebi's own
+// booking page in Chrome (tebi-browser.ts), where the page runs the captcha like for any guest.
 const API = 'https://live.tebi.co/api/reservations-guest/ledgers';
 const WIDGET_REDIRECT = 'https://live.tebi.co/api/widget';
 const BOOKING_PAGE = 'https://live.tebi.co/ecom/reservations';
@@ -24,7 +25,11 @@ export interface TebiDay {
 export function toSlots(date: string, timeslots: TebiTimeslot[]): Slot[] {
   return timeslots
     .filter((t) => typeof t?.time === 'string' && /^\d{2}:\d{2}$/.test(t.time))
-    .map((t) => ({ date, time: t.time, open: t.availabilityType === 'Available', autoBookable: false }));
+    .map((t) => {
+      const open = t.availabilityType === 'Available';
+      // The slot does not say whether it is a bar seat or needs a deposit; book() checks that on the page.
+      return { date, time: t.time, open, autoBookable: open };
+    });
 }
 
 export interface TebiOptions {
@@ -32,9 +37,11 @@ export interface TebiOptions {
   gapMs?: number;
   /** Tebi rotates restaurant ids. Called when a fresh id was found, so the caller can save it. */
   onUidChange?: (restaurantId: string, uid: string) => void;
+  /** Books through the booking page. Tests pass a fake: they never open Chrome or book. */
+  bookImpl?: typeof bookInBrowser;
 }
 
-export function tebi({ fetchImpl = fetch, gapMs = MIN_GAP_MS, onUidChange }: TebiOptions = {}): Platform {
+export function tebi({ fetchImpl = fetch, gapMs = MIN_GAP_MS, onUidChange, bookImpl = bookInBrowser }: TebiOptions = {}): Platform {
   let lastRequestAt = 0;
   const current = new Map<string, string>(); // restaurant id -> latest known ledger id
 
@@ -115,6 +122,10 @@ export function tebi({ fetchImpl = fetch, gapMs = MIN_GAP_MS, onUidChange }: Teb
     bookingUrl(restaurant) {
       // Tebi's booking page takes no date or party size in the link (checked in its code, Oct 2026).
       return `${BOOKING_PAGE}/${uidOf(restaurant)}`;
+    },
+
+    book(restaurant, date, time, partySize, guest) {
+      return bookImpl(uidOf(restaurant), date, time, partySize, guest);
     },
   };
 }

@@ -1,6 +1,6 @@
 # Seated: rules for coding agents
 
-Seated is a personal table radar. It watches restaurant booking systems and alerts the user's phone (ntfy) the moment a matching table opens, with a pre-filled booking link. Optionally it books the table (Formitable only). Read [README.md](README.md) for the product and [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
+Seated is a personal table radar. It watches restaurant booking systems and alerts the user's phone (ntfy) the moment a matching table opens, with a pre-filled booking link. Optionally it books the table (Formitable through its API, Tebi through its booking page in Chrome). Read [README.md](README.md) for the product and [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 
 ## Stage
 
@@ -76,7 +76,9 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - Restaurant websites embed a **widget token** (`data-widget-token="…"` on `widget-manager.js`). It is not the ledger id: resolve it with the same `/api/widget/{token}` redirect.
 - The booking page `https://live.tebi.co/ecom/reservations/{uid}` reads no date or party from the link (only `serviceId`), so Tebi links cannot be pre-filled.
 - Tebi is also a till and web shop: a `tebi.co` link on a site does not prove Tebi takes the bookings.
-- Writes need reCAPTCHA v3. Do not try to get around it.
+- Writes need reCAPTCHA v3. Seated books through Tebi's own booking page in headless Chrome (`tebi-browser.ts`, Joel's decision, 23 Oct 2026), so the page runs the captcha as for any guest. Never fake, reuse or hide from the captcha (no stealth flags, no token tricks).
+- The booker picks the first open option that is not a bar or counter seat, refuses any page with money or a waitlist, and lets exactly one write reach the reservation API after it presses submit. Test ids (`widget-reserve-*`) were read on 23 Oct 2026. The create answer is `{ reservation, paymentPageInput, problem }`; a refusal is a 4xx with `validation[].key` (for example `NothingAvailable`).
+- Not yet proven: whether Tebi's reCAPTCHA accepts the headless browser. The first real booking settles it.
 
 ### Zenchef
 
