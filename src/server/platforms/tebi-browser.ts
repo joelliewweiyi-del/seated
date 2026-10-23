@@ -49,6 +49,20 @@ export function readOptions(optionsBody: unknown, settingsBody: unknown, time: s
     });
 }
 
+/**
+ * True when this `reservation-options` URL answers exactly our date, time and party size.
+ * The deposit covers the whole party, so a list for another party size could break the limit.
+ */
+export function isOurOptions(url: URL, date: string, time: string, partySize: number): boolean {
+  const q = url.searchParams;
+  return (
+    url.pathname.endsWith('/reservation-options') &&
+    q.get('date') === date &&
+    q.get('startTime') === time &&
+    q.get('groupSize') === String(partySize)
+  );
+}
+
 /** Why Seated skips this option, or null when it may book it. */
 function skipReason(o: TebiOption, maxDepositCents: number): string | null {
   if (o.status !== 'Available') return o.status.toLowerCase();
@@ -174,9 +188,7 @@ export async function bookInBrowser(
       const url = new URL(res.url());
       if (res.request().method() !== 'GET' || !res.ok()) return;
       if (url.pathname.endsWith('/reservation-settings')) settingsBody = await res.json().catch(() => null);
-      if (url.pathname.endsWith('/reservation-options') && url.searchParams.get('date') === date) {
-        optionsBody = await res.json().catch(() => null);
-      }
+      if (isOurOptions(url, date, time, partySize)) optionsBody = await res.json().catch(() => null);
     });
 
     await page.goto(`${BOOKING_PAGE}/${uid}`, { waitUntil: 'networkidle', timeout: 30_000 });

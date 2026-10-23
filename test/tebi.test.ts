@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { findTebiUid, tebi, toSlots } from '../src/server/platforms/tebi';
-import { chooseOption, dutchPhone, monthLabel, readAnswer, readOptions, refusal, whyNone } from '../src/server/platforms/tebi-browser';
+import { chooseOption, dutchPhone, isOurOptions, monthLabel, readAnswer, readOptions, refusal, whyNone } from '../src/server/platforms/tebi-browser';
 import type { Restaurant } from '../src/server/platforms/types';
 
 // Recorded from Bacalar (Amsterdam) on 6 Oct 2026. Tests never call Tebi.
@@ -88,6 +88,14 @@ describe('Tebi booking', () => {
     ]);
     expect(readOptions(OPTIONS, SETTINGS, '21:00')).toEqual([]);
     expect(readOptions(null, null, '20:30')).toEqual([]);
+  });
+
+  it('uses only the option list for our party size: the deposit covers the whole party', () => {
+    const u = (q: string) => new URL(`https://live.tebi.co/api/reservations-guest/ledgers/x/reservation-options?${q}`);
+    expect(isOurOptions(u('groupSize=4&date=2026-10-24&startTime=20%3A30'), '2026-10-24', '20:30', 4)).toBe(true);
+    expect(isOurOptions(u('groupSize=2&date=2026-10-24&startTime=20%3A30'), '2026-10-24', '20:30', 4)).toBe(false);
+    expect(isOurOptions(u('groupSize=4&date=2026-10-24&startTime=21%3A00'), '2026-10-24', '20:30', 4)).toBe(false);
+    expect(isOurOptions(u('groupSize=4&date=2026-10-24'), '2026-10-24', '20:30', 4)).toBe(false);
   });
 
   it('books a deposit only up to the limit, because Joel pays it', () => {
