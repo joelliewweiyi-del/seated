@@ -47,7 +47,7 @@ The list in [data/restaurants.json](data/restaurants.json) has 297 restaurants i
 You need Node.js 22.13 or later.
 
 ```bash
-git clone <this repo>
+git clone https://github.com/joelliewweiyi-del/seated.git
 cd seated
 npm install
 npm start

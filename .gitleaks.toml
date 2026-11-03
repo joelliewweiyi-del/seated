@@ -1,0 +1,12 @@
+# gitleaks flags these as API keys. They are public identifiers that restaurant booking widgets
+# publish on every restaurant's website (SevenRooms availability rule ids, Guestplan's widget key),
+# recorded in test fixtures. No secret is stored in this repository.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "public booking-widget identifiers in test fixtures"
+paths = [
+  '''test/fixtures/sevenrooms-range\.json''',
+  '''test/guestplan\.test\.ts''',
+]
