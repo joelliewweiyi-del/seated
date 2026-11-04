@@ -1,4 +1,4 @@
-import type { Platform, Restaurant, Slot } from './types.js';
+import type { DayState, Platform, Restaurant, Slot } from './types.js';
 
 // Guestplan: read-only. Reads need only the restaurant's public widget key, which every site using Guestplan
 // embeds (`_gstpln.accessKey`). getAvailability is a POST but only reads; Seated never calls the booking endpoints.
@@ -82,6 +82,18 @@ export function guestplan({ fetchImpl = fetch, gapMs = MIN_GAP_MS } = {}): Platf
       const known = new Map(body.drs.map((d) => [d.d, d]));
       // A day missing from the answer is unknown (e.g. too far ahead): read it rather than call it full.
       return new Set(dates.filter((d) => known.get(compact(d))?.a === true || !known.has(compact(d))));
+    },
+
+    async calendar(restaurant, dates, partySize) {
+      const body = await read<{ drs?: GuestplanDay[] }>(restaurant, { dates: dates.map(compact), partySize });
+      if (!Array.isArray(body.drs)) throw new Error('Guestplan returned an unexpected days shape');
+      const known = new Map(body.drs.map((d) => [d.d, d]));
+      const out = new Map<string, DayState>();
+      for (const date of dates) {
+        const day = known.get(compact(date));
+        if (day) out.set(date, day.do !== true ? 'closed' : day.a === true ? 'open' : 'full');
+      }
+      return out;
     },
 
     bookingUrl(restaurant) {

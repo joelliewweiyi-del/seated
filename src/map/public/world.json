@@ -1,0 +1,14 @@
+{
+ "cols": 893,
+ "rows": 553,
+ "tileMeters": 16,
+ "bbox": {
+  "south": 52.33,
+  "west": 4.835,
+  "north": 52.41,
+  "east": 5.045
+ },
+ "mPerDegLat": 110574,
+ "mPerDegLng": 67967.53053174692,
+ "attribution": "© OpenStreetMap contributors (ODbL)"
+}

@@ -1,4 +1,4 @@
-import type { Platform, Slot } from './types.js';
+import type { DayState, Platform, Slot } from './types.js';
 
 // Zenchef: read-only, plain GETs (checked Oct 2026). Party size is not a parameter: every shift and slot lists
 // the party sizes it can take right now. The widget may send an AWS WAF bot token; reads work without it.
@@ -26,6 +26,13 @@ interface ZenchefDay {
   date: string;
   isOpen?: boolean | string;
   shifts?: ZenchefShift[];
+}
+
+/** No shift, or every shift closed: closed. A shift that takes the party: open. Shifts with no room: full. */
+export function zenchefDayState(shifts: ZenchefShift[], partySize: number): DayState {
+  const live = shifts.filter((s) => !s.closed);
+  if (live.length === 0) return 'closed';
+  return live.some((s) => !s.marked_as_full && (s.possible_guests ?? []).includes(partySize)) ? 'open' : 'full';
 }
 
 /** A slot is a table for the party only if neither it nor its shift is closed or full, and the party size fits. */
@@ -92,6 +99,25 @@ export function zenchef({ fetchImpl = fetch, gapMs = MIN_GAP_MS } = {}): Platfor
           return (day.shifts ?? []).some((s) => !s.closed && !s.marked_as_full && (s.possible_guests ?? []).includes(partySize));
         }),
       );
+    },
+
+    async calendar(restaurant, dates, partySize) {
+      // One summary call per calendar month: a three-month range answers an error (checked Nov 2026).
+      const out = new Map<string, DayState>();
+      for (const month of [...new Set(dates.map((d) => d.slice(0, 7)))]) {
+        const inMonth = dates.filter((d) => d.startsWith(month)).sort();
+        const days = await get('getAvailabilitiesSummary', {
+          restaurantId: restaurant.platformUid!,
+          date_begin: inMonth[0]!,
+          date_end: inMonth.at(-1)!,
+        });
+        const byDate = new Map(days.map((d) => [d.date, d]));
+        for (const date of inMonth) {
+          const day = byDate.get(date);
+          if (day) out.set(date, zenchefDayState(day.shifts ?? [], partySize));
+        }
+      }
+      return out;
     },
 
     bookingUrl(restaurant, date, _time, partySize) {

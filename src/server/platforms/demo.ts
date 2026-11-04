@@ -1,4 +1,4 @@
-import type { BookResult, Platform, Restaurant, Slot } from './types.js';
+import type { BookResult, DayState, Platform, Restaurant, Slot } from './types.js';
 
 /**
  * A stand-in for Formitable that never touches the network. Used by `npm run demo`,
@@ -35,6 +35,21 @@ export function demoPlatform(): DemoPlatform {
       return [...set]
         .filter((key) => key.startsWith(`${date}|`))
         .map((key) => ({ date, time: key.split('|')[1]!, open: true, autoBookable: true }));
+    },
+
+    // A made-up but steady calendar for the demo map: the same restaurant and day always give the same answer.
+    // Each restaurant shows 3 to 8 weeks ahead; Mondays are closed; tables opened by hand are always open.
+    async calendar(restaurant: Restaurant, dates: string[]): Promise<Map<string, DayState>> {
+      const seed = [...restaurant.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+      const reach = 21 + (seed % 36);
+      const out = new Map<string, DayState>();
+      dates.forEach((date, i) => {
+        const r = ((seed ^ (i * 2654435761)) >>> 0) % 100;
+        const monday = new Date(`${date}T12:00:00Z`).getUTCDay() === 1;
+        const opened = [...(openSlots.get(restaurant.id) ?? [])].some((k) => k.startsWith(`${date}|`));
+        out.set(date, opened ? 'open' : i >= reach ? 'none' : monday ? 'closed' : r < 38 ? 'open' : r < 75 ? 'full' : 'none');
+      });
+      return out;
     },
 
     bookingUrl(restaurant, date, time, partySize) {

@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { EventEmitter } from 'node:events';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Restaurant } from './platforms/types.js';
+import type { DayState, Restaurant } from './platforms/types.js';
 
 export type WatchStatus = 'watching' | 'paused' | 'booked';
 
@@ -104,6 +104,13 @@ export interface Settings {
   guestPhone: string;
 }
 
+export interface DayStateRow {
+  date: string;
+  state: DayState;
+  /** Free times, read only for open days in the next few days. Null = not read. */
+  times: string[] | null;
+}
+
 export interface RestaurantRow extends Restaurant {
   custom: boolean;
   lastCheckedAt: string | null;
@@ -195,6 +202,22 @@ CREATE TABLE IF NOT EXISTS checks (
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
+);
+-- The public map's census: what each restaurant's calendar says per day (census.ts). Restaurant facts only.
+CREATE TABLE IF NOT EXISTS day_states (
+  restaurant_id TEXT NOT NULL,
+  party_size INTEGER NOT NULL,
+  date TEXT NOT NULL,
+  state TEXT NOT NULL,
+  times TEXT,
+  read_at TEXT NOT NULL,
+  PRIMARY KEY (restaurant_id, party_size, date)
+);
+CREATE TABLE IF NOT EXISTS census_reads (
+  restaurant_id TEXT PRIMARY KEY,
+  read_at TEXT,
+  error TEXT,
+  error_at TEXT
 );
 `;
 
@@ -480,6 +503,58 @@ export class Store {
 
   recentSightings(limit: number): Sighting[] {
     return this.db.prepare('SELECT * FROM sightings ORDER BY id DESC LIMIT ?').all(limit).map(toSighting);
+  }
+
+  // ── public map census ────────────────────────────────────────────────────
+
+  /** Replaces what is known about these days. Days not in `rows` keep their last answer. */
+  saveDayStates(restaurantId: string, partySize: number, readAt: string, rows: DayStateRow[]): void {
+    const stmt = this.db.prepare(
+      `INSERT INTO day_states (restaurant_id, party_size, date, state, times, read_at) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(restaurant_id, party_size, date) DO UPDATE SET state = excluded.state, times = excluded.times, read_at = excluded.read_at`,
+    );
+    this.db.exec('BEGIN');
+    for (const r of rows) stmt.run(restaurantId, partySize, r.date, r.state, r.times ? r.times.join(',') : null, readAt);
+    this.db.exec('COMMIT');
+  }
+
+  /** Days from `from` on, for one party size. */
+  dayStates(partySize: number, from: string): Array<DayStateRow & { restaurantId: string; readAt: string }> {
+    return (this.db.prepare('SELECT * FROM day_states WHERE party_size = ? AND date >= ? ORDER BY date').all(partySize, from) as Row[]).map((r) => ({
+      restaurantId: r.restaurant_id as string,
+      date: r.date as string,
+      state: r.state as DayStateRow['state'],
+      times: r.times ? (r.times as string).split(',') : null,
+      readAt: r.read_at as string,
+    }));
+  }
+
+  forgetDayStatesBefore(date: string): void {
+    this.db.prepare('DELETE FROM day_states WHERE date < ?').run(date);
+  }
+
+  /** A failed read keeps the last read time and the days already known, like the radar keeps open tables on errors. */
+  markCensusRead(restaurantId: string, at: string, error: string | null): void {
+    if (error) {
+      this.db
+        .prepare(
+          `INSERT INTO census_reads (restaurant_id, error, error_at) VALUES (?, ?, ?)
+           ON CONFLICT(restaurant_id) DO UPDATE SET error = excluded.error, error_at = excluded.error_at`,
+        )
+        .run(restaurantId, error, at);
+    } else {
+      this.db
+        .prepare(
+          `INSERT INTO census_reads (restaurant_id, read_at) VALUES (?, ?)
+           ON CONFLICT(restaurant_id) DO UPDATE SET read_at = excluded.read_at, error = NULL, error_at = NULL`,
+        )
+        .run(restaurantId, at);
+    }
+  }
+
+  censusReads(): Map<string, { readAt: string | null; error: string | null }> {
+    const rows = this.db.prepare('SELECT * FROM census_reads').all() as Row[];
+    return new Map(rows.map((r) => [r.restaurant_id as string, { readAt: (r.read_at as string | null) ?? null, error: (r.error as string | null) ?? null }]));
   }
 
   // ── activity log ─────────────────────────────────────────────────────────

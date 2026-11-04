@@ -1,4 +1,4 @@
-import type { Platform, Restaurant, Slot } from './types.js';
+import type { DayState, Platform, Restaurant, Slot } from './types.js';
 
 // SevenRooms: read-only. The public widget endpoint needs no login or captcha (checked Oct 2026).
 // One call covers up to 3 days and the whole day around `time_slot`. Seated never books on SevenRooms.
@@ -14,6 +14,8 @@ const CENTER = '16:00';
 const HALO = 32;
 /** Slots read by the calendar call are reused by the day reads of the same check. */
 const CACHE_MS = 45_000;
+/** One call covers only 3 days, so the map's calendar reads just the first 3 weeks (7 calls). Later days stay unknown. */
+const CALENDAR_DAYS = 21;
 
 interface SevenRoomsTime {
   type: string; // "book" = a table; "request" = ask the restaurant, no table
@@ -120,6 +122,24 @@ export function sevenrooms({ fetchImpl = fetch, gapMs = MIN_GAP_MS, now = () => 
         i += window.length;
       }
       return worth;
+    },
+
+    async calendar(restaurant, dates, partySize) {
+      const sorted = [...new Set(dates)].sort().slice(0, CALENDAR_DAYS);
+      const out = new Map<string, DayState>();
+      for (let i = 0; i < sorted.length; ) {
+        const start = sorted[i]!;
+        const last = addDays(start, MAX_DAYS - 1);
+        const window = sorted.filter((d) => d >= start && d <= last);
+        const days = await readRange(restaurant, start, MAX_DAYS, partySize);
+        // A day with no times is closed; times that are only "request" mean you can ask, but there is no table.
+        for (const d of window) {
+          const slots = days.get(d) ?? [];
+          out.set(d, slots.length === 0 ? 'closed' : slots.some((s) => s.open) ? 'open' : 'full');
+        }
+        i += window.length;
+      }
+      return out;
     },
 
     bookingUrl(restaurant, date, time, partySize) {

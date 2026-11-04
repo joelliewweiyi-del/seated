@@ -23,6 +23,15 @@ export interface Slot {
   autoBookable: boolean;
 }
 
+/**
+ * What a booking system's calendar says about one day, for one party size.
+ * - open: at least one table.
+ * - full: the restaurant takes bookings that day, but nothing is free (a waitlist counts as full).
+ * - closed: no online bookings that day.
+ * - none: no table, and the system does not say whether it is closed or full (Tebi, Formitable).
+ */
+export type DayState = 'open' | 'full' | 'closed' | 'none';
+
 export interface Guest {
   firstName: string;
   lastName: string;
@@ -45,6 +54,11 @@ export interface Platform {
    * month instead of one per day. Dates left out are treated as "no tables". Throws on errors.
    */
   openDates?(restaurant: Restaurant, dates: string[], partySize: number): Promise<Set<string>>;
+  /**
+   * Optional: the state of each day, from the platform's cheapest calendar call. Used by the public map.
+   * Days left out of the answer are unknown (past, beyond what the platform shows, or not read). Throws on errors.
+   */
+  calendar?(restaurant: Restaurant, dates: string[], partySize: number): Promise<Map<string, DayState>>;
   /** A link that opens the platform's booking page, pre-filled where possible. */
   bookingUrl(restaurant: Restaurant, date: string, time: string, partySize: number): string;
   /** Books a slot for the guest. Only platforms that allow it implement this. */

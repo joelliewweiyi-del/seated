@@ -9,14 +9,16 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "start": "vite build && tsx --disable-warning=ExperimentalWarning src/server/main.ts",
+    "start": "npm run build && tsx --disable-warning=ExperimentalWarning src/server/main.ts",
     "dev": "concurrently -k -n server,web -c cyan,magenta \"tsx watch --disable-warning=ExperimentalWarning src/server/main.ts\" \"vite\"",
-    "demo": "vite build && tsx --disable-warning=ExperimentalWarning src/server/main.ts --demo",
+    "demo": "npm run build && tsx --disable-warning=ExperimentalWarning src/server/main.ts --demo",
     "peek": "tsx --disable-warning=ExperimentalWarning src/cli.ts",
-    "build": "vite build",
+    "build": "vite build && vite build -c vite.map.config.ts",
+    "dev:map": "vite -c vite.map.config.ts",
+    "map:export": "tsx --disable-warning=ExperimentalWarning scripts/map-export.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "vite build && playwright test"
+    "test:e2e": "npm run build && playwright test"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.3",
@@ -24,6 +26,7 @@
     "playwright-core": "^1.63.0"
   },
   "devDependencies": {
+    "@fontsource/pixelify-sans": "^5.3.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.20.5",

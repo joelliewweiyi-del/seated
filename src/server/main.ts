@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { basicAuth } from 'hono/basic-auth';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { config } from './config.js';
 import { Store } from './db.js';
 import { createApi } from './api.js';
@@ -13,6 +13,8 @@ import type { Platform } from './platforms/types.js';
 import { memoryNotifier, ntfyNotifier } from './notify.js';
 import { loadCuratedRestaurants } from './restaurants.js';
 import { addDays, localDate } from './time.js';
+import { runCensus } from './census.js';
+import { buildMapData, loadOptOut, loadPlaces } from './mapData.js';
 
 const store = new Store(config.dbPath);
 store.seedRestaurants(loadCuratedRestaurants());
@@ -106,6 +108,49 @@ async function seedDemo(): Promise<void> {
   await radar.tick();
 }
 
+// ── the public map's census ────────────────────────────────────────────────
+// A few times a day, one calendar read per Amsterdam restaurant (see census.ts). Separate from the radar.
+const optOut = loadOptOut();
+const places = loadPlaces();
+let mapCache: { at: number; body: string } | null = null;
+function mapJson(): string {
+  if (mapCache && Date.now() - mapCache.at < 30_000) return mapCache.body;
+  mapCache = { at: Date.now(), body: JSON.stringify(buildMapData({ store, platforms, places, optOut })) };
+  return mapCache.body;
+}
+function exportMap(): void {
+  if (!config.mapExportDir) return;
+  try {
+    mkdirSync(config.mapExportDir, { recursive: true });
+    mapCache = null;
+    writeFileSync(`${config.mapExportDir}/data.json`, mapJson());
+  } catch (err) {
+    console.error(`[census] export failed: ${err instanceof Error ? err.message : err}`);
+  }
+}
+let censusRunning = false;
+async function census(): Promise<void> {
+  if (censusRunning) return;
+  censusRunning = true;
+  try {
+    await runCensus({ store, platforms, optOut, log: (l) => console.log(l) });
+    mapCache = null;
+    exportMap();
+  } catch (err) {
+    console.error('[census] crashed:', err);
+  } finally {
+    censusRunning = false;
+  }
+}
+function scheduleCensus(firstMs: number): void {
+  if (!(config.mapCensusHours > 0)) return;
+  setTimeout(async () => {
+    await census();
+    scheduleCensus(config.mapCensusHours * 3600_000 * (0.9 + Math.random() * 0.2));
+  }, firstMs);
+}
+if (config.mapExportDir) setInterval(exportMap, 5 * 60_000);
+
 // ── http ───────────────────────────────────────────────────────────────────
 const app = new Hono();
 
@@ -133,6 +178,11 @@ app.route(
   }),
 );
 
+// The public map (dist/map, built by `npm run build`): a static page plus its data, read-only.
+app.get('/map/data.json', (c) => c.body(mapJson(), 200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }));
+app.get('/map', (c) => c.redirect('/map/'));
+app.use('/map/*', serveStatic({ root: 'dist/map', rewriteRequestPath: (p) => p.replace(/^\/map/, '') || '/' }));
+
 const WEB_ROOT = 'dist/web';
 if (existsSync(`${WEB_ROOT}/index.html`)) {
   const indexHtml = readFileSync(`${WEB_ROOT}/index.html`, 'utf8');
@@ -156,8 +206,11 @@ serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => 
 
 if (config.demo) {
   if (config.seedDemo) await seedDemo();
-  // Demo mode checks only when you press "Check now", so tests stay deterministic.
+  // Demo mode checks only when you press "Check now", so tests stay deterministic. The demo calendar
+  // never touches the network, so the demo map is filled once at start.
+  await census();
 } else {
   noteDowntime();
   scheduleNext(3000);
+  scheduleCensus(90_000);
 }

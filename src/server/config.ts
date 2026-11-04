@@ -42,6 +42,10 @@ export const config = {
   healthcheckUrl: process.env.HEALTHCHECK_URL || '',
   /** No table pushes in this restaurant-local window; held tables are pushed when it ends. Default 00:00-08:00. */
   quietHours: quietHours(process.env.QUIET_HOURS ?? '00:00-08:00'),
+  /** The public map's census: hours between calendar reads of every Amsterdam restaurant. 0 = off. */
+  mapCensusHours: Number(process.env.MAP_CENSUS_HOURS ?? 3),
+  /** Optional: a folder that gets the map's data.json after every census and every 5 minutes, for a static host. */
+  mapExportDir: process.env.MAP_EXPORT_DIR || '',
 };
 
 export type Config = typeof config;

@@ -1,5 +1,5 @@
 import { bookInBrowser } from './tebi-browser.js';
-import type { Platform, Restaurant, Slot } from './types.js';
+import type { DayState, Platform, Restaurant, Slot } from './types.js';
 
 // Tebi (live.tebi.co) shows availability to anyone with plain GET requests; no captcha.
 // Only creating a reservation is behind reCAPTCHA, so Seated books on Tebi through Tebi's own
@@ -21,6 +21,9 @@ export interface TebiDay {
   date: string; // "YYYY-MM-DD"
   availability: 'Available' | 'Waitlist' | 'Unavailable' | string;
 }
+
+/** Tebi's month view uses one word for "closed" and "sold out without a waitlist": Unavailable. Other values stay unknown. */
+const TEBI_DAY: Record<string, DayState> = { Available: 'open', Waitlist: 'full', Unavailable: 'none' };
 
 export function toSlots(date: string, timeslots: TebiTimeslot[]): Slot[] {
   return timeslots
@@ -125,6 +128,20 @@ export function tebi({
         }
       }
       return worth;
+    },
+
+    async calendar(restaurant, dates, partySize) {
+      const out = new Map<string, DayState>();
+      for (const month of [...new Set(dates.map((d) => d.slice(0, 7)))]) {
+        const days = (await get(restaurant, () => `/reservation-months/${month}?groupSize=${partySize}`)) as TebiDay[];
+        if (!Array.isArray(days)) throw new Error('Tebi returned an unexpected month shape');
+        const known = new Map(days.map((d) => [d.date.slice(0, 10), d.availability]));
+        for (const d of dates.filter((x) => x.startsWith(month))) {
+          const state = TEBI_DAY[known.get(d) ?? ''];
+          if (state) out.set(d, state);
+        }
+      }
+      return out;
     },
 
     bookingUrl(restaurant) {
