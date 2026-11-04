@@ -6,11 +6,14 @@ Seated is a personal table radar. It watches restaurant booking systems and aler
 
 **Pilot (personal use)**, since October 2026. One user (Joel) runs it locally. The next stage is a small group of friends, then open source. Name the stage when you propose work, and say so when a change skips one.
 
+The **public map** (`/map`, Nov 2026) is in **Exploration**: built and tested on fixtures and one real census, not yet hosted. Going public waits for Joel's go, a contact address (`VITE_MAP_CONTACT`) and a host.
+
 ## Shape
 
 - One Node process (`src/server/main.ts`) runs the HTTP API, serves the built dashboard, and runs the check loop.
 - One SQLite file through Node's built-in `node:sqlite`. The schema is created on start in `db.ts`. There is no ORM and no migration tool. To change a table, add an idempotent `ALTER` in `Store`'s constructor.
 - React dashboard in `src/web` (Vite + Tailwind v4). The server serves `dist/web`.
+- Public map in `src/map` (its own Vite build, `vite.map.config.ts`). The server serves `dist/map` at `/map` and its data at `/map/data.json`.
 - No queue, no Redis, no auth library. Keep it that way unless a real need appears.
 
 ## Hard rules
@@ -34,6 +37,8 @@ npm start           # real mode, data/seated.db
 npm run peek -- klepel
 npx tsx scripts/verify-radar.ts   # compare the radar's open tables with a direct read (skips Esra)
 npm run typecheck && npm test && npm run test:e2e
+npm run dev:map     # the map with hot reload, data from the demo server on :4310
+npx tsx scripts/map-census.ts [db] [out.json]   # one real census (~110 restaurants, ~3 min); not in a loop
 ```
 
 ## Frontend changes
@@ -51,6 +56,18 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - Badges: monospace, uppercase, pill-shaped.
 - Section labels: `text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500`.
 - No gradients, no colour-coded stat cards, no uniform rounding.
+
+### Map design language (`src/map` only)
+
+Light pixel art, our own (Joel, 4 Nov 2026). Never copy a game's name, art, characters or avatars.
+
+- Everything is drawn in code by a software rasterizer (`pix.ts`): hard pixels, no anti-aliasing, no image files. Shown with `image-rendering: pixelated` at whole zoom steps only (`ZOOMS` in `render.ts`).
+- Isometric 2:1, tiles 32 x 16 px at zoom 1. North-west is up.
+- Outlines and shadows are dark violet (`#2b2733`, `darken()` mixes toward `#1d1a24`), never black. `test/mapArt.test.ts` fails on near-black or half-transparent pixels.
+- Panels: cream `#fffaf0`, square corners notched with four offset 2 px box-shadows (`.px`) and a soft 6 px drop below. Pixelify Sans for headings, numbers and buttons; the system font for running text.
+- Status colours (`STATUS_COLOUR` in `data.ts`): free green `#3fae5f`, full red `#e0604c`, closed grey `#8f8a99`, not bookable yet lavender `#8c7bd8`, unknown light grey. They colour the signs, the awnings, the list badges and the calendar.
+- Primary teal `#0f766e`, the same as the dashboard's copper token.
+- People are round heads on simple bodies. No faces from any game.
 
 ## Platform knowledge
 
@@ -122,6 +139,17 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 - Editing, pausing or resuming a watch closes its open tables quietly and forgets its read days (`checked_dates`), so the next check starts fresh.
 - `GET /api/stats`: openings per restaurant, how long they stayed free (median), and whether they go faster than Seated reads (`tooSlow`). No page shows it since the one-screen redesign.
 - **The dashboard is one screen** (Joel, 7 Oct 2026): the watch list (`WatchListPage.tsx`, `GET /api/board`) plus Settings. The header search (`Search.tsx`) is the only way to add a restaurant: + Watch creates the prime watch. The board ranks restaurants with a prime-time watch (`src/shared/prime.ts`: Thu, Fri and Sat, 18:30–21:30, 2 people) by free tables and shows only the coming Thursday, Friday and Saturday. Do not add pages or nav back without Joel asking. `GET /api/live` is a server-sent event stream: one `change` message per logged event or finished check, so the page never polls. A day never read shows `?`, not "full".
+
+## Public map
+
+- **Census** (`census.ts`): every `MAP_CENSUS_HOURS` (default 3, ±10%, first run 90 s after start) one `calendar()` read per Amsterdam restaurant, for 2 people, from today to the end of the month of day 63. Slot reads only for open days in the next 3 days. One restaurant at a time, 45 s backstop each. A failed read keeps the last answer (`census_reads.error`).
+- **`Platform.calendar()`** answers `open`, `full`, `closed` or `none` per day; a day left out is unknown. Tebi, Formitable and Zenchef use their month calls; Guestplan its day list; SevenRooms reads only 21 days (7 calls), so later days show unknown ("Book on their site").
+- **Day codes** in `data.json`: `o` free, `f` full, `c` closed, `n` none, `l` later (after the last bookable day: the calendar has not opened that far), `?` unknown. `win` is the booking window in days; the card shows "opens about" = day − `win`. The extra days to month end stop a sold-out end of the window from reading as `l` (Vuurtoreneiland, 4 Nov 2026).
+- The radar's own sightings for 2 people override the census for that day.
+- **Never on the map:** Esra (hard rule 2, also in `data/map-optout.json`), anything in `map-optout.json`, restaurants outside Amsterdam or without a calendar. `data.json` carries only restaurant facts and calendar states, never settings, watches, bookings or guest details (`test/mapData.test.ts`).
+- **World:** `scripts/map-world.ts` builds `src/map/public/world.bin` from one Overpass request (ODbL: keep the "© OpenStreetMap contributors" credit in the footer). `data/map-places.json` holds each restaurant's coordinates, area and room kind (`scripts/map-places.ts`: PDOK, then Nominatim, then `MANUAL`/`FIXED`).
+- **Rendering:** chunks of 16 x 16 tiles painted in Web Workers, two levels (1x and a half-size "simple" level) plus a 1/8 overview underneath. Signs are drawn in screen space and kept clear of the panels (`view.safe`).
+- Before you call a map change done: `npm run test:e2e` and review the `map-*` screenshots in a subagent.
 
 ## History
 
