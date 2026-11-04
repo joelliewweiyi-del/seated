@@ -214,7 +214,12 @@ export function App() {
     if (day !== data.start) q.set('date', day);
     if (selected) q.set('r', selected);
     const next = `${location.pathname}${q.toString() ? `?${q}` : ''}`;
-    if (next !== `${location.pathname}${location.search}`) history.replaceState(null, '', next);
+    if (next === `${location.pathname}${location.search}`) return;
+    try {
+      history.replaceState(null, '', next);
+    } catch {
+      // A sandboxed frame (an embed, a preview) may refuse a URL change. The map works without it.
+    }
   }, [day, selected, data]);
 
   const focus = useCallback(
