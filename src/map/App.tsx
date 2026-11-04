@@ -181,6 +181,7 @@ export function App() {
       const side = document.querySelector('.side > *')?.getBoundingClientRect();
       const foot = document.querySelector('.foot')?.getBoundingClientRect();
       const narrow = innerWidth <= 900;
+      if (top) document.documentElement.style.setProperty('--top-h', `${Math.ceil(top.bottom)}px`);
       view.safe = {
         top: top ? top.bottom : 0,
         right: side && !narrow ? innerWidth - side.left + 6 : 0,
@@ -482,6 +483,9 @@ function List(p: ListProps) {
           <p className="sum">
             {openCount} of {p.placed.length} have a table for two{hotOpen ? `, ${hotOpen} of them hard to get` : ''}.
           </p>
+          <span className="sheet-toggle" aria-hidden="true">
+            {p.collapsed ? 'List ▴' : 'Map ▾'}
+          </span>
         </button>
         <div className="filters">
           <button className="chip" aria-pressed={p.openOnly} onClick={() => p.onOpenOnly(!p.openOnly)}>
@@ -553,9 +557,24 @@ function Card({ r, data, day, status, onClose, onDay }: { r: MapRestaurant; data
   // Calendar: weeks from the Monday on or before the first day.
   const lead = (weekday(data.start) + 6) % 7;
   const cells: Array<string | null> = [...Array(lead).fill(null), ...Array.from({ length: data.days }, (_, i) => dateAt(data, i))];
+  // A shade at the bottom edge while more of the card is below the fold.
+  const scroller = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  const check = useCallback(() => {
+    const e = scroller.current;
+    if (e) setMore(e.scrollTop + e.clientHeight < e.scrollHeight - 4);
+  }, []);
+  useEffect(() => {
+    const e = scroller.current;
+    if (!e) return;
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(e);
+    return () => ro.disconnect();
+  }, [check, r.id]);
   return (
-    <section className="px card">
-      <div className="card-scroll">
+    <section className={`px card${more ? ' more' : ''}`}>
+      <div className="card-scroll" ref={scroller} onScroll={check}>
         <div className="room">
           <RoomCanvas kind={r.kind} status={status} free={times.length || 3} seed={seed} />
           <button className="btn small close" onClick={onClose} aria-label="Close">

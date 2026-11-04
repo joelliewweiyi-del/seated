@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import type { Store } from './db.js';
 import type { DayState, Platform } from './platforms/types.js';
-import { CENSUS_DAYS, CENSUS_PARTY } from './census.js';
+import { CENSUS_DAYS, CENSUS_PARTY, censusDates } from './census.js';
 import { addDays, localDate } from './time.js';
 
 /** One character per day: open, full, closed, none (no table; closed or full, the system does not say), later, unknown. */
@@ -97,7 +97,8 @@ export interface MapDataInput {
 
 export function buildMapData({ store, platforms, places, optOut, city = 'Amsterdam', now = new Date() }: MapDataInput): MapData {
   const start = localDate(now);
-  const dates = Array.from({ length: CENSUS_DAYS }, (_, i) => addDays(start, i));
+  // Day codes are worked out over every day read (to the end of the last month), then cut to the days shown.
+  const dates = censusDates(start);
   const byRestaurant = new Map<string, Map<string, { state: DayState; times: string[] | null }>>();
   for (const row of store.dayStates(CENSUS_PARTY, start)) {
     const m = byRestaurant.get(row.restaurantId) ?? new Map();
@@ -129,7 +130,9 @@ export function buildMapData({ store, platforms, places, optOut, city = 'Amsterd
       states.set(d, 'open');
       times[d] = [...new Set([...(times[d] ?? []), ...set])].sort();
     }
-    const { codes, lastBookable } = dayCodes(states, dates);
+    const all = dayCodes(states, dates);
+    const codes = all.codes.slice(0, CENSUS_DAYS);
+    const lastBookable = all.lastBookable;
     const book: Record<string, string> = {};
     if (platform && r.platformUid) {
       codes.forEach((c, i) => {

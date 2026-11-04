@@ -107,6 +107,18 @@ describe('census and map data', () => {
     expect(s.store.censusReads().get('bistro-a')).toMatchObject({ error: 'Fake 503' });
   });
 
+  it('reads to the end of the last month, so a full day past the map shows the end of the map is sold out, not unopened (Vuurtoreneiland)', async () => {
+    const last = addDays(TODAY, CENSUS_DAYS - 1); // 5 Jan 2027
+    const s = setup({ 'bistro-a': { [TODAY]: 'open', [last]: 'none', '2027-01-20': 'full' } });
+    await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });
+    const a = buildMapData({ store: s.store, platforms: s.platforms, places: s.places, optOut: new Set(), now: NOW }).restaurants.find(
+      (r) => r.id === 'bistro-a',
+    )!;
+    expect(a.d).toHaveLength(CENSUS_DAYS);
+    expect(a.d.at(-1)).toBe('n');
+    expect(a.win).toBe(77); // 4 Nov to 20 Jan
+  });
+
   it('builds one day code per day from today, with times and a booking link for open days', async () => {
     const s = setup({ 'bistro-a': { [TODAY]: 'open', [addDays(TODAY, 1)]: 'full', [addDays(TODAY, 2)]: 'none' } }, { times: ['18:00', '20:30'] });
     await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });

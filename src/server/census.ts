@@ -8,6 +8,20 @@ import { addDays, localDate } from './time.js';
 export const CENSUS_PARTY = 2;
 /** Nine weeks: far enough to see when the calendars of most hard-to-book places open. */
 export const CENSUS_DAYS = 63;
+/**
+ * The days asked for: the 63 the map shows, plus the rest of the last month. Month calls answer whole months at
+ * no extra cost, and those extra days show whether the calendar reaches past the map's last day: without them a
+ * sold-out end of the window looks like a calendar that has not opened yet (Vuurtoreneiland, 4 Nov 2026).
+ */
+export function censusDates(today: string): string[] {
+  const last = addDays(today, CENSUS_DAYS - 1);
+  const [y, m] = last.split('-').map(Number) as [number, number];
+  const monthEnd = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10); // day 0 of the next month
+  const dates: string[] = [];
+  for (let d = today; d <= monthEnd; d = addDays(d, 1)) dates.push(d);
+  return dates;
+}
+
 /** Free times are read only for open days this close, one slot read each. */
 export const TIMES_DAYS = 3;
 const READ_TIMEOUT_MS = 45_000;
@@ -49,7 +63,7 @@ function withTimeout<T>(work: Promise<T>, what: string): Promise<T> {
 
 /** Reads one restaurant. Throws on errors; the caller keeps the last answer. */
 export async function readRestaurant(platform: Platform, r: RestaurantRow, today: string): Promise<DayStateRow[]> {
-  const dates = Array.from({ length: CENSUS_DAYS }, (_, i) => addDays(today, i));
+  const dates = censusDates(today);
   const states = await withTimeout(platform.calendar!(r, dates, CENSUS_PARTY), 'calendar');
   const rows: DayStateRow[] = [];
   for (const date of dates) {

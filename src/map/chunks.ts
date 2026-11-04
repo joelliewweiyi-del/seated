@@ -27,8 +27,8 @@ export function paintChunk(w: World, cx: number, cy: number, specials: Map<numbe
       const ox = sx - left;
       const oy = sy - top;
       paintGround(p, w, x, y, ox, oy, left, top);
-      paintBuilding(p, w, x, y, ox, oy, specials.get(y * w.cols + x));
-      paintProps(p, w, x, y, ox, oy);
+      paintBuilding(p, w, x, y, ox, oy, specials.get(y * w.cols + x), level === 2);
+      paintProps(p, w, x, y, ox, oy, level === 2);
     }
   }
   return level === 1 ? p : halve(p);

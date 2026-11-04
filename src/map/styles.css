@@ -151,9 +151,12 @@ a {
   gap: 6px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
+  scroll-padding-inline: 14px;
   scrollbar-width: none;
-  padding: 3px 3px 7px;
+  padding: 3px 14px 7px;
   scroll-behavior: smooth;
+  /* Days scroll: fade the ends so a cut day reads as "more this way". */
+  mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 10px), transparent);
 }
 .strip::-webkit-scrollbar {
   display: none;
@@ -280,6 +283,10 @@ a {
   color: var(--muted);
   font-size: 13px;
 }
+/* Phones only: says the sheet opens and closes. */
+.sheet-toggle {
+  display: none;
+}
 .filters {
   display: flex;
   gap: 6px;
@@ -371,10 +378,22 @@ a {
 }
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   max-height: 100%;
   overflow: hidden;
+}
+/* More below: a two-step pixel shade over the bottom edge (set by Card in App.tsx). */
+.card.more::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  pointer-events: none;
+  background: linear-gradient(transparent 0 4px, rgb(43 39 51 / 0.1) 4px 7px, rgb(43 39 51 / 0.22) 7px);
 }
 .card-scroll {
   overflow-y: auto;
@@ -712,10 +731,32 @@ a {
     max-width: 230px;
   }
   .side {
-    max-height: 70%;
+    /* Up to 70% of the screen, but never over the date strip (its height is measured in App.tsx). */
+    max-height: min(70%, calc(100% - var(--top-h, 190px) - 52px));
   }
   .card h2 {
     font-size: 19px;
+  }
+  .list-head .row {
+    position: relative;
+  }
+  .sheet-toggle {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 5px 8px 4px;
+    font: 600 12px/1 var(--px);
+    text-transform: uppercase;
+    background: var(--panel-2);
+    box-shadow:
+      0 -2px 0 0 var(--ink),
+      0 2px 0 0 var(--ink),
+      -2px 0 0 0 var(--ink),
+      2px 0 0 0 var(--ink);
+  }
+  .side.collapsed .sum {
+    margin-bottom: 0;
   }
   .side.collapsed .rows,
   .side.collapsed .list-foot,

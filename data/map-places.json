@@ -791,8 +791,8 @@
   "source": "list"
  },
  "vuurtoreneiland": {
-  "lat": 52.3778,
-  "lng": 5.0322,
+  "lat": 52.3806,
+  "lng": 5.0189,
   "area": "IJmeer",
   "kind": "island",
   "source": "fixed"

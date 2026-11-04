@@ -234,7 +234,7 @@ function paintBikes(p: Pix, ox: number, oy: number, n: number, seed: number): vo
 }
 
 /** Things that stand on a tile: trees on quays and in parks, houseboats along canals, parked bikes. */
-export function paintProps(p: Pix, w: World, x: number, y: number, ox: number, oy: number): void {
+export function paintProps(p: Pix, w: World, x: number, y: number, ox: number, oy: number, simple = false): void {
   const t = w.terrain(x, y);
   const fl = w.flags(x, y);
   const r = hash(x, y, 3);
@@ -250,7 +250,7 @@ export function paintProps(p: Pix, w: World, x: number, y: number, ox: number, o
     (t === T.wood && r < 0.75) ||
     (isCourtyard(w, x, y) && r < 0.35);
   if (tree) p.blit(treeSprite(Math.floor(r * 30)), ox - 8, oy - 12);
-  else if (t === T.street && fl & F.quay && r > 0.55 && r < 0.68) paintBikes(p, ox, oy, 2 + Math.floor(hash(x, y, 8) * 2), x * 7 + y);
+  else if (!simple && t === T.street && fl & F.quay && r > 0.55 && r < 0.68) paintBikes(p, ox, oy, 2 + Math.floor(hash(x, y, 8) * 2), x * 7 + y);
 }
 
 // ── buildings ──────────────────────────────────────────────────────────────
@@ -275,7 +275,8 @@ interface Facade {
  * Draws one block on a tile. The two faces you see point to +y (left) and +x (right); each holds two houses.
  * Gables go only on fronts that face a street, a canal or a park, like the real thing.
  */
-export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number, oy: number, special?: Special): void {
+/** `simple` leaves out windows: at half size they only add speckle. */
+export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number, oy: number, special?: Special, simple = false): void {
   const t = w.terrain(x, y);
   if (t !== T.land && t !== T.industry) return;
   if (!special && isCourtyard(w, x, y)) return;
@@ -316,7 +317,7 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
         trimmed: style === S.canal,
         floors,
       };
-      paintHouse(p, ox, oy, H, floorH, face.side, house, f, style, x, y, special && face.open ? special : undefined);
+      paintHouse(p, ox, oy, H, floorH, face.side, house, f, style, x, y, special && face.open ? special : undefined, simple);
     }
   }
 }
@@ -346,6 +347,7 @@ function paintHouse(
   tx: number,
   ty: number,
   special?: Special,
+  simple = false,
 ): void {
   const wall = side === 'left' ? f.colour : darken(f.colour, 0.22);
   const lightWall = f.colour === CANAL[4] || f.colour === CANAL[9] || style === S.modern;
@@ -384,7 +386,7 @@ function paintHouse(
         if (ground && (i === 3 || i === 4)) for (let yy = fb - 5; yy <= fb; yy++) p.set(col, yy, darken(wall, 0.28));
         continue;
       }
-      if (!(winCol || ribbon)) continue;
+      if (!(winCol || ribbon) || (simple && !(winCol && fl % 2 === 1 && (i === 1 || i === 5)))) continue;
       const lit = hash(tx, ty, fl, i + house * 9 + (side === 'left' ? 0 : 50)) < 0.06;
       const wy0 = fb - floorH + 2;
       const wy1 = fb - 2;

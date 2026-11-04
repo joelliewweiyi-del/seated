@@ -52,7 +52,7 @@ const MANUAL: Record<string, string> = {
 
 /** Vuurtoreneiland is an island in the IJmeer with no street address: the lighthouse itself. */
 const FIXED: Record<string, { lat: number; lng: number; area: string }> = {
-  vuurtoreneiland: { lat: 52.3778, lng: 5.0322, area: 'IJmeer' },
+  vuurtoreneiland: { lat: 52.3806, lng: 5.0189, area: 'IJmeer' }, // middle of the island's outline in OpenStreetMap
   // In the Van Gendt Hallen on Oostenburg; no house number published yet (Nov 2026).
   motief: { lat: 52.3718, lng: 4.9275, area: 'Oostenburg' },
   // Only the postcode is public (1057 SV, Baffinstraat).
