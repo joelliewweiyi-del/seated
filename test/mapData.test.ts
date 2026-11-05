@@ -109,6 +109,16 @@ describe('census and map data', () => {
     expect(s.store.censusReads().get('bistro-a')).toMatchObject({ error: 'Fake 503' });
   });
 
+  it('forgets days a successful read no longer answers for: they are unknown, not their old answer', async () => {
+    const s = setup({ 'bistro-a': { [TODAY]: 'none', [addDays(TODAY, 1)]: 'none' } });
+    await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });
+    // The calendar is switched off: the platform answers, but for no day (Formitable code 1 everywhere).
+    const off = fakePlatform({ 'bistro-a': {} });
+    await runCensus({ store: s.store, platforms: { fake: off.platform }, optOut: new Set(), now: () => NOW });
+    const data = buildMapData({ store: s.store, platforms: s.platforms, places: s.places, optOut: new Set(), now: NOW });
+    expect(data.restaurants.find((r) => r.id === 'bistro-a')!.d.slice(0, 2)).toBe('??');
+  });
+
   it('reads to the end of the last month, so a full day past the map shows the end of the map is sold out, not unopened (Vuurtoreneiland)', async () => {
     const last = addDays(TODAY, CENSUS_DAYS - 1); // 5 Jan 2027
     const s = setup({ 'bistro-a': { [TODAY]: 'open', [last]: 'none', '2027-01-20': 'full' } });

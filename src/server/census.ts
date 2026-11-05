@@ -90,7 +90,7 @@ export async function runCensus(o: CensusOptions): Promise<CensusResult> {
     const at = now().toISOString();
     try {
       const rows = await readRestaurant(o.platforms[r.platform]!, r, today);
-      o.store.saveDayStates(r.id, CENSUS_PARTY, at, rows);
+      o.store.saveDayStates(r.id, CENSUS_PARTY, at, rows, today);
       o.store.markCensusRead(r.id, at, null);
     } catch (err) {
       failed++;

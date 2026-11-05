@@ -512,13 +512,17 @@ export class Store {
 
   // ── public map census ────────────────────────────────────────────────────
 
-  /** Replaces what is known about these days. Days not in `rows` keep their last answer. */
-  saveDayStates(restaurantId: string, partySize: number, readAt: string, rows: DayStateRow[]): void {
+  /**
+   * Replaces what is known from `from` on with a successful read: a day the system no longer answers for is unknown,
+   * not its old answer (a calendar switched off, 5 Nov 2026). A failed read never comes here, so it keeps the days.
+   */
+  saveDayStates(restaurantId: string, partySize: number, readAt: string, rows: DayStateRow[], from: string): void {
     const stmt = this.db.prepare(
       `INSERT INTO day_states (restaurant_id, party_size, date, state, times, read_at) VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT(restaurant_id, party_size, date) DO UPDATE SET state = excluded.state, times = excluded.times, read_at = excluded.read_at`,
     );
     this.db.exec('BEGIN');
+    this.db.prepare('DELETE FROM day_states WHERE restaurant_id = ? AND party_size = ? AND date >= ?').run(restaurantId, partySize, from);
     for (const r of rows) stmt.run(restaurantId, partySize, r.date, r.state, r.times ? r.times.join(',') : null, readAt);
     this.db.exec('COMMIT');
   }
