@@ -1,6 +1,7 @@
 // The map's pixel art and its date helpers. No network, no browser: the painters write to plain buffers.
 import { describe, expect, it } from 'vitest';
-import { paintChunk, halve, N } from '../src/map/chunks';
+import { chunkOrigin, paintChunk, halve, N } from '../src/map/chunks';
+import { buildingSize } from '../src/map/paint';
 import { codeOn, dayLabel, opensOn, statusOf, type MapData, type MapRestaurant } from '../src/map/data';
 import { Pix } from '../src/map/pix';
 import { drawRoom } from '../src/map/room';
@@ -34,6 +35,33 @@ function alphas(p: Pix): Set<number> {
 }
 
 describe('map painting', () => {
+  it('draws blocks lower at half size, so streets and canals show between them (Joel: "a sea of one colour")', () => {
+    const w = testWorld();
+    let tall = 0;
+    for (let x = 0; x < 8; x++) {
+      const near = buildingSize(w, x, 3);
+      const far = buildingSize(w, x, 3, true);
+      expect(far.H).toBeLessThan(near.H);
+      expect(far.H).toBeGreaterThan(0);
+      tall = Math.max(tall, far.H);
+    }
+    expect(tall).toBeLessThanOrEqual(24); // a canal house of 5 floors keeps 3: 18 px
+  });
+
+  it('keeps a restaurant at full height at half size, so its sign (placed for full height) sits on its roof', () => {
+    const w = testWorld();
+    const plain = paintChunk(w, 0, 0, new Map(), 2);
+    const shop = paintChunk(w, 0, 0, new Map([[12 * w.cols + 12, { awning: 0xff3fae5f, lit: true }]]), 2);
+    // The highest row the restaurant changes: its roof at half size.
+    let top = shop.h;
+    for (let i = 0; i < shop.data.length && top === shop.h; i++) if (shop.data[i] !== plain.data[i]) top = Math.floor(i / shop.w);
+    const ground = (w.screenOf(12, 12).sy - chunkOrigin(w, 0, 0).top + 8) / 2; // middle of the tile, half size
+    const full = buildingSize(w, 12, 12).H / 2;
+    const low = buildingSize(w, 12, 12, true).H / 2;
+    expect(ground - top).toBeGreaterThan(low + 2);
+    expect(ground - top).toBeGreaterThanOrEqual(full - 4);
+  });
+
   it('never paints near-black: the darkest colour is ink #2b2733 (a palette built with .map(c) once blended to black)', () => {
     const w = testWorld();
     for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) {

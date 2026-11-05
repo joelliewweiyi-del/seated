@@ -54,6 +54,16 @@ const CANAL = ['#9e4a3c', '#7e3d34', '#5b3b33', '#38443b', '#ece4d2', '#c9a878',
 const BRICK = ['#9a4c3b', '#8b5a45', '#a8694c', '#7f4637', '#b98b62', '#94604c'].map((h) => c(h));
 const MODERN = ['#e8e4dc', '#d4d0c8', '#c88b6a', '#9aa6ad', '#d9c7a5', '#7d8a80', '#f0ebe0', '#b5a28a'].map((h) => c(h));
 const WARE = ['#8f9a8a', '#a8735a', '#c4b79c', '#7c8a95', '#9c8f7a'].map((h) => c(h));
+/**
+ * Roofs at half size, where roofs are most of what you see: slate and dark tile in the canal ring, orange tile
+ * and some flat grey in the 19th-century belt, pale flat roofs in newer areas. The mix tells the districts apart.
+ */
+const FAR_ROOFS = [
+  ['#5f6672', '#6d5a54', '#8f4f3d', '#565b66', '#7a4a3e'],
+  ['#b5603f', '#9c4f3a', '#9c9a94', '#a9a7a0', '#c08a5c', '#7f7b78'],
+  ['#d6d1c6', '#c4c0b6', '#b0b4b6', '#cfc8b8'],
+  ['#9aa09a', '#8f9893', '#a7a294'],
+].map((list) => list.map((h) => c(h)));
 
 export interface Special {
   /** Awning colour, from the day's status. */
@@ -248,7 +258,7 @@ export function paintProps(p: Pix, w: World, x: number, y: number, ox: number, o
     ((t === T.street || t === T.square) && fl & F.quay && r < 0.55) ||
     (t === T.park && r < 0.2) ||
     (t === T.wood && r < 0.75) ||
-    (isCourtyard(w, x, y) && r < 0.35);
+    (!simple && isCourtyard(w, x, y) && r < 0.35); // far away a courtyard reads better as one green patch
   if (tree) p.blit(treeSprite(Math.floor(r * 30)), ox - 8, oy - 12);
   else if (!simple && t === T.street && fl & F.quay && r > 0.55 && r < 0.68) paintBikes(p, ox, oy, 2 + Math.floor(hash(x, y, 8) * 2), x * 7 + y);
 }
@@ -283,7 +293,9 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
   const style = t === T.industry ? S.warehouse : w.style(x, y);
   const r = hash(x, y, 1);
   if (style === S.warehouse && !special && r < 0.35) return; // open yard
-  const { floors, floorH, H } = buildingSize(w, x, y);
+  // At half size blocks are drawn a third to half as tall (buildingSize), so streets, canals and courtyards show between them. A
+  // restaurant keeps its full height: it stands out, and its sign (placed for full height) sits on its roof.
+  const { floors, floorH, H } = buildingSize(w, x, y, simple && !special);
   const palette = style === S.canal ? CANAL : style === S.brick ? BRICK : style === S.modern ? MODERN : WARE;
 
   // Roof.
@@ -291,8 +303,14 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
   // Canal houses and brick rows get pitched roofs whose ridges run back from the main front: two houses, two
   // slopes each, so four strips, lit on one side. Modern blocks are flat with a rim; warehouses have sawtooth roofs.
   const mainFront = !w.isBuilt(x, y + 1) ? 'left' : !w.isBuilt(x + 1, y) ? 'right' : hash(x, y, 9) < 0.5 ? 'left' : 'right';
-  const tileRoof = style === S.canal ? pick([c('#7a5248'), c('#6e5a52'), c('#5d6066'), c('#80503f')], hash(x, y, 17)) : PAL.roof;
+  // Far away, one roof colour per patch of 3 x 3 tiles (one in five tiles differs): per-tile colours are noise.
+  const tileRoof = simple
+    ? pick(FAR_ROOFS[style]!, hash(x, y, 18) < 0.2 ? hash(x, y, 17) : hash(Math.floor(x / 3), Math.floor(y / 3), 17))
+    : style === S.canal
+      ? pick([c('#7a5248'), c('#6e5a52'), c('#5d6066'), c('#80503f')], hash(x, y, 17))
+      : PAL.roof;
   diamond(p, ox, oy - H, (px, py, u, v) => {
+    if (simple && (style === S.warehouse || style === S.modern)) return u < 0.08 || v < 0.08 ? lighten(tileRoof, 0.2) : tileRoof;
     if (style === S.warehouse) return (u * 6) % 1 < 0.5 ? roof : darken(roof, 0.12);
     if (style === S.modern) return u < 0.08 || v < 0.08 ? lighten(roof, 0.25) : dither(px, py, 0.1) ? darken(roof, 0.08) : roof;
     const across = mainFront === 'left' ? u : v; // position across the fronts
@@ -323,7 +341,7 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
 }
 
 /** Floors and height in pixels of the block on a tile (0 when it has none). The map's signs sit on top. */
-export function buildingSize(w: World, x: number, y: number): { floors: number; floorH: number; H: number } {
+export function buildingSize(w: World, x: number, y: number, low = false): { floors: number; floorH: number; H: number } {
   const t = w.terrain(x, y);
   if (t !== T.land && t !== T.industry) return { floors: 0, floorH: 0, H: 0 };
   const style = t === T.industry ? S.warehouse : w.style(x, y);
@@ -331,6 +349,11 @@ export function buildingSize(w: World, x: number, y: number): { floors: number; 
   const floorH = style === S.modern ? 5 : 6;
   const floors =
     style === S.canal ? 3 + Math.floor(r * 3) : style === S.brick ? 4 + Math.floor(r * 2) : style === S.modern ? 3 + Math.floor(r * 4) + (r > 0.96 ? 8 : 0) : 2;
+  if (low) {
+    // Walls cover more pixels than roofs, so keep them low. Canal houses keep half: their gables are the centre.
+    const f = Math.max(1, Math.round(floors / (style === S.canal ? 2 : 3)));
+    return { floors: f, floorH, H: f * floorH + (style === S.warehouse ? 2 : 0) };
+  }
   return { floors, floorH, H: floors * floorH + (style === S.warehouse ? 4 : 0) };
 }
 

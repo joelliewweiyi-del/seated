@@ -397,6 +397,18 @@ function Mark() {
       <rect x="4" y="7" width="1" height="4" fill="#2b2733" />
       <rect x="9" y="7" width="1" height="4" fill="#2b2733" />
       <rect x="6" y="3" width="2" height="2" fill="#e0604c" />
+      {/* Candle flame: two pixels that take turns. */}
+      <rect className="flame a" x="6" y="2" width="1" height="1" fill="#f26b1d" />
+      <rect className="flame b" x="7" y="2" width="1" height="1" fill="#f26b1d" />
+      {/* Two chairs that slide up to the table once, on load. */}
+      <g className="chair l" fill="#2b2733">
+        <rect x="1" y="4" width="1" height="7" />
+        <rect x="2" y="8" width="1" height="1" />
+      </g>
+      <g className="chair r" fill="#2b2733">
+        <rect x="12" y="4" width="1" height="7" />
+        <rect x="11" y="8" width="1" height="1" />
+      </g>
     </svg>
   );
 }

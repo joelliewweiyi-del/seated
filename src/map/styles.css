@@ -132,6 +132,47 @@ a {
   height: 28px;
   image-rendering: pixelated;
 }
+/* Whole-pixel steps only, so the mark stays pixel art while it moves. */
+.brand-mark .flame {
+  animation: flicker 0.9s steps(1) infinite;
+}
+.brand-mark .flame.b {
+  animation-delay: -0.45s;
+}
+@keyframes flicker {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.brand-mark .chair.l {
+  animation: chair-l 0.6s steps(3, jump-none) 0.3s both;
+}
+.brand-mark .chair.r {
+  animation: chair-r 0.6s steps(3, jump-none) 0.45s both;
+}
+@keyframes chair-l {
+  from {
+    transform: translateX(-2px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes chair-r {
+  from {
+    transform: translateX(2px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
 
 .dates {
   flex: 1;
@@ -793,6 +834,9 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .brand-mark * {
+    animation: none !important;
+  }
   * {
     scroll-behavior: auto !important;
     transition: none !important;
