@@ -155,7 +155,8 @@ Copy `.env.example` to `.env`. Every value is optional.
 | `SEATED_PASSWORD` | empty | Turns on basic auth (user `seated`) |
 | `QUIET_HOURS` | `00:00-08:00` | No table pushes in this window (Amsterdam time). A table that opens at night is pushed at the end of it, if it is still open. `off` turns it off. |
 | `HEALTHCHECK_URL` | empty | A URL that Seated calls after each check, for example from [healthchecks.io](https://healthchecks.io). If the calls stop, that service alerts you. |
-| `MAP_CENSUS_HOURS` | `3` | How often the public map reads every Amsterdam calendar. `0` turns the census off. |
+| `MAP_CENSUS_MINUTES` | `15` | Minutes between census passes for the public map (at least 10). `0` turns the census off. |
+| `BLOB_READ_WRITE_TOKEN` | empty | A Vercel Blob token. Set, each census puts the map's `data.json` in that store for the hosted map. |
 | `MAP_EXPORT_DIR` | empty | Also write the map's `data.json` here after each census and every 5 minutes, for a static host |
 | `VITE_MAP_CONTACT` | empty | Build time: the address restaurants mail to come off the public map |
 
@@ -184,10 +185,10 @@ Set `SEATED_PASSWORD` whenever the dashboard is reachable from outside your own 
 
 Seated also serves a public map at `/map`: a pixel drawing of Amsterdam with every readable restaurant on it. Pick a day and each restaurant's sign shows whether it has a table for two: free, full, closed, not bookable yet, or unknown. Click a restaurant for its room, its free times, a link to its own booking page and a nine-week calendar.
 
-- **What it shows.** Only what each booking page shows to any guest. Every few hours (`MAP_CENSUS_HOURS`) one census reads each Amsterdam calendar once, for two people and nine weeks ahead, plus free times for the next three days. Where a watch of yours already reads a restaurant for two, the map uses that fresher read. No guest details, watches or bookings are in `data.json`; a test checks this.
+- **What it shows.** Only what each booking page shows to any guest. Every 15 minutes (`MAP_CENSUS_MINUTES`) one census reads each Amsterdam calendar once, for two people and nine weeks ahead, plus free times for the next three days. Where a watch of yours already reads a restaurant for two, the map uses that fresher read. No guest details, watches or bookings are in `data.json`; a test checks this.
 - **"Not bookable yet".** A calendar that is open up to some day, and empty after it, has not opened that far yet. The map shows the expected opening date: the day minus the restaurant's booking window.
 - **Opting out.** `data/map-optout.json` lists restaurants that are never read for the map nor shown on it. Set `VITE_MAP_CONTACT` so restaurants can ask.
-- **Hosting it on its own.** `npm run build` writes the map to `dist/map`. It is a static site that needs one `data.json` next to it: `npm run map:export` writes one from your database, `scripts/map-census.ts` runs a census first, and `MAP_EXPORT_DIR` keeps one up to date.
+- **Hosting it on its own.** `npm run build` writes the map to `dist/map`. It is a static site that needs one `data.json` next to it: `npm run map:export` writes one from your database, `scripts/map-census.ts` runs a census first, and `MAP_EXPORT_DIR` keeps one up to date. To host it on Vercel, set `BLOB_READ_WRITE_TOKEN` so each census uploads `data.json` to a Blob store, point the `/data.json` rewrite in `deploy/map/vercel.json` at it, and deploy with `scripts/map-deploy.sh --prod`.
 - **The city.** `scripts/map-world.ts` turns OpenStreetMap data into `src/map/public/world.bin` (one 16 m tile per byte pair: water, park, street, building style). `scripts/map-places.ts` places each restaurant from its address. All art is drawn in code (`src/map/paint.ts`, `room.ts`); there are no image files.
 
 Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, under the Open Database License. Addresses are looked up with [PDOK](https://www.pdok.nl/) and Nominatim.

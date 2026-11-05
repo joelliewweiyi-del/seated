@@ -6,7 +6,7 @@ Seated is a personal table radar. It watches restaurant booking systems and aler
 
 **Pilot (personal use)**, since October 2026. One user (Joel) runs it locally. The next stage is a small group of friends, then open source. Name the stage when you propose work, and say so when a change skips one.
 
-The **public map** (`/map`, Nov 2026) is in **Exploration**: built and tested on fixtures and one real census, not yet hosted. Going public waits for Joel's go, a contact address (`VITE_MAP_CONTACT`) and a host.
+The **public map** (`/map`, Nov 2026) is in **Exploration**: built and tested on fixtures and one real census, not yet public. Host: Vercel (Joel, 5 Nov 2026), project `seated-map` in team `joelliewweiyi-dels-projects`; `data.json` comes from the Vercel Blob store `seated-map` (fra1), which the radar on the Mac mini fills after each census (token: 1Password `bara-dev/seated-map-blob`, read by the launchd job). Going public (`scripts/map-deploy.sh --prod`) waits for Joel's go and a contact address (`VITE_MAP_CONTACT`). Every CLI deploy of this project lands on its public production URL, also with `--environment preview` (5 Nov 2026): there is no private Vercel preview.
 
 ## Shape
 
@@ -142,7 +142,7 @@ Light pixel art, our own (Joel, 4 Nov 2026). Never copy a game's name, art, char
 
 ## Public map
 
-- **Census** (`census.ts`): every `MAP_CENSUS_HOURS` (default 3, ±10%, first run 90 s after start) one `calendar()` read per Amsterdam restaurant, for 2 people, from today to the end of the month of day 63. Slot reads only for open days in the next 3 days. One restaurant at a time, 45 s backstop each. A failed read keeps the last answer (`census_reads.error`).
+- **Census** (`census.ts`): every `MAP_CENSUS_MINUTES` after the last pass ended (default 15, floor 10, ±10%, first run 90 s after start; Joel, 5 Nov 2026) one `calendar()` read per Amsterdam restaurant, for 2 people, from today to the end of the month of day 63. Slot reads only for open days in the next 3 days. One restaurant at a time, 45 s backstop each. A failed read keeps the last answer (`census_reads.error`).
 - **`Platform.calendar()`** answers `open`, `full`, `closed` or `none` per day; a day left out is unknown. Tebi, Formitable and Zenchef use their month calls; Guestplan its day list; SevenRooms reads only 21 days (7 calls), so later days show unknown ("Book on their site").
 - **Day codes** in `data.json`: `o` free, `f` full, `c` closed, `n` none, `l` later (after the last bookable day: the calendar has not opened that far), `?` unknown. `win` is the booking window in days; the card shows "opens about" = day − `win`. The extra days to month end stop a sold-out end of the window from reading as `l` (Vuurtoreneiland, 4 Nov 2026).
 - The radar's own sightings for 2 people override the census for that day.

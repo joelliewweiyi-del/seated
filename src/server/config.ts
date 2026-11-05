@@ -42,10 +42,18 @@ export const config = {
   healthcheckUrl: process.env.HEALTHCHECK_URL || '',
   /** No table pushes in this restaurant-local window; held tables are pushed when it ends. Default 00:00-08:00. */
   quietHours: quietHours(process.env.QUIET_HOURS ?? '00:00-08:00'),
-  /** The public map's census: hours between calendar reads of every Amsterdam restaurant. 0 = off. */
-  mapCensusHours: Number(process.env.MAP_CENSUS_HOURS ?? 3),
+  /** The public map's census: minutes between calendar reads of every Amsterdam restaurant (at least 10). 0 = off. */
+  mapCensusMinutes: censusMinutes(process.env.MAP_CENSUS_MINUTES ?? '15'),
+  /** Set: after each census the map's data.json goes to this Vercel Blob store, for the hosted map. */
+  mapBlobToken: process.env.BLOB_READ_WRITE_TOKEN || '',
   /** Optional: a folder that gets the map's data.json after every census and every 5 minutes, for a static host. */
   mapExportDir: process.env.MAP_EXPORT_DIR || '',
 };
 
 export type Config = typeof config;
+
+/** 0 (or junk) turns the census off; anything else is at least 10 minutes, so each restaurant is read at most 6 times an hour. */
+export function censusMinutes(raw: string): number {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.max(10, n) : 0;
+}

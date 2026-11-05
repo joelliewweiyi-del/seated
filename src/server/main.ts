@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { put } from '@vercel/blob';
 import { Hono } from 'hono';
 import { basicAuth } from 'hono/basic-auth';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -128,6 +129,22 @@ function exportMap(): void {
     console.error(`[census] export failed: ${err instanceof Error ? err.message : err}`);
   }
 }
+/** Puts data.json in the Vercel Blob store that the hosted map reads. A failed upload leaves the last one online. */
+async function uploadMap(): Promise<void> {
+  if (!config.mapBlobToken || demo) return; // never put the demo's made-up tables on the public map
+  try {
+    await put('map/data.json', mapJson(), {
+      access: 'public',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: 'application/json',
+      cacheControlMaxAge: 60,
+      token: config.mapBlobToken,
+    });
+  } catch (err) {
+    console.error(`[census] upload failed: ${err instanceof Error ? err.message : err}`);
+  }
+}
 let censusRunning = false;
 async function census(): Promise<void> {
   if (censusRunning) return;
@@ -136,6 +153,7 @@ async function census(): Promise<void> {
     await runCensus({ store, platforms, optOut, log: (l) => console.log(l) });
     mapCache = null;
     exportMap();
+    await uploadMap();
   } catch (err) {
     console.error('[census] crashed:', err);
   } finally {
@@ -143,10 +161,10 @@ async function census(): Promise<void> {
   }
 }
 function scheduleCensus(firstMs: number): void {
-  if (!(config.mapCensusHours > 0)) return;
+  if (!config.mapCensusMinutes) return;
   setTimeout(async () => {
     await census();
-    scheduleCensus(config.mapCensusHours * 3600_000 * (0.9 + Math.random() * 0.2));
+    scheduleCensus(config.mapCensusMinutes * 60_000 * (0.9 + Math.random() * 0.2));
   }, firstMs);
 }
 if (config.mapExportDir) setInterval(exportMap, 5 * 60_000);

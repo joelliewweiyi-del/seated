@@ -1,5 +1,5 @@
 // Runs one census now (one calendar read per Amsterdam restaurant, Esra and opted-out places skipped), then
-// writes the map's data.json. The server does this by itself every MAP_CENSUS_HOURS; this is for a first fill
+// writes the map's data.json. The server does this by itself every MAP_CENSUS_MINUTES; this is for a first fill
 // or a static host.
 //   npx tsx scripts/map-census.ts [data/seated.db] [dist/map/data.json]
 import { mkdirSync, writeFileSync } from 'node:fs';

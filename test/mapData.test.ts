@@ -4,6 +4,7 @@ import { CENSUS_DAYS, runCensus } from '../src/server/census';
 import { buildMapData, dayCodes, type Place } from '../src/server/mapData';
 import type { DayState, Platform, Restaurant } from '../src/server/platforms/types';
 import { addDays } from '../src/server/time';
+import { censusMinutes } from '../src/server/config';
 
 const NOW = new Date('2026-11-04T20:00:00Z'); // 21:00 in Amsterdam
 const TODAY = '2026-11-04';
@@ -160,5 +161,14 @@ describe('census and map data', () => {
     const phone = data.restaurants.find((r) => r.id === 'phone-e')!;
     expect(phone).toMatchObject({ readable: false, link: 'https://phone-e.example' });
     expect(phone.d).toBe('?'.repeat(CENSUS_DAYS));
+  });
+});
+
+describe('census interval', () => {
+  it('reads each restaurant at most every 10 minutes, and 0 or junk turns the census off', () => {
+    expect(censusMinutes('15')).toBe(15);
+    expect(censusMinutes('3')).toBe(10);
+    expect(censusMinutes('0')).toBe(0);
+    expect(censusMinutes('soon')).toBe(0);
   });
 });
