@@ -1701,8 +1701,8 @@
   {
     "id": "nazka",
     "name": "Nazka",
-    "platform": "formitable",
-    "platformUid": "9424c1b2",
+    "platform": "zenchef",
+    "platformUid": "389310",
     "website": "https://www.nazka.nu",
     "city": "Amsterdam",
     "address": "Van Ostadestraat 352-354, 1073 TZ Amsterdam"
@@ -1719,8 +1719,8 @@
   {
     "id": "neni",
     "name": "NENI",
-    "platform": "formitable",
-    "platformUid": "6d3ee093",
+    "platform": "guestplan",
+    "platformUid": "5da83783f8f530bf0d4594a477a00064b3f623b9:61321",
     "website": "https://neni-amsterdam.nl",
     "city": "Amsterdam",
     "address": "Stadionplein 8, 1076 CM Amsterdam"
@@ -1784,8 +1784,8 @@
   {
     "id": "occo",
     "name": "OCCO",
-    "platform": "formitable",
-    "platformUid": "fd9397f5",
+    "platform": "zenchef",
+    "platformUid": "388370",
     "website": "http://www.occo.nl",
     "city": "Amsterdam",
     "address": "Keizersgracht 384, 1016 GB Amsterdam"
@@ -2011,8 +2011,8 @@
   {
     "id": "r21",
     "name": "R21",
-    "platform": "formitable",
-    "platformUid": "50d970ac",
+    "platform": "fresto",
+    "platformUid": null,
     "website": "https://www.r21.amsterdam",
     "city": "Amsterdam",
     "address": "Peperstraat 23, 1011 TJ Amsterdam"
@@ -2057,7 +2057,7 @@
     "id": "restaurant-kyo",
     "name": "Restaurant Kyo",
     "platform": "formitable",
-    "platformUid": "97bff3e7",
+    "platformUid": "131177d5",
     "website": "https://www.restaurantkyo.nl",
     "city": "Amsterdam",
     "address": null
@@ -2065,8 +2065,8 @@
   {
     "id": "restobar-massalia",
     "name": "Restobar Massalia",
-    "platform": "formitable",
-    "platformUid": "f7a16fdb",
+    "platform": "zenchef",
+    "platformUid": "387672",
     "website": "https://www.restobarmassalia.nl/",
     "city": "Amsterdam",
     "address": null,
@@ -2596,8 +2596,8 @@
   {
     "id": "vinkeles",
     "name": "Vinkeles",
-    "platform": "formitable",
-    "platformUid": "8038d382",
+    "platform": "zenchef",
+    "platformUid": "388371",
     "website": "https://www.vinkeles.com",
     "city": "Amsterdam",
     "address": "Keizersgracht 384, 1016 GB Amsterdam",
