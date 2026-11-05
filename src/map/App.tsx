@@ -18,6 +18,8 @@ const KIND_WORD: Record<string, string> = {
   brasserie: 'Brasserie',
 };
 const ORDER: Status[] = ['open', 'later', 'full', 'closed', 'unknown'];
+/** Booking pages that take no date from a link: the guest picks the day there (Tebi, Guestplan). */
+const NO_DATE_LINK = new Set(['Tebi', 'Guestplan']);
 const GROUP_WORD: Record<Status, string> = {
   open: 'Tables free',
   later: 'Not bookable yet',
@@ -613,8 +615,15 @@ function Card({ r, offMap, data, day, status, onClose, onDay }: { r: MapRestaura
                 {dayLabel(day, { long: true })}: {STATUS_WORD[status].toLowerCase()}
               </b>
               <span>{stateLine(r, status, day)}</span>
+              {r.readable && <span className="seen">Seen {ago(r.readAt)}: tables can go fast.</span>}
             </div>
           </div>
+          {book && NO_DATE_LINK.has(r.platform) && (
+            <p className="hint">
+              {r.platform}'s page opens on its own date: pick {dayLabel(day, { long: true })}
+              {status === 'open' && times.length ? `, ${times[0]}` : ''} there.
+            </p>
+          )}
           {status === 'open' && times.length > 0 && (
             <div className="times">
               {times.map((t) => (
