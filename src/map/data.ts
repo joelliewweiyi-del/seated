@@ -106,3 +106,20 @@ export function linkAt(url: string, time: string): string {
     return url;
   }
 }
+
+/** Amsterdam's date and HH:mm now, whatever the viewer's own time zone. */
+function amsterdamNow(now: Date): { date: string; time: string } {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(now)
+      .map((x) => [x.type, x.value]),
+  );
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+}
+
+/** The free times on a day, without today's times that have already gone by (the data can be 15 minutes old). */
+export function freeTimes(r: Pick<MapRestaurant, 't'>, date: string, now = new Date()): string[] {
+  const list = r.t[date] ?? [];
+  const here = amsterdamNow(now);
+  return date === here.date ? list.filter((t) => t > here.time) : list;
+}

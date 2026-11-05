@@ -98,16 +98,21 @@ test('on a phone the map, the date strip and the list sheet all fit', async ({ b
 test('picking a free time makes it the one to book: the Book button and its link follow it', async ({ page }) => {
   // One restaurant with two free times today and a Formitable link, which carries the time in minutes.
   await page.route('**/map/data.json', async (route) => {
+    // Tomorrow, so no time has gone by yet whenever the test runs.
     const data = await (await route.fetch()).json();
+    const day = new Date(Date.parse(`${data.start}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
     const r = data.restaurants[0];
-    r.d = `o${r.d.slice(1)}`;
-    r.t[data.start] = ['18:00', '20:30'];
-    r.book[data.start] = `https://widget.formitable.com/side/en/abc12345/book?partysize=2&date=${data.start}&time=1080`;
+    r.d = `${r.d[0]}o${r.d.slice(2)}`;
+    r.t[day] = ['18:00', '20:30'];
+    r.book[day] = `https://widget.formitable.com/side/en/abc12345/book?partysize=2&date=${day}&time=1080`;
     route.fulfill({ json: data });
   });
   await page.goto('/map/');
-  const id = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants[0].id);
-  await page.goto(`/map/?r=${id}`);
+  const [id, day] = await page.evaluate(async () => {
+    const d = await (await fetch('/map/data.json')).json();
+    return [d.restaurants[0].id, new Date(Date.parse(`${d.start}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10)];
+  });
+  await page.goto(`/map/?r=${id}&date=${day}`);
   const times = page.locator('.card .time');
   await expect(times).toHaveText(['18:00', '20:30']);
   await expect(times.first()).toHaveAttribute('aria-pressed', 'true'); // the first free time until you pick

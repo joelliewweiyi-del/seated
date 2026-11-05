@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { ago, codeOn, dateAt, dayIndex, dayLabel, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
+import { ago, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { Marks, metres, michelinWords, useRemembered, walk } from './marks';
@@ -69,7 +69,7 @@ function readUrl(): { date: string | null; r: string | null } {
 
 function badgeFor(r: MapRestaurant, status: Status, date: string): string {
   if (status === 'open') {
-    const n = r.t[date]?.length;
+    const n = freeTimes(r, date).length;
     return n ? `${n} time${n === 1 ? '' : 's'}` : 'free';
   }
   if (status === 'later') {
@@ -82,7 +82,7 @@ function badgeFor(r: MapRestaurant, status: Status, date: string): string {
 }
 
 function stateLine(r: MapRestaurant, status: Status, date: string): string {
-  const times = r.t[date];
+  const times = freeTimes(r, date);
   switch (status) {
     case 'open':
       return times?.length ? `Free for two at ${times.join(', ')}.` : 'There is a table for two. The booking page shows the times.';
@@ -785,7 +785,7 @@ async function share(r: MapRestaurant, day: string): Promise<string> {
 }
 
 function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay }: CardProps) {
-  const times = r.t[day] ?? [];
+  const times = freeTimes(r, day);
   const lunch = times.filter((t) => t < '16:00');
   const dinner = times.filter((t) => t >= '16:00');
   const next = status !== 'open' && r.readable ? firstFree(r, data, day) : null;
