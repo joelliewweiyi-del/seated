@@ -134,6 +134,18 @@ describe('census and map data', () => {
     expect(a.win).toBe(1); // last bookable day is tomorrow
   });
 
+  it('forgets the days read on the old system when a restaurant moves to another one (The White Room, 5 Nov 2026)', async () => {
+    const s = setup({ 'bistro-a': { [TODAY]: 'none', [addDays(TODAY, 1)]: 'none' } });
+    await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });
+    // Moves to a system Seated cannot read: no census will ever overwrite the old days.
+    s.store.seedRestaurants([{ ...restaurant('bistro-a', 'Bistro A', 'tablecheck'), platformUid: null }]);
+    const a = buildMapData({ store: s.store, platforms: s.platforms, places: s.places, optOut: new Set(), now: NOW }).restaurants.find(
+      (r) => r.id === 'bistro-a',
+    )!;
+    expect(a.d.slice(0, 2)).toBe('??');
+    expect(a.readAt).toBeNull();
+  });
+
   it('lets the radar win: a table it sees open now marks the day open, with its time', async () => {
     const s = setup({ 'wine-b': { [addDays(TODAY, 1)]: 'none' } });
     await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });

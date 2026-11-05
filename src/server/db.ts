@@ -304,7 +304,8 @@ export class Store {
   /**
    * Loads the curated list. Updates curated rows, never touches custom ones.
    * A restaurant that changed booking system (e.g. Formitable to Zenchef) starts its watches fresh: its old
-   * open tables came from the old system, so they are closed quietly instead of being logged as "taken".
+   * open tables came from the old system, so they are closed quietly instead of being logged as "taken", and the
+   * map forgets the days it read there.
    * Returns the ids of restaurants that changed system.
    */
   seedRestaurants(list: Restaurant[]): string[] {
@@ -344,6 +345,10 @@ export class Store {
         this.setWatchCheckedDates(w.id, null);
       }
       this.markChecked(id, now, null);
+      // The map's days came from the old system too: an unreadable new system, or one that reads fewer days
+      // (SevenRooms: 21), would otherwise show them for weeks (Marie, The White Room, 5 Nov 2026).
+      this.db.prepare('DELETE FROM day_states WHERE restaurant_id = ?').run(id);
+      this.db.prepare('DELETE FROM census_reads WHERE restaurant_id = ?').run(id);
     }
     return switched;
   }
