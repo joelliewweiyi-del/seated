@@ -1,198 +1,94 @@
-// The world: Amsterdam as a grid of 4 m cells (built by scripts/map-world.ts from OpenStreetMap, 3DBAG and the PDOK
-// aerial photo), and the isometric projection. Grid x runs east, y runs south; on screen north-west is up.
-// Four planes of one byte per cell: terrain and flags, building height, roof colour, and building or ground details.
+// The city layer: Amsterdam as drawn by sezlab (sezlab.dev/amsterdam), used with permission (Joel, 5 Nov 2026).
+// scripts/map-sez-sync.ts copies his images and writes sez/manifest.json; this file places things on them.
+// His projection: RD New metres from his origin (x east, y north), PX = (x + y) / sqrt 2, PY = (x - y) / (2 sqrt 2)
+// - h * VZ. North-west is up. One world pixel here is one pixel of his sharpest images (3 per unit of his).
+import { wgsToRd } from '../shared/rd';
 
-export const T = { land: 0, water: 1, park: 2, road: 3, street: 4, square: 5, rail: 6, wood: 7, field: 8, industry: 9, sand: 10, pavement: 11, garden: 12 } as const;
-export const F = { bridge: 1, tram: 2, ferry: 4, railLine: 8 } as const;
-
-/** One cell on screen at zoom 1, and the room left above each chunk for tall buildings and trees. */
-export const TW = 8;
-export const TH = 4;
-export const HEAD = 160;
-/** Screen pixels per metre of building height: a touch taller than true, as pixel cities are. */
-export const PX_PER_M = 1.25;
-
-export interface WorldMeta {
-  cols: number;
-  rows: number;
-  cellMeters: number;
-  bbox: { south: number; west: number; north: number; east: number };
-  mPerDegLat: number;
-  mPerDegLng: number;
-  roofPalette: string[];
-  attribution: string;
+export interface Level {
+  w: number;
+  h: number;
+  /** Chunk size in image pixels. */
+  cs: number;
+  chunks: Array<[number, number]>;
 }
 
-/** Building periods (meta bits 0-2): before 1800, 1800s, 1900-1944, 1945-1979, 1980-1999, 2000 on, unknown. */
-export const AGE = { none: 0, old: 1, c19: 2, early20: 3, postwar: 4, late20: 5, new: 6, unknown: 7 } as const;
+export interface SezManifest {
+  source: string;
+  credit: string;
+  version: string;
+  X0: number;
+  Y0: number;
+  X1: number;
+  Y1: number;
+  VZ: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Image levels at 1/2, 1/4 and 1/8 of the sharpest; the last is one image. */
+  levels: Level[];
+  hi: Level;
+  /** Where the art is drawn: mw x mh cells of `cell` world pixels, base64 bits, row-major. */
+  mask: { mw: number; mh: number; cell: number; bits: string };
+}
 
-/**
- * A rectangle of the world: the whole city on the page, a chunk plus a border in a painter worker. Outside the
- * rectangle is open water with nothing on it, which frames the map.
- */
+const R2 = Math.SQRT1_2;
+
 export class World {
-  readonly cols: number;
-  readonly rows: number;
-  /** Screen x of cell (0, 0)'s top corner, so the whole map has x >= 0. */
-  readonly originX: number;
+  /** World pixels per unit of his projection. */
+  readonly scale: number;
   readonly width: number;
   readonly height: number;
+  private readonly sets: Array<Set<string>>;
+  private readonly mask: Uint8Array;
 
   constructor(
-    readonly meta: WorldMeta,
-    /** terrain, height, roof, details: four planes of w x h bytes. */
-    private readonly planes: Uint8Array,
-    private readonly ox = 0,
-    private readonly oy = 0,
-    private readonly w = meta.cols,
-    private readonly h = meta.rows,
+    readonly meta: SezManifest,
+    readonly base = './sez/',
   ) {
-    this.cols = meta.cols;
-    this.rows = meta.rows;
-    this.originX = this.rows * (TW / 2);
-    this.width = (this.cols + this.rows) * (TW / 2);
-    this.height = (this.cols + this.rows) * (TH / 2) + HEAD;
+    this.scale = meta.hi.w / meta.w;
+    this.width = meta.hi.w;
+    this.height = meta.hi.h;
+    this.sets = [...meta.levels, meta.hi].map((l) => new Set(l.chunks.map(([x, y]) => `${x}_${y}`)));
+    this.mask = Uint8Array.from(atob(meta.mask.bits), (ch) => ch.charCodeAt(0));
   }
 
-  static async load(base = './'): Promise<World> {
-    const [meta, bytes] = await Promise.all([
-      fetch(`${base}world.json`).then((r) => r.json() as Promise<WorldMeta>),
-      fetch(`${base}world.bin`).then((r) => gunzip(r)),
-    ]);
-    return new World(meta, bytes);
+  static async load(base = './sez/'): Promise<World> {
+    const res = await fetch(`${base}manifest.json`);
+    if (!res.ok) throw new Error(`the city map answered ${res.status}`);
+    return new World((await res.json()) as SezManifest, base);
   }
 
-  /** The planes of a rectangle, to hand to a painter worker. */
-  slice(x0: number, y0: number, w: number, h: number): Uint8Array {
-    const out = new Uint8Array(w * h * 4);
-    for (let p = 0; p < 4; p++) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) out[p * w * h + y * w + x] = this.byte(p, x0 + x, y0 + y);
-      }
-    }
-    return out;
+  /** A point at `metres` above the ground -> world pixels. */
+  project(lat: number, lng: number, metres = 0): { x: number; y: number } {
+    const { x: rx, y: ry } = wgsToRd(lat, lng);
+    const x = rx - this.meta.X0;
+    const y = ry - this.meta.Y0;
+    const px = (x + y) * R2;
+    const py = (x - y) * R2 * 0.5 - metres * this.meta.VZ;
+    return { x: (px - this.meta.x) * this.scale, y: (py - this.meta.y) * this.scale };
   }
 
-  inside(x: number, y: number): boolean {
-    return x >= 0 && y >= 0 && x < this.cols && y < this.rows;
-  }
-
-  private byte(plane: number, x: number, y: number): number {
-    const lx = x - this.ox;
-    const ly = y - this.oy;
-    if (lx < 0 || ly < 0 || lx >= this.w || ly >= this.h || !this.inside(x, y)) return plane === 0 ? T.water : 0;
-    return this.planes[plane * this.w * this.h + ly * this.w + lx]!;
-  }
-
-  terrain(x: number, y: number): number {
-    return this.byte(0, x, y) & 15;
-  }
-
-  flags(x: number, y: number): number {
-    return this.byte(0, x, y) >> 4;
-  }
-
-  /** Building height in metres above the ground; 0 where there is no building. */
-  heightM(x: number, y: number): number {
-    return this.byte(1, x, y) / 2;
-  }
-
-  /** Building height in screen pixels at zoom 1. */
-  heightPx(x: number, y: number): number {
-    return Math.min(HEAD - 6, Math.round(this.heightM(x, y) * PX_PER_M));
-  }
-
-  /** Index into meta.roofPalette. */
-  roof(x: number, y: number): number {
-    return this.byte(2, x, y);
-  }
-
-  /** Buildings: age (bits 0-2), pitched roof (bit 3), seed (bits 4-7). Ground: a tree (bit 0). */
-  details(x: number, y: number): number {
-    return this.byte(3, x, y);
-  }
-
-  isBuilt(x: number, y: number): boolean {
-    return this.byte(1, x, y) > 0;
-  }
-
-  isWater(x: number, y: number): boolean {
-    return this.terrain(x, y) === T.water && !(this.flags(x, y) & F.bridge) && !this.isBuilt(x, y);
-  }
-
-  isStreetLike(x: number, y: number): boolean {
-    const t = this.terrain(x, y);
-    return !this.isBuilt(x, y) && (t === T.street || t === T.road || t === T.square || t === T.pavement);
-  }
-
-  /** lat/lng -> fractional cell. */
-  tileOf(lat: number, lng: number): { x: number; y: number } {
-    const { bbox, mPerDegLat, mPerDegLng, cellMeters } = this.meta;
-    return { x: ((lng - bbox.west) * mPerDegLng) / cellMeters, y: ((bbox.north - lat) * mPerDegLat) / cellMeters };
-  }
-
-  /** Cell -> screen position of its top corner at zoom 1. */
-  screenOf(x: number, y: number): { sx: number; sy: number } {
-    return { sx: this.originX + (x - y) * (TW / 2), sy: HEAD + (x + y) * (TH / 2) };
-  }
-
-  /** Screen point at zoom 1 -> fractional cell. */
-  tileAt(sx: number, sy: number): { x: number; y: number } {
-    const a = (sx - this.originX) / (TW / 2);
-    const b = (sy - HEAD) / (TH / 2);
-    return { x: (a + b) / 2, y: (b - a) / 2 };
-  }
-
-  /** The nearest building cell to a point (within 40 m), so a restaurant sits in a building, not in the canal. */
-  nearestBuilt(x: number, y: number): { x: number; y: number } {
-    const fx = Math.floor(x);
-    const fy = Math.floor(y);
-    for (let r = 0; r < 10; r++) {
-      let best: { x: number; y: number; d: number } | null = null;
-      for (let dx = -r; dx <= r; dx++) {
-        for (let dy = -r; dy <= r; dy++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-          const tx = fx + dx;
-          const ty = fy + dy;
-          if (!this.isBuilt(tx, ty)) continue;
-          const d = Math.hypot(tx + 0.5 - x, ty + 0.5 - y);
-          if (!best || d < best.d) best = { x: tx, y: ty, d };
-        }
-      }
-      if (best) return { x: best.x, y: best.y };
-    }
-    return { x: fx, y: fy };
+  /** Whether his art is drawn at a place (it follows the city's outline, so the RD box alone is not enough). */
+  covers(lat: number, lng: number): boolean {
+    const { x, y } = this.project(lat, lng);
+    const { mw, mh, cell } = this.meta.mask;
+    const mx = Math.floor(x / cell);
+    const my = Math.floor(y / cell);
+    if (mx < 0 || my < 0 || mx >= mw || my >= mh) return false;
+    const i = my * mw + mx;
+    return !!(this.mask[i >> 3]! & (1 << (i & 7)));
   }
 
   /**
-   * The cells of the building at a cell: the connected cells with the same roof colour and seed (one 3DBAG building
-   * keeps both), at most `max`. A restaurant's storefront goes on all of them.
+   * Level 'hi' (1:1), 0 (1/2), 1 (1/4) or 2 (the one overview image, 1/8): its image pixels per world pixel, the
+   * world pixels one chunk covers, and whether a chunk exists (open water and the edges have none).
    */
-  buildingAt(x: number, y: number, max = 60): number[] {
-    if (!this.isBuilt(x, y)) return [];
-    const key = (cx: number, cy: number) => this.roof(cx, cy) * 16 + (this.details(cx, cy) >> 4);
-    const want = key(x, y);
-    const seen = new Set<number>([y * this.cols + x]);
-    const queue: Array<[number, number]> = [[x, y]];
-    for (let q = 0; q < queue.length && seen.size < max; q++) {
-      const [cx, cy] = queue[q]!;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const nx = cx + dx;
-        const ny = cy + dy;
-        const i = ny * this.cols + nx;
-        if (seen.has(i) || !this.isBuilt(nx, ny) || key(nx, ny) !== want) continue;
-        seen.add(i);
-        queue.push([nx, ny]);
-        if (seen.size >= max) break;
-      }
-    }
-    return [...seen];
+  level(L: 'hi' | 0 | 1 | 2): { k: number; span: number; has: (cx: number, cy: number) => boolean; url: (cx: number, cy: number) => string } {
+    const lv = L === 'hi' ? this.meta.hi : this.meta.levels[L]!;
+    const set = this.sets[L === 'hi' ? 3 : L]!;
+    const k = lv.w / this.width;
+    const name = (cx: number, cy: number) => (L === 2 ? '2' : `${L === 'hi' ? 'h' : L}_${cx}_${cy}`);
+    return { k, span: lv.cs / k, has: (cx, cy) => set.has(`${cx}_${cy}`), url: (cx, cy) => `${this.base}${this.meta.version}/${name(cx, cy)}.png` };
   }
-}
-
-/** world.bin is gzip: the browser unpacks it natively. */
-async function gunzip(res: Response): Promise<Uint8Array> {
-  if (!res.ok || !res.body) throw new Error(`world.bin answered ${res.status}`);
-  const stream = res.body.pipeThrough(new DecompressionStream('gzip'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
 }

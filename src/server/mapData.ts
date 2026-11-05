@@ -16,6 +16,8 @@ export interface Place {
   area: string;
   /** Picks the room drawn for the restaurant: bistro, wine, japanese, fine, cafe, greenhouse, island, brasserie, bar. */
   kind: string;
+  /** Roof height in metres of the building at the address (3DBAG), so the map's sign stands on its roof. */
+  roof?: number;
 }
 
 export interface MapRestaurant {
@@ -25,6 +27,8 @@ export interface MapRestaurant {
   lat: number;
   lng: number;
   kind: string;
+  /** Roof height in metres, or null when 3DBAG has no building there. */
+  roof: number | null;
   platform: string;
   site: string | null;
   hot: number | null;
@@ -146,6 +150,7 @@ export function buildMapData({ store, platforms, places, optOut, city = 'Amsterd
       lat: place.lat,
       lng: place.lng,
       kind: place.kind,
+      roof: place.roof ?? null,
       platform: platform?.label ?? r.platform,
       site: r.website,
       hot: r.hot ?? null,

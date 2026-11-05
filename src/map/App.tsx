@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ago, codeOn, dateAt, dayIndex, dayLabel, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
-import { rgb } from './pix';
 import { World } from './world';
 
 const CONTACT = (import.meta.env.VITE_MAP_CONTACT as string | undefined) ?? '';
@@ -29,12 +28,11 @@ const GROUP_WORD: Record<Status, string> = {
 
 interface Placed {
   r: MapRestaurant;
-  tx: number;
-  ty: number;
+  /** Sign anchor in world pixels: its roof. */
   ax: number;
   ay: number;
-  /** The cells of its building: all get the storefront. */
-  cells: number[];
+  /** False outside the city art: listed, but without a sign. */
+  onMap: boolean;
 }
 
 function readUrl(): { date: string | null; r: string | null } {
@@ -118,15 +116,11 @@ export function App() {
   // Where each restaurant stands.
   const placed = useMemo<Placed[]>(() => {
     if (!world || !data) return [];
-    const view = viewRef.current;
     return data.restaurants.map((r) => {
-      const t = world.tileOf(r.lat, r.lng);
-      const b = world.nearestBuilt(t.x, t.y);
-      const { sx, sy } = world.screenOf(b.x, b.y);
-      const a = view ? view.anchorOf(b.x, b.y) : { ax: sx, ay: sy };
-      return { r, tx: b.x, ty: b.y, ax: a.ax, ay: a.ay, cells: world.buildingAt(b.x, b.y) };
+      const a = world.project(r.lat, r.lng, r.roof ?? 10);
+      return { r, ax: a.x, ay: a.y, onMap: world.covers(r.lat, r.lng) };
     });
-  }, [world, data, viewRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [world, data]);
 
   // Start the map once the world is in.
   useEffect(() => {
@@ -145,22 +139,20 @@ export function App() {
 
   const statusOfR = useCallback((r: MapRestaurant) => (day && data ? statusOf(codeOn(r, data, day)) : 'unknown'), [day, data]);
 
-  // Signs and storefronts for the day.
+  // Signs for the day.
   useEffect(() => {
     const view = viewRef.current;
     if (!view || !data || !day || !world) return;
     const q = query.trim().toLowerCase();
     const markers: Marker[] = [];
-    const specials = new Map<number, { awning: number; lit: boolean }>();
     for (const p of placed) {
+      if (!p.onMap) continue;
       const s = statusOfR(p.r);
       if (hotOnly && !p.r.hot) continue;
       const match = !q || p.r.name.toLowerCase().includes(q) || p.r.area.toLowerCase().includes(q);
       markers.push({
         id: p.r.id,
         name: p.r.name,
-        tx: p.tx,
-        ty: p.ty,
         ax: p.ax,
         ay: p.ay,
         colour: STATUS_COLOUR[s],
@@ -168,12 +160,8 @@ export function App() {
         rank: { open: 300, later: 200, full: 100, closed: 50, unknown: 0 }[s] + (p.r.hot ?? 0) * 20,
         dim: (openOnly && s !== 'open') || !match,
       });
-      // The whole building gets the storefront and awning, so it reads from afar.
-      const sp = { awning: rgb(STATUS_COLOUR[s]), lit: s !== 'closed' && s !== 'unknown' };
-      for (const i of p.cells.length ? p.cells : [p.ty * world.cols + p.tx]) specials.set(i, sp);
     }
     view.setMarkers(markers);
-    view.setSpecials(specials);
   }, [placed, day, data, world, openOnly, hotOnly, query, statusOfR]);
 
   // Tell the map which screen areas the panels cover, so no sign hides under them.
@@ -231,7 +219,7 @@ export function App() {
       const p = placed.find((x) => x.r.id === id);
       const view = viewRef.current;
       setSelected(id);
-      if (p && view) {
+      if (p && view && p.onMap) {
         const narrow = matchMedia('(max-width: 900px)').matches;
         const z = Math.max(view.cam.z, 1);
         // Centre the sign in the part of the screen the panels leave free. On a phone the card will cover
@@ -320,7 +308,7 @@ export function App() {
 
           <aside className={`side${collapsed && !sel ? ' collapsed' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
-              <Card r={sel} data={data} day={day} status={statusOfR(sel)} onClose={() => setSelected(null)} onDay={setDate} />
+              <Card r={sel} offMap={!placed.find((p) => p.r.id === sel.id)?.onMap} data={data} day={day} status={statusOfR(sel)} onClose={() => setSelected(null)} onDay={setDate} />
             ) : (
               <List
                 data={data}
@@ -370,8 +358,17 @@ export function App() {
 
           <footer className="foot">
             <span className="credit">
-              <span className="long">Read {ago(data.generatedAt)} · </span>Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
-              <span className="long"> contributors</span> · <a href="https://3dbag.nl/">3DBAG</a> · <a href="https://www.pdok.nl/">PDOK</a>
+              <span className="long">Read {ago(data.generatedAt)} · </span>City art <a href="https://sezlab.dev/amsterdam">sezlab</a>
+              <span className="long">
+                {' '}
+                (<a href="https://github.com/sponsors/sezkus">sponsor him</a>)
+              </span>{' '}
+              · ©{' '}
+              <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+              <span className="long">
+                {' '}
+                contributors · <a href="https://3dbag.nl/">3DBAG</a> · <a href="https://www.pdok.nl/">PDOK</a>
+              </span>
             </span>
             <nav>
               <button onClick={() => setDialog('about')}>How it works</button>
@@ -571,7 +568,7 @@ function RoomCanvas({ kind, status, free, seed }: { kind: string; status: Status
   return <canvas ref={ref} width={ROOM_W} height={ROOM_H} role="img" aria-label={`Inside: ${STATUS_WORD[status].toLowerCase()}`} />;
 }
 
-function Card({ r, data, day, status, onClose, onDay }: { r: MapRestaurant; data: MapData; day: string; status: Status; onClose: () => void; onDay: (d: string) => void }) {
+function Card({ r, offMap, data, day, status, onClose, onDay }: { r: MapRestaurant; offMap: boolean; data: MapData; day: string; status: Status; onClose: () => void; onDay: (d: string) => void }) {
   const times = r.t[day] ?? [];
   const book = r.book[day] ?? r.link;
   const seed = useMemo(() => [...r.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 1000, [r.id]);
@@ -608,6 +605,7 @@ function Card({ r, data, day, status, onClose, onDay }: { r: MapRestaurant; data
             {KIND_WORD[r.kind] ?? 'Restaurant'} · {r.area}
             {r.hot ? <span className="hot">{'★'.repeat(r.hot)} hard to book</span> : null}
           </p>
+          {offMap && <p className="where">Outside the city map, so it has no sign there.</p>}
           <div className="state">
             <span className="stud" style={{ background: STATUS_COLOUR[status] }} />
             <div>
@@ -693,6 +691,13 @@ function Dialog({ kind, onClose }: { kind: 'about' | 'restaurants'; onClose: () 
             <p>
               A few times a day we read each restaurant's own public booking calendar (Tebi, Zenchef, Formitable, SevenRooms,
               Guestplan): the same calendar any guest sees. A few restaurants are watched more closely, so their signs change sooner.
+            </p>
+            <h3>The city</h3>
+            <p>
+              The city is drawn by sezlab: <a href="https://sezlab.dev/amsterdam">sezlab.dev/amsterdam</a>, used with his permission.
+              Like his work? <a href="https://github.com/sponsors/sezkus">Sponsor him</a>. His drawing is made from 3DBAG (TU Delft and
+              3DGI), the PDOK aerial photo (Beeldmateriaal Nederland) and OpenStreetMap. Restaurants outside his drawing are in the
+              list, without a sign.
             </p>
             <h3>“Not bookable yet”</h3>
             <p>

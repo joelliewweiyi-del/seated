@@ -1,17 +1,11 @@
-// Draws the city on a canvas: a far-away overview, chunks of painted tiles near by (cached, two levels of
-// detail), little lives on the streets and canals, and a sign over every restaurant.
-import type { FromWorker, ToWorker } from './chunk-worker';
-import { MARGIN, N, paintChunk } from './chunks';
-import { hash, mix, Pix } from './pix';
-import { overviewColour, PAL, type Special } from './paint';
-import { F, HEAD, T, TH, TW, World } from './world';
+// Draws the map on a canvas: the city (sezlab's images, the level that fits the zoom, loaded as the view needs them)
+// and a sign over every restaurant.
+import { World } from './world';
 
 export interface Marker {
   id: string;
   name: string;
-  tx: number;
-  ty: number;
-  /** Anchor at zoom 1: the top of the restaurant's building. */
+  /** Anchor in world pixels: the roof of the restaurant's building. */
   ax: number;
   ay: number;
   colour: string;
@@ -22,50 +16,30 @@ export interface Marker {
   dim: boolean;
 }
 
-const OVERVIEW = 8; // world pixels per overview pixel
+/** Crisp zooms: at each one the chosen image level is shown at a whole multiple of its pixels. */
 const ZOOMS = [0.125, 0.25, 0.5, 1, 2, 3, 4];
-const MAX_L1 = 56;
-const MAX_L2 = 180;
+const MAX_IMAGES = 48;
+/** Outside the art: a pale sky, as on a printed map. */
+const SKY = '#e9eef0';
 
-type ChunkKey = number;
-const keyOf = (cx: number, cy: number) => cx * 4096 + cy;
-
-interface Agent {
-  kind: 'bike' | 'walker' | 'boat' | 'tram' | 'ferry';
-  x: number;
-  y: number;
-  /** Direction as a unit step on the grid. */
-  dx: number;
-  dy: number;
-  /** 0..1 along the current tile step. */
-  t: number;
-  speed: number;
-  colour: string;
-  seed: number;
+interface Tile {
+  img: HTMLImageElement;
+  ok: boolean;
+  failed: boolean;
 }
 
 export class MapView {
   readonly ctx: CanvasRenderingContext2D;
-  /** Camera centre in world pixels (zoom 1) and zoom (CSS pixels per world pixel). */
+  /** Camera centre in world pixels and zoom (CSS pixels per world pixel). */
   cam = { x: 0, y: 0, z: 0.25 };
-  private target: { x: number; y: number; z: number } | null = null;
+  target: { x: number; y: number; z: number } | null = null;
   private dpr = 1;
-  private overview: HTMLCanvasElement | null = null;
-  private l1 = new Map<ChunkKey, HTMLCanvasElement>();
-  private l2 = new Map<ChunkKey, HTMLCanvasElement>();
-  /** Chunks the current view still needs, nearest first. Rebuilt every frame, so a fly-over never paints stale ones. */
-  private queue: Array<{ cx: number; cy: number; level: 1 | 2 }> = [];
-  private workers: Worker[] = [];
-  private busy = new Map<Worker, number>();
-  private inflight = new Set<string>();
-  private jobs = new Map<number, { key: ChunkKey; level: 1 | 2; version: number; id: string }>();
-  private versions = new Map<ChunkKey, number>();
-  private jobId = 0;
-  private specials = new Map<number, Special>();
-  private chunkOfSpecial = new Map<number, ChunkKey>();
+  private overview: Tile;
+  private tiles = new Map<string, Tile>();
+  /** Images the current view shows but has not got yet. Tests wait for 0. */
+  private waiting = 0;
   private markers: Marker[] = [];
   private hits: Array<{ id: string; x: number; y: number; w: number; h: number }> = [];
-  private agents: Agent[] = [];
   private raf = 0;
   private dirty = true;
   private last = performance.now();
@@ -84,13 +58,11 @@ export class MapView {
     readonly world: World,
   ) {
     this.ctx = canvas.getContext('2d', { alpha: false })!;
-    const dam = world.tileOf(52.3702, 4.8952);
-    const centre = world.screenOf(dam.x, dam.y);
-    this.cam = { x: centre.sx, y: centre.sy, z: 0.5 };
+    const dam = world.project(52.3731, 4.8926);
+    this.cam = { x: dam.x, y: dam.y, z: 0.5 };
     this.home = { ...this.cam };
     this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.buildOverview();
-    this.startWorkers();
+    this.overview = this.load(world.level(2).url(0, 0));
     this.bindInput();
     this.resize();
     new ResizeObserver(() => this.resize()).observe(canvas);
@@ -99,32 +71,12 @@ export class MapView {
 
   destroy(): void {
     cancelAnimationFrame(this.raf);
-    for (const w of this.workers) w.terminate();
   }
 
   // ── public ───────────────────────────────────────────────────────────────
 
   setMarkers(markers: Marker[]): void {
     this.markers = markers;
-    this.dirty = true;
-  }
-
-  /** Restaurant storefronts for the chosen day. Only chunks whose storefront changed are painted again. */
-  setSpecials(next: Map<number, Special>): void {
-    const changed = new Set<ChunkKey>();
-    const same = (a?: Special, b?: Special) => a?.awning === b?.awning && a?.lit === b?.lit;
-    for (const idx of new Set([...this.specials.keys(), ...next.keys()])) {
-      if (same(this.specials.get(idx), next.get(idx))) continue;
-      const x = idx % this.world.cols;
-      const y = Math.floor(idx / this.world.cols);
-      changed.add(keyOf(Math.floor(x / N), Math.floor(y / N)));
-    }
-    this.specials = next;
-    for (const k of changed) {
-      this.l1.delete(k);
-      this.l2.delete(k);
-      this.versions.set(k, (this.versions.get(k) ?? 0) + 1);
-    }
     this.dirty = true;
   }
 
@@ -183,15 +135,9 @@ export class MapView {
     return { x: (m.ax - this.cam.x) * this.cam.z + rect.width / 2, y: (m.ay - this.cam.y) * this.cam.z + rect.height / 2 };
   }
 
-  /** Top of the building on a tile, at zoom 1. */
-  anchorOf(tx: number, ty: number): { ax: number; ay: number } {
-    const { sx, sy } = this.world.screenOf(tx, ty);
-    return { ax: sx, ay: sy + TH / 2 - this.world.heightPx(tx, ty) - 4 };
-  }
-
-  /** Chunks still to paint for the current view. Tests wait for 0. */
+  /** City images the view still waits for. Tests wait for 0. */
   pending(): number {
-    return this.queue.filter((j) => !(j.level === 1 ? this.l1 : this.l2).has(keyOf(j.cx, j.cy))).length + this.inflight.size;
+    return this.waiting + (this.overview.ok || this.overview.failed ? 0 : 1);
   }
 
   // ── frame ────────────────────────────────────────────────────────────────
@@ -222,110 +168,61 @@ export class MapView {
       moving = true;
       this.onCamera(this.cam);
     }
-    const alive = !this.reducedMotion && this.cam.z >= 0.75;
-    if (alive) this.stepAgents(dt);
-    const worked = this.work(now);
-    if (this.dirty || moving || alive || worked) this.draw(now);
+    const bobbing = !!this.selected && !this.reducedMotion;
+    if (this.dirty || moving || bobbing) this.draw(now);
     this.dirty = false;
   };
 
-  /** Hands visible chunks to the painter workers (or paints on this thread when there are none). */
-  private work(start: number): boolean {
-    let did = false;
-    for (const job of this.queue) {
-      const id = `${job.cx},${job.cy},${job.level}`;
-      if (this.inflight.has(id)) continue;
-      const k = keyOf(job.cx, job.cy);
-      if ((job.level === 1 ? this.l1 : this.l2).has(k)) continue;
-      if (this.workers.length) {
-        const free = this.workers.find((w) => (this.busy.get(w) ?? 0) < 2);
-        if (!free) break;
-        const jobId = ++this.jobId;
-        this.jobs.set(jobId, { key: k, level: job.level, version: this.versions.get(k) ?? 0, id });
-        this.inflight.add(id);
-        this.busy.set(free, (this.busy.get(free) ?? 0) + 1);
-        const [x0, y0, size] = [job.cx * N - MARGIN, job.cy * N - MARGIN, N + MARGIN * 2];
-        const bytes = this.world.slice(x0, y0, size, size).buffer as ArrayBuffer;
-        free.postMessage(
-          { type: 'paint', id: jobId, cx: job.cx, cy: job.cy, level: job.level, specials: this.specialsIn(job.cx, job.cy), slice: { x0, y0, w: size, h: size, bytes } } satisfies ToWorker,
-          [bytes],
-        );
-      } else {
-        if (performance.now() - start > 10) break;
-        const pix = paintChunk(this.world, job.cx, job.cy, new Map(this.specialsIn(job.cx, job.cy)), job.level);
-        this.store(k, job.level, pix.toCanvas());
-        did = true;
+  private load(url: string): Tile {
+    const t: Tile = { img: new Image(), ok: false, failed: false };
+    t.img.onload = () => {
+      t.ok = true;
+      this.dirty = true;
+    };
+    t.img.onerror = () => {
+      t.failed = true;
+      this.dirty = true;
+    };
+    t.img.src = url;
+    return t;
+  }
+
+  /** A chunk image, loaded on first use; the least recently used ones are dropped. */
+  private tile(url: string): Tile {
+    let t = this.tiles.get(url);
+    if (t) this.tiles.delete(url);
+    else t = this.load(url);
+    this.tiles.set(url, t);
+    if (this.tiles.size > MAX_IMAGES) this.tiles.delete(this.tiles.keys().next().value!);
+    return t;
+  }
+
+  /** Draws the visible chunks of one level; returns how many it still waits for. */
+  private drawLevel(L: 'hi' | 0 | 1, toX: (x: number) => number, toY: (y: number) => number, W: number, H: number): number {
+    const { span, has, url } = this.world.level(L);
+    const z = this.cam.z;
+    const x0 = Math.max(0, Math.floor((this.cam.x - W / 2 / z) / span));
+    const y0 = Math.max(0, Math.floor((this.cam.y - H / 2 / z) / span));
+    const x1 = Math.floor((this.cam.x + W / 2 / z) / span);
+    const y1 = Math.floor((this.cam.y + H / 2 / z) / span);
+    let waiting = 0;
+    for (let cy = y0; cy <= y1; cy++) {
+      for (let cx = x0; cx <= x1; cx++) {
+        if (!has(cx, cy)) continue;
+        const t = this.tile(url(cx, cy));
+        if (!t.ok) {
+          if (!t.failed) waiting++;
+          continue;
+        }
+        // Whole pixels, so neighbouring chunks meet without a seam.
+        const sx = Math.round(toX(cx * span));
+        const sy = Math.round(toY(cy * span));
+        const ex = Math.round(toX(cx * span + (t.img.width / this.world.level(L).k)));
+        const ey = Math.round(toY(cy * span + (t.img.height / this.world.level(L).k)));
+        this.ctx.drawImage(t.img, sx, sy, ex - sx, ey - sy);
       }
     }
-    return did;
-  }
-
-  private specialsIn(cx: number, cy: number): Array<[number, Special]> {
-    const out: Array<[number, Special]> = [];
-    for (const [idx, sp] of this.specials) {
-      const x = idx % this.world.cols;
-      const y = Math.floor(idx / this.world.cols);
-      if (Math.floor(x / N) === cx && Math.floor(y / N) === cy) out.push([idx, sp]);
-    }
-    return out;
-  }
-
-  private store(k: ChunkKey, level: 1 | 2, img: HTMLCanvasElement): void {
-    const cache = level === 1 ? this.l1 : this.l2;
-    cache.set(k, img);
-    if (cache.size > (level === 1 ? MAX_L1 : MAX_L2)) cache.delete(cache.keys().next().value!);
-    this.dirty = true;
-  }
-
-  private startWorkers(): void {
-    const count = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    try {
-      for (let i = 0; i < count; i++) {
-        const w = new Worker(new URL('./chunk-worker.ts', import.meta.url), { type: 'module' });
-        w.postMessage({ type: 'init', meta: this.world.meta } satisfies ToWorker);
-        w.onmessage = (e: MessageEvent<FromWorker>) => {
-          const r = e.data;
-          const job = this.jobs.get(r.id);
-          this.jobs.delete(r.id);
-          this.busy.set(w, Math.max(0, (this.busy.get(w) ?? 1) - 1));
-          if (!job) return;
-          this.inflight.delete(job.id);
-          if ((this.versions.get(job.key) ?? 0) !== job.version) return; // the storefronts changed meanwhile
-          const c = document.createElement('canvas');
-          c.width = r.w;
-          c.height = r.h;
-          c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(r.buffer), r.w, r.h), 0, 0);
-          this.store(job.key, job.level, c);
-        };
-        w.onerror = () => {
-          this.workers = this.workers.filter((x) => x !== w);
-        };
-        this.workers.push(w);
-      }
-    } catch {
-      this.workers = [];
-    }
-  }
-
-  private buildOverview(): void {
-    const w = this.world;
-    const ow = Math.ceil(w.width / OVERVIEW);
-    const oh = Math.ceil(w.height / OVERVIEW);
-    const p = new Pix(ow, oh);
-    const bg = PAL.water;
-    for (let py = 0; py < oh; py++) {
-      for (let px = 0; px < ow; px++) {
-        // Four samples per pixel, averaged: one point per pixel turns the dense city into noise.
-        const at = (fx: number, fy: number) => {
-          const t = w.tileAt((px + fx) * OVERVIEW, (py + fy) * OVERVIEW);
-          const x = Math.floor(t.x);
-          const y = Math.floor(t.y);
-          return w.inside(x, y) ? overviewColour(w, x, y) : bg;
-        };
-        p.data[py * ow + px] = mix(mix(at(0.25, 0.25), at(0.75, 0.25), 0.5), mix(at(0.25, 0.75), at(0.75, 0.75), 0.5), 0.5);
-      }
-    }
-    this.overview = p.toCanvas();
+    return waiting;
   }
 
   private draw(now: number): void {
@@ -334,224 +231,27 @@ export class MapView {
     const H = canvas.height / dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#6cb4c4';
+    ctx.fillStyle = SKY;
     ctx.fillRect(0, 0, W, H);
     const z = cam.z;
     const toX = (wx: number) => (wx - cam.x) * z + W / 2;
     const toY = (wy: number) => (wy - cam.y) * z + H / 2;
 
-    // Overview underneath everything: it shows while chunks are being painted, and alone when far away.
-    if (this.overview) {
-      ctx.imageSmoothingEnabled = z < OVERVIEW / 8 / 2;
-      ctx.drawImage(this.overview, toX(0), toY(0), this.overview.width * OVERVIEW * z, this.overview.height * OVERVIEW * z);
+    // The overview underneath everything: it shows while chunks load, and alone when far away.
+    if (this.overview.ok) {
+      ctx.imageSmoothingEnabled = z < 0.125;
+      ctx.drawImage(this.overview.img, Math.round(toX(0)), Math.round(toY(0)), Math.round(this.world.width * z), Math.round(this.world.height * z));
       ctx.imageSmoothingEnabled = false;
     }
-
-    if (z >= 0.3) {
-      const level: 1 | 2 = z >= 0.75 ? 1 : 2;
-      const cache = level === 1 ? this.l1 : this.l2;
-      const corners = [
-        this.world.tileAt(cam.x - W / 2 / z, cam.y - H / 2 / z),
-        this.world.tileAt(cam.x + W / 2 / z, cam.y - H / 2 / z),
-        this.world.tileAt(cam.x - W / 2 / z, cam.y + (H / 2 + HEAD) / z),
-        this.world.tileAt(cam.x + W / 2 / z, cam.y + (H / 2 + HEAD) / z),
-      ];
-      const minX = Math.floor(Math.min(...corners.map((c) => c.x)) / N) - 1;
-      const maxX = Math.floor(Math.max(...corners.map((c) => c.x)) / N) + 1;
-      const minY = Math.floor(Math.min(...corners.map((c) => c.y)) / N) - 1;
-      const maxY = Math.floor(Math.max(...corners.map((c) => c.y)) / N) + 1;
-      const todo: Array<{ cx: number; cy: number; d: number }> = [];
-      for (let s = minX + minY; s <= maxX + maxY; s++) {
-        for (let cx = minX; cx <= maxX; cx++) {
-          const cy = s - cx;
-          if (cy < minY || cy > maxY) continue;
-          if (cx < 0 || cy < 0 || cx * N >= this.world.cols || cy * N >= this.world.rows) continue;
-          const x0 = cx * N;
-          const y0 = cy * N;
-          const left = this.world.screenOf(x0, y0 + N - 1).sx - TW / 2;
-          const top = (x0 + y0) * (TH / 2);
-          const sx = toX(left);
-          const sy = toY(top);
-          const sw = N * TW * z;
-          const sh = (N * TH + HEAD) * z;
-          if (sx > W || sy > H || sx + sw < 0 || sy + sh < 0) continue;
-          const img = cache.get(keyOf(cx, cy));
-          if (img) {
-            ctx.drawImage(img, Math.round(sx), Math.round(sy), Math.round(sw), Math.round(sh));
-            // LRU: touch.
-            cache.delete(keyOf(cx, cy));
-            cache.set(keyOf(cx, cy), img);
-          } else {
-            // While it is painted, the other level stands in: much closer to the real thing than the overview.
-            const other = (level === 1 ? this.l2 : this.l1).get(keyOf(cx, cy));
-            if (other) ctx.drawImage(other, Math.round(sx), Math.round(sy), Math.round(sw), Math.round(sh));
-            todo.push({ cx, cy, d: Math.hypot(sx + sw / 2 - W / 2, sy + sh / 2 - H / 2) });
-          }
-        }
-      }
-      // Paint the chunks nearest the centre first.
-      todo.sort((a, b) => a.d - b.d);
-      this.queue = todo.map((t) => ({ cx: t.cx, cy: t.cy, level }));
-      if (level === 1) {
-        this.drawGlints(ctx, now, toX, toY, W, H);
-        this.drawAgents(ctx, now, toX, toY);
-      }
-    } else {
-      this.queue = [];
-    }
+    // The level whose pixels are at least as fine as the screen's, so images are only ever enlarged.
+    let waiting = 0;
+    if (z >= 1) {
+      this.drawLevel(0, toX, toY, W, H); // under the sharpest: it fills where a sharp chunk is missing or loading
+      waiting = this.drawLevel('hi', toX, toY, W, H);
+    } else if (z >= 0.5) waiting = this.drawLevel(0, toX, toY, W, H);
+    else if (z >= 0.25) waiting = this.drawLevel(1, toX, toY, W, H);
+    this.waiting = waiting;
     this.drawMarkers(ctx, toX, toY, W, H, now);
-  }
-
-  // ── water glints and agents ─────────────────────────────────────────────
-
-  private drawGlints(ctx: CanvasRenderingContext2D, now: number, toX: (x: number) => number, toY: (y: number) => number, W: number, H: number): void {
-    if (this.reducedMotion) return;
-    const z = this.cam.z;
-    const c0 = this.world.tileAt(this.cam.x - W / 2 / z, this.cam.y - H / 2 / z);
-    const c1 = this.world.tileAt(this.cam.x + W / 2 / z, this.cam.y + H / 2 / z);
-    const span = Math.ceil(Math.hypot(c1.x - c0.x, c1.y - c0.y));
-    const mid = this.world.tileAt(this.cam.x, this.cam.y);
-    ctx.fillStyle = '#d8f1f3';
-    const phase = Math.floor(now / 700);
-    for (let k = 0; k < 140; k++) {
-      const x = Math.floor(mid.x + (hash(k, phase, 1) - 0.5) * span);
-      const y = Math.floor(mid.y + (hash(k, phase, 2) - 0.5) * span);
-      if (this.world.terrain(x, y) !== T.water || this.world.flags(x, y) & F.bridge) continue;
-      const { sx, sy } = this.world.screenOf(x + hash(k, 3), y + hash(k, 4));
-      ctx.fillRect(Math.round(toX(sx)), Math.round(toY(sy)), Math.max(1, 3 * z), Math.max(1, z));
-    }
-  }
-
-  private spawn(kind: Agent['kind']): Agent | null {
-    const W = this.canvas.width / this.dpr;
-    const H = this.canvas.height / this.dpr;
-    const z = this.cam.z;
-    for (let tries = 0; tries < 40; tries++) {
-      const t = this.world.tileAt(this.cam.x + (Math.random() - 0.5) * (W / z), this.cam.y + (Math.random() - 0.5) * (H / z));
-      const x = Math.floor(t.x);
-      const y = Math.floor(t.y);
-      if (!this.canWalk(kind, x, y)) continue;
-      const dirs = DIRS.filter(([dx, dy]) => this.canWalk(kind, x + dx, y + dy));
-      if (!dirs.length) continue;
-      const [dx, dy] = dirs[Math.floor(Math.random() * dirs.length)]!;
-      const colours = kind === 'boat' ? ['#2f4a3c', '#7a4b2a', '#3b4f6b', '#e9e1cf'] : ['#d9534f', '#3c6e8f', '#e6b33a', '#5b8f4e', '#7a5aa6', '#2b2733'];
-      return {
-        kind,
-        x,
-        y,
-        dx,
-        dy,
-        t: Math.random(),
-        // Cells per second: cells are 4 m, so a bike does about 5 m/s.
-        speed: { bike: 1.4, walker: 0.45, boat: 0.35, tram: 1.1, ferry: 0.5 }[kind] * 4 * (0.8 + Math.random() * 0.4),
-        colour: colours[Math.floor(Math.random() * colours.length)]!,
-        seed: Math.random() * 1000,
-      };
-    }
-    return null;
-  }
-
-  private canWalk(kind: Agent['kind'], x: number, y: number): boolean {
-    const t = this.world.terrain(x, y);
-    const f = this.world.flags(x, y);
-    if (!this.world.inside(x, y) || this.world.isBuilt(x, y)) return false;
-    switch (kind) {
-      case 'bike':
-        return t === T.street || t === T.road || !!(f & F.bridge);
-      case 'walker':
-        return t === T.street || t === T.square || t === T.park || t === T.pavement || !!(f & F.bridge);
-      case 'boat':
-        return t === T.water && !(f & (F.ferry | F.bridge));
-      case 'tram':
-        return !!(f & F.tram);
-      case 'ferry':
-        return !!(f & F.ferry);
-    }
-  }
-
-  private stepAgents(dt: number): void {
-    const small = this.canvas.clientWidth < 700;
-    const want = small ? { bike: 12, walker: 8, boat: 5, tram: 2, ferry: 1 } : { bike: 26, walker: 18, boat: 10, tram: 3, ferry: 2 };
-    for (const kind of Object.keys(want) as Array<Agent['kind']>) {
-      const have = this.agents.filter((a) => a.kind === kind).length;
-      for (let i = have; i < want[kind]; i++) {
-        const a = this.spawn(kind);
-        if (a) this.agents.push(a);
-        else break;
-      }
-    }
-    const W = this.canvas.width / this.dpr;
-    const H = this.canvas.height / this.dpr;
-    const z = this.cam.z;
-    this.agents = this.agents.filter((a) => {
-      a.t += a.speed * dt;
-      while (a.t >= 1) {
-        a.t -= 1;
-        a.x += a.dx;
-        a.y += a.dy;
-        const options = DIRS.filter(([dx, dy]) => this.canWalk(a.kind, a.x + dx, a.y + dy) && !(dx === -a.dx && dy === -a.dy));
-        const ahead = options.find(([dx, dy]) => dx === a.dx && dy === a.dy);
-        const pick = ahead && Math.random() < 0.8 ? ahead : options[Math.floor(Math.random() * options.length)];
-        if (!pick) {
-          a.dx = -a.dx;
-          a.dy = -a.dy;
-        } else [a.dx, a.dy] = pick;
-      }
-      const { sx, sy } = this.world.screenOf(a.x + 0.5 + a.dx * a.t, a.y + 0.5 + a.dy * a.t);
-      const px = (sx - this.cam.x) * z + W / 2;
-      const py = (sy - this.cam.y) * z + H / 2;
-      return px > -200 && py > -200 && px < W + 200 && py < H + 200;
-    });
-  }
-
-  private drawAgents(ctx: CanvasRenderingContext2D, now: number, toX: (x: number) => number, toY: (y: number) => number): void {
-    const z = this.cam.z;
-    const sorted = [...this.agents].sort((a, b) => a.x + a.y - (b.x + b.y));
-    for (const a of sorted) {
-      const { sx, sy } = this.world.screenOf(a.x + 0.5 + a.dx * a.t, a.y + 0.5 + a.dy * a.t);
-      const X = Math.round(toX(sx));
-      const Y = Math.round(toY(sy));
-      const u = Math.max(1, Math.round(z));
-      const frame = Math.floor(now / 160 + a.seed) % 2;
-      const facingRight = a.dx > 0 || a.dy < 0;
-      const px = (x: number, y: number, w: number, h: number, c: string) => {
-        ctx.fillStyle = c;
-        ctx.fillRect(X + (facingRight ? x : -x - w) * u, Y + y * u, w * u, h * u);
-      };
-      if (a.kind === 'walker') {
-        px(-1, -7, 2, 2, '#f1c7a5');
-        px(-1, -5, 2, 3, a.colour);
-        px(frame ? -1 : 0, -2, 1, 2, '#3a3440');
-        px(frame ? 0 : -1, -2, 1, 1, '#3a3440');
-      } else if (a.kind === 'bike') {
-        px(-4, -1, 2, 2, '#2b2733');
-        px(2, -1, 2, 2, '#2b2733');
-        px(-2, -3, 4, 1, a.colour);
-        px(-1, -8, 2, 2, '#f1c7a5');
-        px(-1, -6, 2, 3, frame ? a.colour : '#2b2733');
-      } else if (a.kind === 'boat') {
-        px(-7, -2, 14, 3, a.colour);
-        px(-6, -1, 12, 1, '#ffffff33');
-        px(-3, -5, 6, 3, '#f4efe4');
-        px(-2, -4, 1, 1, '#3f5466');
-        px(1, -4, 1, 1, '#3f5466');
-        px(-9 + frame, 1, 3, 1, '#d8f1f3');
-      } else if (a.kind === 'tram') {
-        px(-12, -9, 24, 8, '#f4f1ea');
-        px(-12, -5, 24, 2, '#2d6fb5');
-        px(-10, -8, 4, 2, '#3f5466');
-        px(-4, -8, 4, 2, '#3f5466');
-        px(2, -8, 4, 2, '#3f5466');
-        px(8, -8, 3, 2, '#3f5466');
-        px(-12, -1, 24, 1, '#2b2733');
-      } else {
-        px(-14, -6, 28, 6, '#f4f1ea');
-        px(-14, -2, 28, 2, '#2d6fb5');
-        px(-6, -10, 12, 4, '#f4f1ea');
-        px(-4, -9, 2, 2, '#3f5466');
-        px(1, -9, 2, 2, '#3f5466');
-      }
-    }
   }
 
   // ── signs ────────────────────────────────────────────────────────────────
@@ -741,13 +441,6 @@ export class MapView {
     this.flyTo((this.target?.x ?? this.cam.x) + dx / z, (this.target?.y ?? this.cam.y) + dy / z, z);
   }
 }
-
-const DIRS: Array<[number, number]> = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
 
 function pxCircle(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, colour: string): void {
   ctx.fillStyle = colour;

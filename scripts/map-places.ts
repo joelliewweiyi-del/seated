@@ -7,6 +7,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadCuratedRestaurants } from '../src/server/restaurants.js';
 import type { Place } from '../src/server/mapData.js';
+import { wgsToRd } from '../src/shared/rd.js';
 
 const OUT = 'data/map-places.json';
 const UA = 'Seated-map/0.1 (one-off geocoding for a restaurant map)';
@@ -151,6 +152,52 @@ for (const r of loadCuratedRestaurants().filter((x) => x.city === 'Amsterdam')) 
   }
   places[r.id] = { lat: Number(hit.lat.toFixed(6)), lng: Number(hit.lng.toFixed(6)), area: hit.area, kind, source };
   console.log(`ok ${r.name.padEnd(28)} ${hit.area.padEnd(22)} ${source}`);
+}
+/** Metres from a point to a polygon's outline, 0 inside it (RD New coordinates). */
+function distance(px: number, py: number, rings: number[][][]): number {
+  let inside = false;
+  let best = Infinity;
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [ax, ay] = ring[j]!;
+      const [bx, by] = ring[i]!;
+      if (ay! > py !== by! > py && px < ((ax! - bx!) * (py - by!)) / (ay! - by!) + bx!) inside = !inside;
+      const dx = bx! - ax!;
+      const dy = by! - ay!;
+      const t = Math.max(0, Math.min(1, ((px - ax!) * dx + (py - ay!) * dy) / (dx * dx + dy * dy || 1)));
+      best = Math.min(best, Math.hypot(px - (ax! + t * dx), py - (ay! + t * dy)));
+    }
+  }
+  return inside ? 0 : best;
+}
+
+// Roof heights from 3DBAG (TU Delft and 3DGI, CC BY 4.0): the tallest building part within 4 m of the address. The
+// box query also returns parts that only touch its corners, so each part's real distance is checked.
+for (const [id, p] of Object.entries(places)) {
+  if (p.roof !== undefined && !all) continue;
+  await sleep(300);
+  const { x, y } = wgsToRd(p.lat, p.lng);
+  const url =
+    'https://data.3dbag.nl/api/BAG3D/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=BAG3D:lod13&outputFormat=application/json' +
+    `&propertyName=geom,b3_h_maaiveld,b3_h_max,b3_h_nok&bbox=${x - 4},${y - 4},${x + 4},${y + 4},EPSG:28992`;
+  const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(20_000) }).catch(() => null);
+  if (!res?.ok) {
+    console.log(`?  ${id}: no roof height (3DBAG ${res?.status ?? 'no answer'})`);
+    continue;
+  }
+  type Q = { b3_h_maaiveld: number | null; b3_h_max: number | null; b3_h_nok: number | null };
+  type Geom = { type: string; coordinates: number[][][] | number[][][][] } | null;
+  const feats = ((await res.json()) as { features?: Array<{ properties: Q; geometry: Geom }> }).features ?? [];
+  const near = (g: Geom) => {
+    if (!g) return false;
+    const polys = (g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]) as number[][][][];
+    return polys.some((rings) => distance(x, y, rings) <= 4);
+  };
+  const heights = feats
+    .filter((f) => near(f.geometry))
+    .map(({ properties: q }) => (q.b3_h_nok ?? q.b3_h_max ?? 0) - (q.b3_h_maaiveld ?? 0))
+    .filter((h) => h > 0);
+  if (heights.length) p.roof = Math.round(Math.max(...heights) * 2) / 2;
 }
 const sorted = Object.fromEntries(Object.entries(places).sort(([a], [b]) => a.localeCompare(b)));
 writeFileSync(OUT, `${JSON.stringify(sorted, null, 1)}\n`);

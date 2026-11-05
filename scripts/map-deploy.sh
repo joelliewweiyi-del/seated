@@ -15,6 +15,7 @@ if [[ -z "${VITE_MAP_CONTACT:-}" ]]; then
   echo "Set VITE_MAP_CONTACT (the address restaurants write to to come off the map) before going public." >&2
   exit 1
 fi
+npx tsx scripts/map-sez-sync.ts # the city art (sezlab, with permission): fetches only what is missing
 npx vite build -c vite.map.config.ts
 cp deploy/map/vercel.json dist/map/vercel.json
 VERCEL_ORG_ID=team_eUkad93RQyEOnkyPiSoPR4Mr VERCEL_PROJECT_ID=prj_TUZq0gmT8CLbhxEHRADEXdOdsE9h vercel deploy dist/map --prod --yes

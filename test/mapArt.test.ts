@@ -1,123 +1,57 @@
-// The map's pixel art and its date helpers. No network, no browser: the painters write to plain buffers.
+// The map: where things land on the city art, the room drawings, and the date helpers. No network, no browser.
 import { describe, expect, it } from 'vitest';
-import { chunkOrigin, paintChunk, halve, N } from '../src/map/chunks';
+import { readFileSync } from 'node:fs';
 import { codeOn, dayLabel, opensOn, statusOf, type MapData, type MapRestaurant } from '../src/map/data';
-import { Pix } from '../src/map/pix';
 import { drawRoom } from '../src/map/room';
-import { PX_PER_M, T, World, type WorldMeta } from '../src/map/world';
+import { World, type SezManifest } from '../src/map/world';
+import { rdToWgs } from '../src/shared/rd';
 
-const PALETTE = ['#b8603a', '#cfc4b0', '#4a5260'];
+const manifest = JSON.parse(readFileSync('src/map/public/sez/manifest.json', 'utf8')) as SezManifest;
+const world = new World(manifest);
+/** A place by RD New metres from his origin. */
+const at = (east: number, north: number) => rdToWgs(manifest.X0 + east, manifest.Y0 + north);
 
-/**
- * A small made-up world of 4 m cells: a canal with streets on both sides and a bridge, a flat-roofed block of two
- * buildings, one pitched-roof house, and single test towers. `edit` changes the planes before the world is made.
- */
-function testWorld(edit?: (set: (plane: number, x: number, y: number, v: number) => void) => void): World {
-  const cols = N * 2;
-  const rows = N * 2;
-  const n = cols * rows;
-  const planes = new Uint8Array(n * 4);
-  const set = (plane: number, x: number, y: number, v: number) => (planes[plane * n + y * cols + x] = v);
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      let t: number = T.land;
-      if (x === 10) t = T.water | (y === 12 ? 1 << 4 : 0); // a bridge at y 12
-      else if (x === 9 || x === 11) t = T.street;
-      else if (x >= 50 && y >= 50 && x < 60 && y < 60) t = T.park;
-      set(0, x, y, t);
-    }
-  }
-  // Two flat-roofed buildings side by side, 12 m high, same roof colour, different seeds (BAG panden).
-  for (let y = 4; y < 10; y++) {
-    for (let x = 12; x < 21; x++) {
-      set(1, x, y, 24);
-      set(2, x, y, 1);
-      set(3, x, y, 2 | ((x < 18 ? 3 : 7) << 4)); // 1800s; seed 3, then seed 7
-    }
-  }
-  // A pitched-roof house: eaves 8 m, ridge 12 m along y.
-  for (let y = 20; y < 26; y++) {
-    for (let x = 30; x < 37; x++) {
-      set(1, x, y, Math.round((12 - Math.abs(x - 33) * 1.3) * 2));
-      set(2, x, y, 0);
-      set(3, x, y, 2 | 8 | (5 << 4));
-    }
-  }
-  edit?.(set);
-  const meta: WorldMeta = { cols, rows, cellMeters: 4, bbox: { south: 0, west: 0, north: 1, east: 1 }, mPerDegLat: 1, mPerDegLng: 1, roofPalette: PALETTE, attribution: '' };
-  return new World(meta, planes);
-}
-
-function alphas(p: Pix): Set<number> {
-  const out = new Set<number>();
-  for (const c of p.data) out.add(c >>> 24);
-  return out;
-}
-
-/** The highest row where two paintings of the same chunk differ. */
-function topChange(a: Pix, b: Pix): number {
-  for (let i = 0; i < a.data.length; i++) if (a.data[i] !== b.data[i]) return Math.floor(i / a.w);
-  return -1;
-}
-
-describe('map painting', () => {
-  it('stands every building at its real height from 3DBAG: a 6 m and a 30 m tower rise 6 x and 30 x PX_PER_M', () => {
-    const empty = paintChunk(testWorld(), 0, 0, new Map(), 1);
-    const top = chunkOrigin(testWorld(), 0, 0).top;
-    for (const metres of [6, 30]) {
-      const w = testWorld((set) => {
-        set(1, 40, 40, metres * 2);
-        set(3, 40, 40, 4);
-      });
-      const roofTop = w.screenOf(40, 40).sy - top - Math.round(metres * PX_PER_M);
-      expect(topChange(paintChunk(w, 0, 0, new Map(), 1), empty)).toBe(roofTop);
-    }
+describe('map projection (sezlab city art)', () => {
+  it("matches his projection: north-west is up, so a step north-east is straight right and a step south-east straight down", () => {
+    const o = world.project(at(2000, 2000).lat, at(2000, 2000).lng);
+    const ne = world.project(at(2100, 2100).lat, at(2100, 2100).lng);
+    const se = world.project(at(2100, 1900).lat, at(2100, 1900).lng);
+    // PX = (x + y) / sqrt 2 units, PY = (x - y) / (2 sqrt 2) units; world.scale pixels per unit.
+    expect(ne.x - o.x).toBeCloseTo((200 / Math.SQRT2) * world.scale, 0);
+    expect(Math.abs(ne.y - o.y)).toBeLessThan(1);
+    expect(se.y - o.y).toBeCloseTo((200 / (2 * Math.SQRT2)) * world.scale, 0);
+    expect(Math.abs(se.x - o.x)).toBeLessThan(1);
   });
 
-  it('puts a restaurant storefront on its whole building and not on the building next door', () => {
-    const w = testWorld();
-    const cells = w.buildingAt(14, 6);
-    expect(cells).toHaveLength(6 * 6); // x 12..17, y 4..9
-    expect(cells).not.toContain(6 * w.cols + 18); // the next building: same roof colour, other seed
-    // Its storefront shows: the cell on the street-facing (front) row changes.
-    const shop = new Map(cells.map((i) => [i, { awning: 0xff3fae5f, lit: true }] as const));
-    const plain = paintChunk(w, 0, 0, new Map(), 1);
-    expect(topChange(paintChunk(w, 0, 0, shop, 1), plain)).toBeGreaterThan(-1);
+  it('puts the origin where his art starts, and a sign on a roof: 20 m up is 20 x VZ units higher', () => {
+    const o = world.project(at(0, 0).lat, at(0, 0).lng);
+    expect(o.x).toBeCloseTo(-manifest.x * world.scale, 0);
+    expect(o.y).toBeCloseTo(-manifest.y * world.scale, 0);
+    const ground = world.project(52.3731, 4.8926);
+    const roof = world.project(52.3731, 4.8926, 20);
+    expect(ground.y - roof.y).toBeCloseTo(20 * manifest.VZ * world.scale, 1);
+    expect(roof.x).toBe(ground.x);
   });
 
-  it('paints a pitched roof in at most three shades of its colour, so roofs read as planes (a per-cell shade speckled)', () => {
-    const w = testWorld();
-    const red = paintChunk(w, 0, 0, new Map(), 1);
-    // The same house with another roof colour: the pixels that change are exactly its roof.
-    const stone = paintChunk(testWorld((set) => { for (let y = 20; y < 26; y++) for (let x = 30; x < 37; x++) set(2, x, y, 1); }), 0, 0, new Map(), 1);
-    const shades = new Set<number>();
-    for (let i = 0; i < red.data.length; i++) if (red.data[i] !== stone.data[i]) shades.add(red.data[i]!);
-    expect(shades.size).toBeGreaterThan(1); // it slopes
-    expect(shades.size).toBeLessThanOrEqual(3);
+  it('knows what his art covers: the Dam is on it, Vuurtoreneiland is not (it gets no sign, only a list row)', () => {
+    expect(world.covers(52.3731, 4.8926)).toBe(true);
+    expect(world.covers(52.3807, 5.0055)).toBe(false);
+    const dam = world.project(52.3731, 4.8926);
+    expect(dam.x).toBeGreaterThan(0);
+    expect(dam.x).toBeLessThan(world.width);
+    expect(dam.y).toBeGreaterThan(0);
+    expect(dam.y).toBeLessThan(world.height);
   });
 
-  it('never paints near-black: the darkest colour is ink #2b2733 (a palette built with .map(c) once blended to black)', () => {
-    const w = testWorld();
-    for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) {
-      const p = paintChunk(w, cx, cy, new Map([[6 * w.cols + 14, { awning: 0xff3fae5f, lit: true }]]), 1);
-      expect([...alphas(p)].sort((a, b) => a - b)).toEqual([0, 255]);
-      const darkest = Math.min(...[...p.data].filter((c) => c >>> 24).map((c) => (c & 255) + ((c >>> 8) & 255) + ((c >>> 16) & 255)));
-      expect(darkest).toBeGreaterThanOrEqual(70);
-    }
-  });
-
-  it('paints a chunk the same from a worker slice as from the whole city (a short border cut roofs at chunk edges)', () => {
-    const w = testWorld();
-    const s = w.slice(N - 2, -2, N + 4, N + 4);
-    const part = new World(w.meta, s, N - 2, -2, N + 4, N + 4);
-    expect(paintChunk(part, 1, 0, new Map(), 1).data).toEqual(paintChunk(w, 1, 0, new Map(), 1).data);
-  });
-
-  it('keeps colours exact when halving: every pixel of the half-size level is a colour from the full one', () => {
-    const p = paintChunk(testWorld(), 0, 0, new Map(), 1);
-    const full = new Set(p.data);
-    const half = halve(p);
-    for (const c of half.data) if (c >>> 24) expect(full.has(c)).toBe(true);
+  it('names chunk images by level and keeps whole chunks: the sharpest is 1:1, then 1/2, 1/4, and one overview', () => {
+    expect(world.level('hi').k).toBe(1);
+    expect(world.level(0).k).toBe(0.5);
+    expect(world.level(1).k).toBe(0.25);
+    expect(world.level(2).span).toBe(world.width);
+    const [cx, cy] = manifest.hi.chunks[0]!;
+    expect(world.level('hi').has(cx, cy)).toBe(true);
+    expect(world.level('hi').url(cx, cy)).toBe(`./sez/${manifest.version}/h_${cx}_${cy}.png`);
+    expect(world.level(2).url(0, 0)).toBe(`./sez/${manifest.version}/2.png`);
   });
 
   it('draws a room for every kind and status without leaving the canvas empty', () => {

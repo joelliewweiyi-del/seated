@@ -4,357 +4,408 @@
   "lng": 4.911876,
   "area": "Oosterparkbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 17
  },
  "arca": {
   "lat": 52.377641,
   "lng": 4.897165,
   "area": "Burgwallen Nieuwe Zijde",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 23.5
  },
  "bacalar": {
   "lat": 52.391508,
   "lng": 4.904063,
   "area": "Noordelijke IJ-oevers",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 7.5
  },
  "badcuyp": {
   "lat": 52.356651,
   "lng": 4.897102,
   "area": "Oude Pijp",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 15
  },
  "bak": {
   "lat": 52.390445,
   "lng": 4.886049,
   "area": "Spaarndammerbuurt/Zeeheldenbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 9
  },
  "bar-centraal": {
   "lat": 52.367316,
   "lng": 4.86643,
   "area": "Bellamybuurt",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 16
  },
  "barracuda": {
   "lat": 52.384539,
   "lng": 4.928246,
   "area": "Noordelijke IJ-oevers",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 8.5
  },
  "baut-oost": {
   "lat": 52.354572,
   "lng": 4.912656,
   "area": "Weesperzijde",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 6.5
  },
  "beulings": {
   "lat": 52.367983,
   "lng": 4.887713,
   "area": "Grachtengordel",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 14.5
  },
  "bistro-feline": {
   "lat": 52.38053,
   "lng": 4.885662,
   "area": "Jordaan",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 17
  },
  "bistrot-des-alpes": {
   "lat": 52.353875,
   "lng": 4.886257,
   "area": "Museumkwartier",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 18.5
  },
  "bistrot-neuf": {
   "lat": 52.379368,
   "lng": 4.893753,
   "area": "Haarlemmerbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 13
  },
  "blauw": {
   "lat": 52.353436,
   "lng": 4.855687,
   "area": "Schinkelbuurt",
   "kind": "bistro",
-  "source": "manual"
+  "source": "manual",
+  "roof": 15
  },
  "blik": {
   "lat": 52.366392,
   "lng": 4.890407,
   "area": "Grachtengordel",
   "kind": "fine",
-  "source": "site: Bekijk menu CONTACT Reguliersdwarsstraat 28, 1017 BM Amsterdam"
+  "source": "site: Bekijk menu CONTACT Reguliersdwarsstraat 28, 1017 BM Amsterdam",
+  "roof": 14
  },
  "bolenius": {
   "lat": 52.336079,
   "lng": 4.873663,
   "area": "Zuidas",
   "kind": "fine",
-  "source": "manual"
+  "source": "manual",
+  "roof": 104.5
  },
  "bottleshop": {
   "lat": 52.354602,
   "lng": 4.911535,
   "area": "Weesperzijde",
   "kind": "wine",
-  "source": "list"
+  "source": "list",
+  "roof": 24
  },
  "bussia": {
   "lat": 52.372459,
   "lng": 4.883521,
   "area": "Grachtengordel",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 16
  },
  "cafe-beurre": {
   "lat": 52.383797,
   "lng": 4.876298,
   "area": "Staatsliedenbuurt",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 13
  },
  "cafe-binnenvisser": {
   "lat": 52.371521,
   "lng": 4.870404,
   "area": "Da Costabuurt",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 15
  },
  "cafe-caron": {
   "lat": 52.357371,
   "lng": 4.888686,
   "area": "Oude Pijp",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 14
  },
  "cafe-de-klepel": {
   "lat": 52.377946,
   "lng": 4.886851,
   "area": "Grachtengordel",
   "kind": "wine",
-  "source": "list"
+  "source": "list",
+  "roof": 15
  },
  "cafe-maurits": {
   "lat": 52.350886,
   "lng": 4.850346,
   "area": "Hoofddorppleinbuurt",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 10.5
  },
  "cafe-parlotte": {
   "lat": 52.378266,
   "lng": 4.881752,
   "area": "Jordaan",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 18.5
  },
  "cafe-restaurant-amsterdam": {
   "lat": 52.38422,
   "lng": 4.868215,
   "area": "Centrale Markt",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 18
  },
  "cafe-wu": {
   "lat": 52.365317,
   "lng": 4.926224,
   "area": "Dapperbuurt",
   "kind": "wine",
-  "source": "list"
+  "source": "list",
+  "roof": 17.5
  },
  "choux": {
   "lat": 52.377548,
   "lng": 4.907157,
   "area": "Nieuwmarkt/Lastage",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 19
  },
  "ciel-bleu": {
   "lat": 52.348585,
   "lng": 4.893625,
   "area": "Nieuwe Pijp",
   "kind": "fine",
-  "source": "manual"
+  "source": "manual",
+  "roof": 80.5
  },
  "cornerstore": {
   "lat": 52.394316,
   "lng": 4.911686,
   "area": "Noordelijke IJ-oevers",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 5
  },
  "cucina-casalinga": {
   "lat": 52.344886,
   "lng": 4.859047,
   "area": "Stadionbuurt",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 16.5
  },
  "cue": {
   "lat": 52.36443,
   "lng": 4.897927,
   "area": "Grachtengordel",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 17
  },
  "daalder": {
   "lat": 52.38053,
   "lng": 4.885662,
   "area": "Jordaan",
   "kind": "bistro",
-  "source": "site: Reserveer nu Ontdek Lindengracht 90, 1015 KK Amsterdam"
+  "source": "site: Reserveer nu Ontdek Lindengracht 90, 1015 KK Amsterdam",
+  "roof": 17
  },
  "de-belhamel": {
   "lat": 52.379424,
   "lng": 4.892034,
   "area": "Haarlemmerbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 17.5
  },
  "de-kas": {
   "lat": 52.352292,
   "lng": 4.930572,
   "area": "Frankendael",
   "kind": "greenhouse",
-  "source": "list"
+  "source": "list",
+  "roof": 5.5
  },
  "de-mark": {
   "lat": 52.377559,
   "lng": 4.988498,
   "area": "Waterland",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 12
  },
  "de-plantage": {
   "lat": 52.366772,
   "lng": 4.912393,
   "area": "Weesperbuurt/Plantage",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 18.5
  },
  "de-silveren-spiegel": {
   "lat": 52.377734,
   "lng": 4.893991,
   "area": "Burgwallen Nieuwe Zijde",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 11
  },
  "domenica": {
   "lat": 52.380142,
   "lng": 4.887429,
   "area": "Jordaan",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 19
  },
  "entrepot": {
   "lat": 52.369655,
   "lng": 4.911907,
   "area": "Oostelijke Eilanden/Kadijken",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 7
  },
  "esra": {
   "lat": 52.372456,
   "lng": 4.938749,
   "area": "Oostelijk Havengebied",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 4.5
  },
  "euro-pizza": {
   "lat": 52.383941,
   "lng": 4.921977,
   "area": "Noordelijke IJ-oevers",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 7
  },
  "europa": {
   "lat": 52.383922,
   "lng": 4.921859,
   "area": "Noordelijke IJ-oevers",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 7
  },
  "fa-pekelhaaring": {
   "lat": 52.353251,
   "lng": 4.902747,
   "area": "Nieuwe Pijp",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 19.5
  },
  "flore": {
   "lat": 52.367851,
   "lng": 4.894806,
   "area": "Burgwallen Oude Zijde",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 23
  },
  "fuku-ramen": {
   "lat": 52.355249,
   "lng": 4.925815,
   "area": "Transvaalbuurt",
   "kind": "japanese",
-  "source": "list"
+  "source": "list",
+  "roof": 16
  },
  "gartine": {
   "lat": 52.369203,
   "lng": 4.891516,
   "area": "Burgwallen Nieuwe Zijde",
   "kind": "cafe",
-  "source": "manual"
+  "source": "manual",
+  "roof": 16
  },
  "gebr-hartering": {
   "lat": 52.371985,
   "lng": 4.908005,
   "area": "Nieuwmarkt/Lastage",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16
  },
  "gertrude": {
   "lat": 52.365704,
   "lng": 4.876139,
   "area": "Helmersbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16.5
  },
  "gitane": {
   "lat": 52.361779,
   "lng": 4.864396,
   "area": "Overtoomse Sluis",
   "kind": "bistro",
-  "source": "manual"
+  "source": "manual",
+  "roof": 17
  },
  "graham-s-kitchen": {
   "lat": 52.356657,
   "lng": 4.902563,
   "area": "Oude Pijp",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 18.5
  },
  "hatsune": {
   "lat": 52.343017,
   "lng": 4.876259,
   "area": "Prinses Irenebuurt e.o.",
   "kind": "japanese",
-  "source": "osm by name"
+  "source": "osm by name",
+  "roof": 15
  },
  "helling-7": {
   "lat": 52.40591,
   "lng": 4.885003,
   "area": "Noordelijke IJ-oevers",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 7
  },
  "het-bosch-waterfront-kitchen": {
   "lat": 52.335469,
@@ -368,154 +419,176 @@
   "lng": 4.928246,
   "area": "Noordelijke IJ-oevers",
   "kind": "brasserie",
-  "source": "manual"
+  "source": "manual",
+  "roof": 8.5
  },
  "ikaria-park": {
   "lat": 52.372203,
   "lng": 4.870132,
   "area": "Da Costabuurt",
   "kind": "brasserie",
-  "source": "site: Ikaria Park Bilderdijkpark 1A, 1052 RZ Amsterdam"
+  "source": "site: Ikaria Park Bilderdijkpark 1A, 1052 RZ Amsterdam",
+  "roof": 6
  },
  "incanto": {
   "lat": 52.367002,
   "lng": 4.893876,
   "area": "Grachtengordel",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 15
  },
  "ja": {
   "lat": 52.355651,
   "lng": 4.898303,
   "area": "Oude Pijp",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 18
  },
  "jaspers": {
   "lat": 52.352118,
   "lng": 4.887319,
   "area": "Nieuwe Pijp",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 19.5
  },
  "johannes": {
   "lat": 52.367613,
   "lng": 4.88735,
   "area": "Grachtengordel",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 17
  },
  "john-dory": {
   "lat": 52.362121,
   "lng": 4.893856,
   "area": "Grachtengordel",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 17.5
  },
  "kaagman-kortekaas": {
   "lat": 52.374806,
   "lng": 4.892379,
   "area": "Burgwallen Nieuwe Zijde",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16.5
  },
  "kamer-bar": {
   "lat": 52.378753,
   "lng": 4.886416,
   "area": "Jordaan",
   "kind": "wine",
-  "source": "manual"
+  "source": "manual",
+  "roof": 14.5
  },
  "ken-sushi": {
   "lat": 52.375397,
   "lng": 4.902828,
   "area": "Nieuwmarkt/Lastage",
   "kind": "japanese",
-  "source": "list"
+  "source": "list",
+  "roof": 17.5
  },
  "kid-amsterdam": {
   "lat": 52.379882,
   "lng": 4.877033,
   "area": "Frederik Hendrikbuurt",
   "kind": "bistro",
-  "source": "site: Visit us Frederik Hendrikplantsoen 36, 1052 XS Amsterdam"
+  "source": "site: Visit us Frederik Hendrikplantsoen 36, 1052 XS Amsterdam",
+  "roof": 15.5
  },
  "kien": {
   "lat": 52.368951,
   "lng": 4.858291,
   "area": "Chassébuurt",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 20
  },
  "klaproos": {
   "lat": 52.39415,
   "lng": 4.911094,
   "area": "Noordelijke IJ-oevers",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 4.5
  },
  "la-fiorita": {
   "lat": 52.377098,
   "lng": 4.881794,
   "area": "Jordaan",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 14.5
  },
  "la-vallade": {
   "lat": 52.354246,
   "lng": 4.926897,
   "area": "Frankendael",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 12.5
  },
  "lars": {
   "lat": 52.401381,
   "lng": 4.874895,
   "area": "Coenhaven/Minervahaven",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 37
  },
  "lastage": {
   "lat": 52.375459,
   "lng": 4.902402,
   "area": "Nieuwmarkt/Lastage",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 14.5
  },
  "marie": {
   "lat": 52.367851,
   "lng": 4.894806,
   "area": "Burgwallen Oude Zijde",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 23
  },
  "maris-piper": {
   "lat": 52.356104,
   "lng": 4.888492,
   "area": "Oude Pijp",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16.5
  },
  "meneer-de-wit-heeft-honger": {
   "lat": 52.365138,
   "lng": 4.859673,
   "area": "Chassébuurt",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 17
  },
  "mont-blanc": {
   "lat": 52.356327,
   "lng": 4.898765,
   "area": "Oude Pijp",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 15
  },
  "mos-amsterdam": {
   "lat": 52.383782,
   "lng": 4.895476,
   "area": "Haarlemmerbuurt",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 47
  },
  "motief": {
   "lat": 52.3718,
@@ -529,266 +602,304 @@
   "lng": 4.869961,
   "area": "Bellamybuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16
  },
  "nazka": {
   "lat": 52.353715,
   "lng": 4.901803,
   "area": "Nieuwe Pijp",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16
  },
  "neni": {
   "lat": 52.344702,
   "lng": 4.856201,
   "area": "Stadionbuurt",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 19.5
  },
  "nikotin": {
   "lat": 52.383963,
   "lng": 4.922196,
   "area": "Noordelijke IJ-oevers",
   "kind": "wine",
-  "source": "list"
+  "source": "list",
+  "roof": 9.5
  },
  "nnea": {
   "lat": 52.378004,
   "lng": 4.896235,
   "area": "Burgwallen Nieuwe Zijde",
   "kind": "pizza",
-  "source": "manual"
+  "source": "manual",
+  "roof": 18
  },
  "occo": {
   "lat": 52.369279,
   "lng": 4.883983,
   "area": "Grachtengordel",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 19
  },
  "oocker": {
   "lat": 52.361331,
   "lng": 4.900604,
   "area": "De Weteringschans",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 13.5
  },
  "oriental-city": {
   "lat": 52.37182,
   "lng": 4.89623,
   "area": "Burgwallen Oude Zijde",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 16.5
  },
  "ottolenghi": {
   "lat": 52.358635,
   "lng": 4.878696,
   "area": "Museumkwartier",
   "kind": "bistro",
-  "source": "osm by name"
+  "source": "osm by name",
+  "roof": 31.5
  },
  "pelusa": {
   "lat": 52.39384,
   "lng": 4.89969,
   "area": "Noordelijke IJ-oevers",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 29.5
  },
  "pianeta-terra": {
   "lat": 52.36801,
   "lng": 4.887771,
   "area": "Grachtengordel",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 14.5
  },
  "r21": {
   "lat": 52.37158,
   "lng": 4.907716,
   "area": "Nieuwmarkt/Lastage",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 17
  },
  "remouillage": {
   "lat": 52.343903,
   "lng": 4.906987,
   "area": "Rijnbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16
  },
  "restaurant-kyo": {
   "lat": 52.372347,
   "lng": 4.90201,
   "area": "Nieuwmarkt/Lastage",
   "kind": "japanese",
-  "source": "site: Contact Restaurant Kyo Koningsstraat 29, 1011 ET Amsterdam"
+  "source": "site: Contact Restaurant Kyo Koningsstraat 29, 1011 ET Amsterdam",
+  "roof": 16
  },
  "restobar-massalia": {
   "lat": 52.357091,
   "lng": 4.9185,
   "area": "Oosterparkbuurt",
   "kind": "bistro",
-  "source": "manual"
+  "source": "manual",
+  "roof": 15.5
  },
  "rijsel": {
   "lat": 52.351603,
   "lng": 4.912922,
   "area": "Weesperzijde",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 21
  },
  "roef": {
   "lat": 52.354562,
   "lng": 4.92955,
   "area": "Middenmeer",
   "kind": "bistro",
-  "source": "manual"
+  "source": "manual",
+  "roof": 17
  },
  "roux": {
   "lat": 52.37845,
   "lng": 4.882733,
   "area": "Jordaan",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 15.5
  },
  "salmuera": {
   "lat": 52.373268,
   "lng": 4.879459,
   "area": "Jordaan",
   "kind": "brasserie",
-  "source": "manual"
+  "source": "manual",
+  "roof": 16
  },
  "satkara": {
   "lat": 52.365871,
   "lng": 4.894182,
   "area": "Grachtengordel",
   "kind": "fine",
-  "source": "site: Reguliersdwarsstraat 88, 1017 BN Amsterdam"
+  "source": "site: Reguliersdwarsstraat 88, 1017 BN Amsterdam",
+  "roof": 18
  },
  "scheepskameel": {
   "lat": 52.371839,
   "lng": 4.916391,
   "area": "Oostelijke Eilanden/Kadijken",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 12.5
  },
  "senses": {
   "lat": 52.365867,
   "lng": 4.893257,
   "area": "Grachtengordel",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 25
  },
  "september": {
   "lat": 52.3686,
   "lng": 4.8543,
   "area": "De Baarsjes",
   "kind": "bistro",
-  "source": "fixed"
+  "source": "fixed",
+  "roof": 17
  },
  "showw": {
   "lat": 52.337398,
   "lng": 4.892941,
   "area": "Scheldebuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 33
  },
  "sinck": {
   "lat": 52.366261,
   "lng": 4.882255,
   "area": "Jordaan",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 16.5
  },
  "sinne": {
   "lat": 52.353018,
   "lng": 4.894046,
   "area": "Nieuwe Pijp",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 16.5
  },
  "sushi-oodo": {
   "lat": 52.364611,
   "lng": 4.898116,
   "area": "Grachtengordel",
   "kind": "japanese",
-  "source": "site: Utrechtsestraat 33, 1017 VH Amsterdam"
+  "source": "site: Utrechtsestraat 33, 1017 VH Amsterdam",
+  "roof": 14.5
  },
  "tacite": {
   "lat": 52.351151,
   "lng": 4.863229,
   "area": "Willemspark",
   "kind": "fine",
-  "source": "manual"
+  "source": "manual",
+  "roof": 14
  },
  "tannay": {
   "lat": 52.388107,
   "lng": 4.889983,
   "area": "Haarlemmerbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 14
  },
  "testamatta": {
   "lat": 52.362089,
   "lng": 4.873494,
   "area": "Vondelparkbuurt",
   "kind": "pizza",
-  "source": "list"
+  "source": "list",
+  "roof": 15.5
  },
  "the-white-room": {
   "lat": 52.372729,
   "lng": 4.894385,
   "area": "Burgwallen Oude Zijde",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 25
  },
  "toet": {
   "lat": 52.342644,
   "lng": 4.89258,
   "area": "Scheldebuurt",
   "kind": "brasserie",
-  "source": "list"
+  "source": "list",
+  "roof": 19.5
  },
  "toscanini": {
   "lat": 52.380178,
   "lng": 4.885372,
   "area": "Jordaan",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 17.5
  },
  "troef": {
   "lat": 52.349206,
   "lng": 4.913681,
   "area": "Weesperzijde",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 18.5
  },
  "tsunarie": {
   "lat": 52.357508,
   "lng": 4.899633,
   "area": "Oude Pijp",
   "kind": "japanese",
-  "source": "manual"
+  "source": "manual",
+  "roof": 21
  },
  "vanoost": {
   "lat": 52.362199,
   "lng": 4.91965,
   "area": "Oosterparkbuurt",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 21
  },
  "vinkeles": {
   "lat": 52.369279,
   "lng": 4.883983,
   "area": "Grachtengordel",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 19
  },
  "vrr": {
   "lat": 52.371916,
   "lng": 4.931456,
   "area": "Oostelijke Eilanden/Kadijken",
   "kind": "wine",
-  "source": "list"
+  "source": "list",
+  "roof": 7
  },
  "vuurtoreneiland": {
   "lat": 52.3806,
@@ -802,34 +913,39 @@
   "lng": 4.88876,
   "area": "De Weteringschans",
   "kind": "bistro",
-  "source": "list"
+  "source": "list",
+  "roof": 18.5
  },
  "weinlokal-stern": {
   "lat": 52.373831,
   "lng": 4.888578,
   "area": "Grachtengordel",
   "kind": "wine",
-  "source": "list"
+  "source": "list",
+  "roof": 21.5
  },
  "wijmpje-beukers": {
   "lat": 52.35154,
   "lng": 4.895427,
   "area": "Nieuwe Pijp",
   "kind": "cafe",
-  "source": "list"
+  "source": "list",
+  "roof": 21.5
  },
  "wils": {
   "lat": 52.343394,
   "lng": 4.856157,
   "area": "Stadionbuurt",
   "kind": "bistro",
-  "source": "osm by name"
+  "source": "osm by name",
+  "roof": 13.5
  },
  "wolf-atelier": {
   "lat": 52.383083,
   "lng": 4.892272,
   "area": "Haarlemmerbuurt",
   "kind": "fine",
-  "source": "list"
+  "source": "list",
+  "roof": 11
  }
 }

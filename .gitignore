@@ -19,3 +19,6 @@ playwright-report/
 
 # Watchdog state (scripts/watchdog.mjs)
 data/watchdog.json
+
+# City art from sezlab.dev/amsterdam (scripts/map-sez-sync.ts): his, used with permission, not ours to publish in the repo
+src/map/public/sez/*/
