@@ -129,7 +129,7 @@
     "id": "bacalar",
     "name": "Bacalar",
     "platform": "tebi",
-    "platformUid": "643067_c82547a90e248d497f4b62ee18bc822033395230d66242a4b4e2518c48005c54",
+    "platformUid": "643067_1cc3c9024be71ed4dd1c7e47de7b2081b10e5b2f513be93161842c1213d32637",
     "website": "https://bacalar.amsterdam",
     "city": "Amsterdam",
     "address": "Chrysantenstraat 4, 1031 HT Amsterdam",
@@ -138,8 +138,8 @@
   {
     "id": "badcuyp",
     "name": "Badcuyp",
-    "platform": "formitable",
-    "platformUid": "a5e5ef73",
+    "platform": "sevenrooms",
+    "platformUid": "badcuyp",
     "website": "https://badcuypamsterdam.nl",
     "city": "Amsterdam",
     "address": "Eerste Sweelinckstraat 10 A, 1073 CM Amsterdam"
@@ -222,7 +222,7 @@
     "id": "beulings",
     "name": "Beulings",
     "platform": "tebi",
-    "platformUid": "101709_37e1e90f1bff7dc9cef7350c2baf9237e30004ab0620c4cca64f16ab282a3a7d",
+    "platformUid": "101709_5cff4971d0d8c3d603fb143d636f527e21aea66d7e925141f6ea11fd1f8a1a2e",
     "website": "http://www.beulings.nl",
     "city": "Amsterdam",
     "address": "Beulingstraat 9, 1017 BA Amsterdam"
@@ -276,7 +276,7 @@
     "id": "bistrot-des-alpes",
     "name": "Bistrot des Alpes",
     "platform": "tebi",
-    "platformUid": "181352_be0830149f279f3793b9a98f8e00befb896e9926a4c8579d9b4d2ab2ccb10ba4",
+    "platformUid": "181352_5be665e16f26d63105dc020618b3642f560356affcab8a550abb089d86271188",
     "website": "https://www.bistrotdesalpesamsterdam.nl",
     "city": "Amsterdam",
     "address": "Hobbemakade 64, 1071 XM Amsterdam"
@@ -360,11 +360,11 @@
   {
     "id": "bolenius",
     "name": "Bolenius",
-    "platform": "other",
-    "platformUid": null,
+    "platform": "frank",
+    "platformUid": "9f8efe3d-5834-4576-9cb1-f0c5901adb0c",
     "website": "https://bolenius-rembrandtpark.nl/",
     "city": "Amsterdam",
-    "address": null,
+    "address": "Nachtwachtlaan 20B, 1058 EA Amsterdam",
     "hot": 1,
     "hotWhy": "Michelin-starred; book about two weeks out"
   },
@@ -380,8 +380,8 @@
   {
     "id": "bottleshop",
     "name": "Bottleshop",
-    "platform": "formitable",
-    "platformUid": "8e62f780",
+    "platform": "thefork",
+    "platformUid": null,
     "website": "https://www.bottleshopams.nl",
     "city": "Amsterdam",
     "address": "Wibautstraat 130, 1091 GP Amsterdam"
@@ -417,7 +417,7 @@
     "id": "bussia",
     "name": "Bussia",
     "platform": "tebi",
-    "platformUid": "743622_f519b6cfe211252119197102e6f4fc68bdbbf5a63235ef0e41958e1b3ffdb173",
+    "platformUid": "743622_a14203427a50d34f5b7f057ae3f17007e676940513b43839fbb1a482f723edd0",
     "website": "https://www.bussia.nl",
     "city": "Amsterdam",
     "address": "Reestraat 28-32, 1016 DN Amsterdam"
@@ -453,7 +453,7 @@
     "id": "cafe-beurre",
     "name": "Café Beurre",
     "platform": "tebi",
-    "platformUid": "591296_ff57dc704d43ce6cc0d8b11bca961fd3d7c84345de3fe0dae7c9e333924ae340",
+    "platformUid": "591296_e59d153f16fbf4698343905b3786e0887d536dd9954ace40b51f2fdd1ecde1c1",
     "website": "https://www.cafebeurreamsterdam.nl",
     "city": "Amsterdam",
     "address": "Van Limburg Stirumstraat 115, 1051 BA Amsterdam"
@@ -462,7 +462,7 @@
     "id": "cafe-binnenvisser",
     "name": "Café Binnenvisser",
     "platform": "tebi",
-    "platformUid": "574841_fa9b8c20c2506cb4b7bb73782c4b13df5b28a09d2e40e524e2122994c30f420d",
+    "platformUid": "574841_303ef1aa046eb6593bac3b48419651127b6ef35835874e59720bbf7145e375b0",
     "website": "http://www.binnenvisser.nl",
     "city": "Amsterdam",
     "address": "Bilderdijkstraat 36, 1052 NB Amsterdam"
@@ -471,7 +471,7 @@
     "id": "cafe-caron",
     "name": "Café Caron",
     "platform": "tebi",
-    "platformUid": "431123_6659f9ccc2ae88a1ba7a7a1b71c5bc9143656861bbb227460fbfc6719c8c6e8b",
+    "platformUid": "431123_41865e77ee7b1de5360166bcda6bf0bea4911152e0c358ddd7b1a41c27aff312",
     "website": "http://www.cafecaron.nl",
     "city": "Amsterdam",
     "address": "Frans Halsstraat 28 H, 1072 BS Amsterdam"
@@ -516,7 +516,7 @@
     "id": "cafe-parlotte",
     "name": "Café Parlotte",
     "platform": "tebi",
-    "platformUid": "886651_3dfebd716a9ea6ae97e21d4293bb164b95e64999aebbce25c40ab9ce6a58bb06",
+    "platformUid": "886651_be34895f27b40c34c806954b2cb4442cbedd7665a3de8b651780b4f713ee3f67",
     "website": "https://www.parlotte.nl",
     "city": "Amsterdam",
     "address": "Westerstraat 182, 1015 MR Amsterdam"
@@ -870,7 +870,7 @@
     "id": "domenica",
     "name": "Domenica",
     "platform": "tebi",
-    "platformUid": "608035_7d59c9cf25555669cfdf7c122029778c2d79c96c279ec2020ade2ca07b0f668e",
+    "platformUid": "608035_978a911b3a8f2fa1ed7bed9b8525049f6c46f450ec4502d834b80e716c13f6ee",
     "website": "https://www.restaurantdomenica.com",
     "city": "Amsterdam",
     "address": "Noordermarkt 7, 1015 MV Amsterdam"
@@ -932,8 +932,8 @@
   {
     "id": "entrepot",
     "name": "Entrepot",
-    "platform": "formitable",
-    "platformUid": "c818fc0f",
+    "platform": "guestplan",
+    "platformUid": "ea59218da07ff8aae1433e8f473509774436df80:62005",
     "website": "http://www.restaurantentrepot.nl",
     "city": "Amsterdam",
     "address": "Entrepotdok 7-8, 1018 AD Amsterdam"
@@ -953,7 +953,7 @@
     "id": "euro-pizza",
     "name": "Euro Pizza",
     "platform": "tebi",
-    "platformUid": "643456_7ddea887081e70c86cc5d336bb6a48e5af4fcd8d54c894752112466adf736d19",
+    "platformUid": "643456_62437c1495e9c857ac78d590d64e4711ca88e53f6372d3bafbb1566a4fa8b382",
     "website": "https://www.europizza.rest",
     "city": "Amsterdam",
     "address": "Gedempt Hamerkanaal 79, 1021 KP Amsterdam"
@@ -973,7 +973,7 @@
     "id": "fa-pekelhaaring",
     "name": "Fa. Pekelhaaring",
     "platform": "tebi",
-    "platformUid": "700571_2920219a6c2f3625e76fce19f26456472ac924ea6b5f19b9de641224df2427e4",
+    "platformUid": "700571_5a9827794f4c84346782a57c6a3498928df15d1a9116dd0f40817885b3f97f6b",
     "website": "http://www.pekelhaaring.nl",
     "city": "Amsterdam",
     "address": "Van Woustraat 127-129, 1074AH Amsterdam"
@@ -1189,8 +1189,8 @@
   {
     "id": "helling-7",
     "name": "Helling 7",
-    "platform": "formitable",
-    "platformUid": "3f8e1139",
+    "platform": "tebi",
+    "platformUid": "114256_8f4e522da02e2813ec607ae9971bc46526dac24321760ef13801107132fc195a",
     "website": "https://www.helling7.nl",
     "city": "Amsterdam",
     "address": "T.T. Melissaweg 57, 1033 SP Amsterdam"
@@ -1234,8 +1234,8 @@
   {
     "id": "het-bosch-waterfront-kitchen",
     "name": "Het Bosch ‘Waterfront Kitchen'",
-    "platform": "formitable",
-    "platformUid": "254d56e1",
+    "platform": "frank",
+    "platformUid": "a25606d9-882c-47ad-8353-4b767cf295f7",
     "website": "http://www.hetbosch.com",
     "city": "Amsterdam",
     "address": "Jollenpad 10, 1081 KC Amsterdam"
@@ -1345,7 +1345,7 @@
     "id": "ja",
     "name": "JA",
     "platform": "tebi",
-    "platformUid": "186014_9e9eb5cd9cffb8ae361835bae87652051174352c4422259e54d31c01e0304934",
+    "platformUid": "186014_a44dd230d1ec64f21d80096781d662513524ff313587fcf52931d5a8635017b2",
     "website": "https://www.restaurantja.nl",
     "city": "Amsterdam",
     "address": "Tweede Jan Steenstraat 3H, 1073 VK Amsterdam"
@@ -1362,8 +1362,8 @@
   {
     "id": "jaspers",
     "name": "Jaspers",
-    "platform": "formitable",
-    "platformUid": "85a8e72f",
+    "platform": "fresto",
+    "platformUid": null,
     "website": "http://www.restaurantjaspers.nl",
     "city": "Amsterdam",
     "address": "Ceintuurbaan 196, 1072 GC Amsterdam"
@@ -1529,7 +1529,7 @@
     "id": "lars",
     "name": "Lars",
     "platform": "tebi",
-    "platformUid": "831753_f0042538a931514acd32923a8f244071d3706f52a0c971cb6b744a5aa3f466c1",
+    "platformUid": "831753_ae1331087be89a6cb709601cd8fa964a523dd19a3ed15632f8ea360ec91bb53e",
     "website": "https://www.larsamsterdam.nl",
     "city": "Amsterdam",
     "address": "Danzigerkade 179, 1013 AP Amsterdam"
@@ -1538,7 +1538,7 @@
     "id": "lastage",
     "name": "Lastage",
     "platform": "tebi",
-    "platformUid": "896640_ae82d8c763dc5ba3b1ff96e99ebb22c3dd46a50eca0adfc44ac79ebcbe4f06ce",
+    "platformUid": "896640_98a417de3519c09f3ed000ceed0cbd40db04c473810158241d2f15df62d69cd2",
     "website": "http://restaurantlastage.nl",
     "city": "Amsterdam",
     "address": "Geldersekade 29, 1011 EJ Amsterdam"
@@ -1618,8 +1618,8 @@
   {
     "id": "marie",
     "name": "Marie",
-    "platform": "formitable",
-    "platformUid": "7a69a9ce",
+    "platform": "sevenrooms",
+    "platformUid": "brasseriemarie",
     "website": "https://marieamsterdam.com",
     "city": "Amsterdam",
     "address": "Nieuwe Doelenstraat 2-14, 1012 CP Amsterdam"
@@ -1664,7 +1664,7 @@
     "id": "mont-blanc",
     "name": "Mont Blanc",
     "platform": "tebi",
-    "platformUid": "579267_501b9497c43b70988557219cf31f87a3f416c8e929d209d4dd6b7b97eff35beb",
+    "platformUid": "579267_170885c6033bdd0b810b12d8068791f3ddd625167c55f662dd3e9fcf4f725e59",
     "website": "https://www.restaurantmontblanc.nl",
     "city": "Amsterdam",
     "address": "Govert Flinckstraat 308 H, 1073 CJ Amsterdam"
@@ -1672,8 +1672,8 @@
   {
     "id": "mos-amsterdam",
     "name": "MOS Amsterdam",
-    "platform": "formitable",
-    "platformUid": "321bb04b",
+    "platform": "frank",
+    "platformUid": "a03e8ba4-6929-4816-b0eb-efef8db42cf0",
     "website": "http://www.mosamsterdam.nl",
     "city": "Amsterdam",
     "address": "IJdok 185, 1013 MM Amsterdam"
@@ -1839,7 +1839,7 @@
     "id": "oocker",
     "name": "Oocker",
     "platform": "tebi",
-    "platformUid": "703927_b2ef05a17c2ceb15f963596bcd01d5d583f1d495a6e6ee122a807e72014ecb64",
+    "platformUid": "703927_bc6e76ed7f264957124d6bb6225685a90971e032b2c6a609c138ed87defe7bf5",
     "website": "https://www.oockeramsterdam.nl",
     "city": "Amsterdam",
     "address": "Frederiksplein 29h, 1017 XL Amsterdam"
@@ -1856,8 +1856,8 @@
   {
     "id": "oriental-city",
     "name": "Oriental City",
-    "platform": "formitable",
-    "platformUid": "5fe1d848",
+    "platform": "guestplan",
+    "platformUid": "d510a3f998d94b4e622acb4ab1595f90a5758ccb:61873",
     "website": "https://www.oriental-city.com",
     "city": "Amsterdam",
     "address": "Oudezijds Voorburgwal 177-179, 1012 EV Amsterdam"
@@ -2039,7 +2039,7 @@
     "id": "remouillage",
     "name": "Remouillage",
     "platform": "tebi",
-    "platformUid": "619423_c96b352d036168724b32d308c17207be8090528bf55c9f3fb879cbf6ff992f46",
+    "platformUid": "619423_fdebc6ff83592142a53f8b11ad0344be1673ca5a2723b9d553b378309a946f6a",
     "website": "https://cafe.remouillage.com",
     "city": "Amsterdam",
     "address": "Trompenburgstraat 111, 1079 TV Amsterdam"
@@ -2271,8 +2271,8 @@
   {
     "id": "sinne",
     "name": "Sinne",
-    "platform": "formitable",
-    "platformUid": "c0b96977",
+    "platform": "frank",
+    "platformUid": "a28bb7d4-bddc-4d92-9d97-624c72a88bdb",
     "website": "http://www.restaurantsinne.nl",
     "city": "Amsterdam",
     "address": "Ceintuurbaan 342-h, 1072 PB Amsterdam"
@@ -2473,8 +2473,8 @@
   {
     "id": "the-white-room",
     "name": "The White Room",
-    "platform": "formitable",
-    "platformUid": "98a85dc9",
+    "platform": "tablecheck",
+    "platformUid": null,
     "website": "https://www.restaurantthewhiteroom.com",
     "city": "Amsterdam",
     "address": "Dam 9, 1012 JS Amsterdam"
@@ -2684,7 +2684,7 @@
     "id": "wolf-atelier",
     "name": "Wolf Atelier",
     "platform": "tebi",
-    "platformUid": "426187_1a6ea98a1bbd473da1d934e0cc4bb03889a9af782d48cab2552ee4ef99b78475",
+    "platformUid": "426187_1521937956f0224aa0fce5a0a5e0e01b693bed6281ab05b2d3bcf5c23ec78fea",
     "website": "http://www.wolfatelier.nl",
     "city": "Amsterdam",
     "address": "Westerdoksplein 20-brug, 1013 AZ Amsterdam"
@@ -2749,5 +2749,140 @@
     "address": null,
     "hot": 2,
     "hotWhy": "Friday dinners for two were fully booked two weeks out (checked 7 Oct 2026)."
+  },
+  {
+    "id": "a-fusion",
+    "name": "A-Fusion",
+    "platform": "thefork",
+    "platformUid": null,
+    "website": "https://a-fusion.nl/locaties/amsterdam/",
+    "city": "Amsterdam",
+    "address": "Zeedijk 130, 1012 BC Amsterdam"
+  },
+  {
+    "id": "auberge",
+    "name": "Auberge",
+    "platform": "guestplan",
+    "platformUid": "666603c0c03d66bc5c5d5e3b2190e2d505e1252f:54678",
+    "website": "https://www.aubergeamsterdam.nl/auberge",
+    "city": "Amsterdam",
+    "address": "Albert Cuypstraat 58-60, 1072 CV Amsterdam"
+  },
+  {
+    "id": "bistro-de-la-mer",
+    "name": "Bistro de la Mer",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://www.bistrodelamer.com/",
+    "city": "Amsterdam",
+    "address": "Utrechtsestraat 57, 1017 VJ Amsterdam"
+  },
+  {
+    "id": "boon-de-koot",
+    "name": "Boon & De Koot",
+    "platform": "tebi",
+    "platformUid": "454519_6a78cb19803c0ceda6b0ba3f6748413294b13c5d83d8e6d51d8b2d38e0096b01",
+    "website": "https://www.boonendekoot.nl/boonendekoot",
+    "city": "Amsterdam",
+    "address": "Barentszstraat 171-173, 1013 NM Amsterdam"
+  },
+  {
+    "id": "bougainville",
+    "name": "Bougainville",
+    "platform": "zenchef",
+    "platformUid": "375527",
+    "website": "https://restaurantbougainville.com/",
+    "city": "Amsterdam",
+    "address": "Dam 27, 1012 JS Amsterdam"
+  },
+  {
+    "id": "fulu-mandarijn",
+    "name": "FuLu Mandarijn",
+    "platform": "guestplan",
+    "platformUid": "34852a1ef862895fda106729d89499dc905ab6de:61872",
+    "website": "https://fulumandarijn.com/",
+    "city": "Amsterdam",
+    "address": "Rokin 26, 1012 KS Amsterdam"
+  },
+  {
+    "id": "restaurant-212",
+    "name": "Restaurant 212",
+    "platform": "guestplan",
+    "platformUid": "e7d991710fda9e77377b98064cc10c56b8c39b6c:54253",
+    "website": "https://www.212.amsterdam/restaurant-212",
+    "city": "Amsterdam",
+    "address": "Amstel 212, 1017 AH Amsterdam"
+  },
+  {
+    "id": "rijks",
+    "name": "RIJKS®",
+    "platform": "guestplan",
+    "platformUid": "c79997f9b7cb27850c9f1330e4b03c04bf1f75dd:51925",
+    "website": "https://www.rijksrestaurant.nl/",
+    "city": "Amsterdam",
+    "address": "Museumstraat 2, 1071 XX Amsterdam"
+  },
+  {
+    "id": "ron-gastrobar",
+    "name": "RON Gastrobar",
+    "platform": "zenchef",
+    "platformUid": "374966",
+    "website": "https://rongastrobar.nl/en/restaurants/ron-gastrobar",
+    "city": "Amsterdam",
+    "address": "Sophialaan 55, 1075 BP Amsterdam"
+  },
+  {
+    "id": "sea-palace",
+    "name": "Sea Palace",
+    "platform": "frank",
+    "platformUid": "a20cfee3-e847-4b96-8e98-03631cd158e1",
+    "website": "https://seapalace.nl/",
+    "city": "Amsterdam",
+    "address": "Oosterdokskade 8, 1011 AE Amsterdam"
+  },
+  {
+    "id": "serre-okura",
+    "name": "Serre",
+    "platform": "tablecheck",
+    "platformUid": null,
+    "website": "https://www.okura.nl/serre",
+    "city": "Amsterdam",
+    "address": "Ferdinand Bolstraat 333, 1072 LH Amsterdam"
+  },
+  {
+    "id": "utage-sake-bar",
+    "name": "Utage Sake Bar",
+    "platform": "zenchef",
+    "platformUid": "383184",
+    "website": "https://www.utage-sakebar.nl/",
+    "city": "Amsterdam",
+    "address": "Lekstraat 11, 1079 EK Amsterdam"
+  },
+  {
+    "id": "wils-bakery-cafe",
+    "name": "Wils Bakery Café",
+    "platform": "guestplan",
+    "platformUid": "e0baff7a9cd3642dd9f948036a9223475efafdc8:52612",
+    "website": "https://www.wilsbakerycafe.nl/wbchome",
+    "city": "Amsterdam",
+    "address": "Stadionplein 24, 1076 CM Amsterdam"
+  },
+  {
+    "id": "yamazato",
+    "name": "Yamazato",
+    "platform": "tablecheck",
+    "platformUid": null,
+    "website": "https://www.okura.nl/yamazato",
+    "city": "Amsterdam",
+    "address": "Ferdinand Bolstraat 333, 1072 LH Amsterdam"
+  },
+  {
+    "id": "zoldering",
+    "name": "Zoldering",
+    "platform": "tebi",
+    "platformUid": "308607_99f9fc3fa14bc56146ada5902f588ddd1ac63df3db2775bec1e17bbf29d51bc6",
+    "website": "https://www.zoldering.nl/",
+    "city": "Amsterdam",
+    "address": "Utrechtsestraat 141H, 1017 VM Amsterdam"
   }
 ]

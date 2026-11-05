@@ -16,6 +16,8 @@ const MIN_GAP_MS = 300;
 const EMPTY_DAY_CODES = new Set([1, 2, 3, 5, 6]);
 /** The same codes for the public map. 2 (past) and unknown codes stay unknown. */
 const DAY_STATE: Record<number, DayState> = { 0: 'open', 1: 'none', 3: 'none', 5: 'none', 6: 'none' };
+/** A calendar answering code 1 for this many days in a row, and nothing else, is switched off (see `calendar`). */
+const DEAD_CALENDAR_DAYS = 28;
 
 export interface FormitableSlot {
   timeString: string; // "19:30", restaurant-local
@@ -155,6 +157,7 @@ export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS, now
     async calendar(restaurant, dates, partySize) {
       await assertNotMoved(restaurant);
       const out = new Map<string, DayState>();
+      const seen = new Set<number>();
       for (const month of [...new Set(dates.map((d) => d.slice(0, 7)))]) {
         const [y, m] = month.split('-');
         const days = await getJson<Array<{ dayString: string; status: number }>>(
@@ -164,10 +167,16 @@ export function formitable({ fetchImpl = fetch as Fetch, gapMs = MIN_GAP_MS, now
         if (!Array.isArray(days)) throw new Error('Formitable returned an unexpected month shape');
         const code = new Map(days.map((d) => [d.dayString, d.status]));
         for (const d of dates.filter((x) => x.startsWith(month))) {
-          const state = DAY_STATE[code.get(d) ?? -1];
+          const c = code.get(d);
+          const state = DAY_STATE[c ?? -1];
           if (state) out.set(d, state);
+          if (c !== undefined && c !== 2) seen.add(c);
         }
       }
+      // Code 1 on every day for weeks is a calendar switched off, not a full one: the widget says "No availability at
+      // this time. Please try again later." On 5 Nov 2026, 16 Amsterdam restaurants showed it; 9 had moved to another
+      // system (Marie to SevenRooms, Helling 7 to Tebi), with no zenchefId. Their days are unknown, not full.
+      if (out.size >= DEAD_CALENDAR_DAYS && seen.size === 1 && seen.has(1)) return new Map();
       return out;
     },
 

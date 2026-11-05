@@ -89,3 +89,20 @@ export async function loadData(url = './data.json'): Promise<MapData> {
   if (!res.ok) throw new Error(`data.json answered ${res.status}`);
   return (await res.json()) as MapData;
 }
+
+/**
+ * The day's booking link set to another free time. Formitable's link carries the time as `time` (minutes after
+ * midnight), SevenRooms' as `start_time` (HH:mm); other links carry no time and stay as they are.
+ */
+export function linkAt(url: string, time: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'widget.formitable.com' && /^\d+$/.test(u.searchParams.get('time') ?? ''))
+      u.searchParams.set('time', String(Number(time.slice(0, 2)) * 60 + Number(time.slice(3))));
+    else if (u.hostname === 'www.sevenrooms.com' && u.searchParams.has('start_time')) u.searchParams.set('start_time', time);
+    else return url;
+    return u.toString();
+  } catch {
+    return url;
+  }
+}

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ago, codeOn, dateAt, dayIndex, dayLabel, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { ago, codeOn, dateAt, dayIndex, dayLabel, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
+import { Marks, metres, michelinWords, useRemembered, walk } from './marks';
 import { World } from './world';
 
 const CONTACT = (import.meta.env.VITE_MAP_CONTACT as string | undefined) ?? '';
@@ -18,8 +19,8 @@ const KIND_WORD: Record<string, string> = {
   brasserie: 'Brasserie',
 };
 const ORDER: Status[] = ['open', 'later', 'full', 'closed', 'unknown'];
-/** Booking pages that take no date from a link: the guest picks the day there (Tebi, Guestplan). */
-const NO_DATE_LINK = new Set(['Tebi', 'Guestplan']);
+/** Booking pages that take no date from a link: the guest picks the day there (Tebi, Guestplan, Frank). */
+const NO_DATE_LINK = new Set(['Tebi', 'Guestplan', 'Frank']);
 const GROUP_WORD: Record<Status, string> = {
   open: 'Tables free',
   later: 'Not bookable yet',
@@ -27,6 +28,30 @@ const GROUP_WORD: Record<Status, string> = {
   closed: 'Closed',
   unknown: 'Book on their site',
 };
+
+interface Filters {
+  open: boolean;
+  stars: boolean;
+  bib: boolean;
+  hot: boolean;
+  fav: boolean;
+  /** Sort by walking distance from where you are. */
+  near: boolean;
+}
+const NO_FILTERS: Filters = { open: false, stars: false, bib: false, hot: false, fav: false, near: false };
+/** The Dam: where distances start when your own location is unknown or outside Amsterdam. */
+const DAM = { lat: 52.3731, lng: 4.8926 };
+
+/** Kinds chosen (stars, Bib, hard to get, saved): a restaurant shows when it is any of them. None chosen: all. */
+function inKinds(f: Filters, r: MapRestaurant, favs: Set<string>): boolean {
+  if (!f.stars && !f.bib && !f.hot && !f.fav) return true;
+  return (
+    (f.stars && (r.michelin === '1' || r.michelin === '2' || r.michelin === '3')) ||
+    (f.bib && r.michelin === 'bib') ||
+    (f.hot && !!r.hot) ||
+    (f.fav && favs.has(r.id))
+  );
+}
 
 interface Placed {
   r: MapRestaurant;
@@ -45,7 +70,7 @@ function readUrl(): { date: string | null; r: string | null } {
 function badgeFor(r: MapRestaurant, status: Status, date: string): string {
   if (status === 'open') {
     const n = r.t[date]?.length;
-    return n ? `${n} free` : 'free';
+    return n ? `${n} time${n === 1 ? '' : 's'}` : 'free';
   }
   if (status === 'later') {
     const o = opensOn(r, date);
@@ -53,7 +78,7 @@ function badgeFor(r: MapRestaurant, status: Status, date: string): string {
   }
   if (status === 'full') return 'full';
   if (status === 'closed') return 'closed';
-  return '?';
+  return r.readable ? 'unknown' : 'their site';
 }
 
 function stateLine(r: MapRestaurant, status: Status, date: string): string {
@@ -84,8 +109,11 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(readUrl().date);
   const [selected, setSelected] = useState<string | null>(readUrl().r);
-  const [openOnly, setOpenOnly] = useState(false);
-  const [hotOnly, setHotOnly] = useState(false);
+  const [filters, setFilters] = useRemembered<Filters>('seated.map.filters', NO_FILTERS);
+  const [saved, setSaved] = useRemembered<{ ids: string[] }>('seated.map.saved', { ids: [] });
+  const favs = useMemo(() => new Set(saved.ids), [saved]);
+  const toggleFav = useCallback((id: string) => setSaved((o) => ({ ids: o.ids.includes(id) ? o.ids.filter((x) => x !== id) : [...o.ids, id] })), [setSaved]);
+  const [me, setMe] = useState<{ lat: number; lng: number; note?: string } | null>(null);
   const [query, setQuery] = useState('');
   const [dialog, setDialog] = useState<'about' | 'restaurants' | null>(null);
   const [collapsed, setCollapsed] = useState(() => matchMedia('(max-width: 900px)').matches);
@@ -128,7 +156,6 @@ export function App() {
   useEffect(() => {
     if (!world || !canvasRef.current || viewRef.current) return;
     const view = new MapView(canvasRef.current, world);
-    if (matchMedia('(max-width: 900px)').matches) view.setHomeZoom(0.25);
     viewRef.current = view;
     // For tests and the curious: the map object, read-only by convention.
     (window as unknown as { seatedMap: MapView }).seatedMap = view;
@@ -150,21 +177,48 @@ export function App() {
     for (const p of placed) {
       if (!p.onMap) continue;
       const s = statusOfR(p.r);
-      if (hotOnly && !p.r.hot) continue;
-      const match = !q || p.r.name.toLowerCase().includes(q) || p.r.area.toLowerCase().includes(q);
+      if (!inKinds(filters, p.r, favs)) continue;
+      const match = !q || matches(p.r, q);
+      const mark = p.r.michelin ? (p.r.michelin === 'bib' ? 'Bib' : '★'.repeat(Number(p.r.michelin))) : '';
       markers.push({
         id: p.r.id,
-        name: p.r.name,
+        name: mark ? `${p.r.name} ${mark}` : p.r.name,
         ax: p.ax,
         ay: p.ay,
         colour: STATUS_COLOUR[s],
         badge: badgeFor(p.r, s, day),
-        rank: { open: 300, later: 200, full: 100, closed: 50, unknown: 0 }[s] + (p.r.hot ?? 0) * 20,
-        dim: (openOnly && s !== 'open') || !match,
+        rank: { open: 300, later: 200, full: 100, closed: 50, unknown: 0 }[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0),
+        dim: (filters.open && s !== 'open') || !match,
       });
     }
     view.setMarkers(markers);
-  }, [placed, day, data, world, openOnly, hotOnly, query, statusOfR]);
+    view.setYou(me && !me.note && world.covers(me.lat, me.lng) ? world.project(me.lat, me.lng) : null);
+  }, [placed, day, data, world, filters, favs, query, statusOfR, me]);
+
+  // Near me: ask once, when the filter is turned on. Outside Amsterdam (or refused), distances start at the Dam.
+  useEffect(() => {
+    if (!filters.near || me) return;
+    if (!('geolocation' in navigator)) {
+      setMe({ ...DAM, note: 'Your browser does not share a location: distances are from the Dam.' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if (metres(here, DAM) > 15_000) setMe({ ...DAM, note: 'You seem to be outside Amsterdam: distances are from the Dam.' });
+        else {
+          setMe(here);
+          const view = viewRef.current;
+          if (view && world?.covers(here.lat, here.lng)) {
+            const a = world.project(here.lat, here.lng);
+            view.flyTo(a.x, a.y, Math.max(view.cam.z, 1));
+          }
+        }
+      },
+      () => setMe({ ...DAM, note: 'Location is off: distances are from the Dam.' }),
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
+    );
+  }, [filters.near, me, world]);
 
   // Tell the map which screen areas the panels cover, so no sign hides under them.
   useEffect(() => {
@@ -222,21 +276,26 @@ export function App() {
       const view = viewRef.current;
       setSelected(id);
       if (p && view && p.onMap) {
-        const narrow = matchMedia('(max-width: 900px)').matches;
-        const z = Math.max(view.cam.z, 1);
-        // Centre the sign in the part of the screen the panels leave free. On a phone the card will cover
-        // up to 62% of the height once it opens, so plan for that.
-        const W = innerWidth;
-        const H = innerHeight;
-        const s = view.safe;
-        const bottom = narrow ? H * 0.62 + 44 : s.bottom;
-        const cx = (s.left + (W - s.right)) / 2;
-        const cy = (s.top + (H - bottom)) / 2 + 24;
-        view.flyTo(p.ax + (W / 2 - cx) / z, p.ay + (H / 2 - cy) / z, z);
+        // On a phone the card will cover up to 62% of the height once it opens, so plan for that.
+        const c = centred(view, p.ax, p.ay, Math.max(view.cam.z, 1), matchMedia('(max-width: 900px)').matches ? innerHeight * 0.62 + 44 : null);
+        view.flyTo(c.x, c.y, c.z);
       }
     },
     [placed],
   );
+
+  // The first view: the middle of the restaurants (not the Dam: most sit west and south of it), at a zoom where
+  // their names show, centred in the part of the screen the panels leave free. Once, after the panels are measured.
+  const homed = useRef(false);
+  useEffect(() => {
+    const view = viewRef.current;
+    if (homed.current || !view || !placed.length || !view.safe.top) return;
+    homed.current = true;
+    const on = placed.filter((p) => p.onMap);
+    const mid = (v: number[]) => v.sort((a, b) => a - b)[Math.floor(v.length / 2)] ?? 0;
+    const c = centred(view, mid(on.map((p) => p.ax)), mid(on.map((p) => p.ay)), 0.25, null);
+    view.setHome(c.x, c.y, c.z);
+  });
 
   // Open the restaurant from the link once everything is in place.
   const opened = useRef(false);
@@ -310,24 +369,34 @@ export function App() {
 
           <aside className={`side${collapsed && !sel ? ' collapsed' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
-              <Card r={sel} offMap={!placed.find((p) => p.r.id === sel.id)?.onMap} data={data} day={day} status={statusOfR(sel)} onClose={() => setSelected(null)} onDay={setDate} />
+              <Card
+                r={sel}
+                offMap={!placed.find((p) => p.r.id === sel.id)?.onMap}
+                data={data}
+                day={day}
+                status={statusOfR(sel)}
+                saved={favs.has(sel.id)}
+                onSave={() => toggleFav(sel.id)}
+                onClose={() => setSelected(null)}
+                onDay={setDate}
+              />
             ) : (
               <List
                 data={data}
                 day={day}
                 placed={placed}
                 statusOf={statusOfR}
-                openOnly={openOnly}
-                hotOnly={hotOnly}
+                filters={filters}
+                onFilters={setFilters}
+                favs={favs}
+                me={filters.near ? me : null}
                 query={query}
                 collapsed={collapsed}
                 onToggle={() => setCollapsed((c) => !c)}
-                onOpenOnly={setOpenOnly}
-                onHotOnly={setHotOnly}
                 onQuery={setQuery}
                 onPick={focus}
                 onDay={setDate}
-                nextOpen={nextOpenDay(data, day, hotOnly)}
+                nextOpen={nextOpenDay(data, day, (r) => inKinds(filters, r, favs))}
               />
             )}
           </aside>
@@ -350,6 +419,7 @@ export function App() {
                 {STATUS_WORD[s]}
               </span>
             ))}
+            {data.restaurants.some((r) => r.michelin) && <span>★ MICHELIN</span>}
           </div>
 
           {Date.now() - Date.parse(data.generatedAt) > 6 * 3600_000 && (
@@ -360,7 +430,10 @@ export function App() {
 
           <footer className="foot">
             <span className="credit">
-              <span className="long">Read {ago(data.generatedAt)} · </span>City art <a href="https://sezlab.dev/amsterdam">sezlab</a>
+              <span className="long">Read {ago(data.generatedAt)} · </span>
+              <span className="mid">City art </span>
+              <span className="tiny">Art </span>
+              <a href="https://sezlab.dev/amsterdam">sezlab</a>
               <span className="long">
                 {' '}
                 (<a href="https://github.com/sponsors/sezkus">sponsor him</a>)
@@ -373,8 +446,14 @@ export function App() {
               </span>
             </span>
             <nav>
-              <button onClick={() => setDialog('about')}>How it works</button>
-              <button onClick={() => setDialog('restaurants')}>For restaurants</button>
+              <button onClick={() => setDialog('about')}>
+                <span className="long">How it works</span>
+                <span className="short">About</span>
+              </button>
+              <button onClick={() => setDialog('restaurants')}>
+                <span className="long">For restaurants</span>
+                <span className="short">Restaurants</span>
+              </button>
             </nav>
           </footer>
         </>
@@ -384,11 +463,31 @@ export function App() {
   );
 }
 
-function nextOpenDay(data: MapData, day: string, hotOnly: boolean): string | null {
+/** The camera that puts world point (x, y) in the middle of the screen the panels leave free. */
+function centred(view: MapView, x: number, y: number, z: number, bottom: number | null): { x: number; y: number; z: number } {
+  const s = view.safe;
+  const cx = (s.left + (innerWidth - s.right)) / 2;
+  const cy = (s.top + (innerHeight - (bottom ?? s.bottom))) / 2 + 24;
+  return { x: x + (innerWidth / 2 - cx) / z, y: y + (innerHeight / 2 - cy) / z, z };
+}
+
+function nextOpenDay(data: MapData, day: string, shown: (r: MapRestaurant) => boolean): string | null {
   for (let i = dayIndex(data, day) + 1; i < data.days; i++) {
-    if (data.restaurants.some((r) => (!hotOnly || r.hot) && r.d[i] === 'o')) return dateAt(data, i);
+    if (data.restaurants.some((r) => shown(r) && r.d[i] === 'o')) return dateAt(data, i);
   }
   return null;
+}
+
+/** The first day after `day` with a free table at this restaurant. */
+function firstFree(r: MapRestaurant, data: MapData, day: string): string | null {
+  const i = r.d.indexOf('o', dayIndex(data, day) + 1);
+  return i < 0 ? null : dateAt(data, i);
+}
+
+/** Search: name, area, kind of food or MICHELIN distinction. */
+function matches(r: MapRestaurant, q: string): boolean {
+  const hay = [r.name, r.area, KIND_WORD[r.kind] ?? '', michelinWords(r) ?? ''].join(' ').toLowerCase();
+  return q.split(/\s+/).every((w) => hay.includes(w));
 }
 
 function Mark() {
@@ -431,17 +530,31 @@ function DateStrip({ data, day, onPick }: { data: MapData; day: string; onPick: 
     ['Fri', weekday(days[0]!) === 5 ? days[0]! : next(5)],
     ['Sat', weekday(days[0]!) === 6 ? days[0]! : next(6)],
   ];
-  if (nye) quick.push(["New Year's Eve", nye]);
+  if (nye) quick.push(['NYE', nye]);
   return (
     <nav className="px dates" aria-label="Day">
       <div className="quick">
         {quick.map(([label, d]) => (
-          <button key={label} className="chip" aria-pressed={d === day} onClick={() => onPick(d)}>
+          <button key={label} className="chip" aria-pressed={d === day} onClick={() => onPick(d)} aria-label={label === 'NYE' ? "New Year's Eve" : undefined}>
             {label}
           </button>
         ))}
       </div>
-      <div className="strip" ref={ref}>
+      <div className="strip-wrap">
+      {/* One tab stop for all days: the chosen one. Arrow keys move the day (and not the map). */}
+      <div
+        className="strip"
+        ref={ref}
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+          e.preventDefault();
+          e.stopPropagation();
+          const to = days[days.indexOf(day) + (e.key === 'ArrowRight' ? 1 : -1)];
+          if (!to) return;
+          onPick(to);
+          requestAnimationFrame(() => ref.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus());
+        }}
+      >
         {days.map((d, i) => {
           const wd = weekday(d);
           const first = i === 0 || d.endsWith('-01');
@@ -451,7 +564,9 @@ function DateStrip({ data, day, onPick }: { data: MapData; day: string; onPick: 
               className={`day${wd === 0 || wd === 6 || wd === 5 ? ' weekend' : ''}${first ? ' month-start' : ''}`}
               data-month={dayLabel(d).split(' ')[2]}
               aria-pressed={d === day}
+              tabIndex={d === day ? 0 : -1}
               aria-label={`${dayLabel(d, { long: true })}: ${open[i]} with a table`}
+              title={`${open[i]} restaurants with a table for two`}
               onClick={() => onPick(d)}
             >
               <div className="wd">{dayLabel(d).slice(0, 3)}</div>
@@ -463,6 +578,10 @@ function DateStrip({ data, day, onPick }: { data: MapData; day: string; onPick: 
           );
         })}
       </div>
+      <button className="chip later" aria-label="Later days" onClick={() => ref.current?.scrollBy({ left: ref.current.clientWidth * 0.8 })}>
+        ›
+      </button>
+      </div>
     </nav>
   );
 }
@@ -472,13 +591,14 @@ interface ListProps {
   day: string;
   placed: Placed[];
   statusOf: (r: MapRestaurant) => Status;
-  openOnly: boolean;
-  hotOnly: boolean;
+  filters: Filters;
+  onFilters: (f: Filters) => void;
+  favs: Set<string>;
+  /** Where distances start, when "Near me" is on. */
+  me: { lat: number; lng: number; note?: string } | null;
   query: string;
   collapsed: boolean;
   onToggle: () => void;
-  onOpenOnly: (v: boolean) => void;
-  onHotOnly: (v: boolean) => void;
   onQuery: (v: string) => void;
   onPick: (id: string) => void;
   onDay: (d: string) => void;
@@ -486,42 +606,73 @@ interface ListProps {
   nextOpen: string | null;
 }
 
+const CHIPS: Array<[keyof Filters, string]> = [
+  ['open', 'Free only'],
+  ['near', 'Near me'],
+  ['stars', '★ Stars'],
+  ['bib', 'Bib Gourmand'],
+  ['hot', 'Hard to get'],
+  ['fav', 'Saved'],
+];
+
 function List(p: ListProps) {
   const q = p.query.trim().toLowerCase();
+  const f = p.filters;
+  const hasMichelin = p.placed.some((x) => x.r.michelin);
   const rows = p.placed
-    .map((x) => ({ r: x.r, s: p.statusOf(x.r) }))
-    .filter(({ r, s }) => (!p.hotOnly || r.hot) && (!p.openOnly || s === 'open') && (!q || r.name.toLowerCase().includes(q) || r.area.toLowerCase().includes(q)))
-    .sort((a, b) => ORDER.indexOf(a.s) - ORDER.indexOf(b.s) || (b.r.hot ?? 0) - (a.r.hot ?? 0) || a.r.name.localeCompare(b.r.name));
+    .map((x) => ({ r: x.r, s: p.statusOf(x.r), m: p.me ? metres(p.me, x.r) : 0 }))
+    .filter(({ r, s }) => inKinds(f, r, p.favs) && (!f.open || s === 'open') && (!q || matches(r, q)))
+    .sort((a, b) =>
+      p.me
+        ? a.m - b.m
+        : ORDER.indexOf(a.s) - ORDER.indexOf(b.s) ||
+          Number(b.r.michelin === '3') - Number(a.r.michelin === '3') ||
+          (b.r.hot ?? 0) - (a.r.hot ?? 0) ||
+          a.r.name.localeCompare(b.r.name),
+    );
   const openCount = p.placed.filter((x) => p.statusOf(x.r) === 'open').length;
   const hotOpen = p.placed.filter((x) => x.r.hot && p.statusOf(x.r) === 'open').length;
+  const anyKind = f.stars || f.bib || f.hot || f.fav;
+  const active = CHIPS.filter(([k]) => f[k]).map(([, label]) => label);
+  const [scroller, more, check] = useMore<HTMLUListElement>(`${rows.length}${q}${active}`);
   let last: Status | null = null;
   return (
     <section className="px list">
       <div className="list-head">
-        <button className="row" style={{ padding: 0, display: 'block', cursor: 'default' }} onClick={p.onToggle} aria-expanded={!p.collapsed}>
+        <button className="row head-toggle" onClick={p.onToggle} aria-expanded={!p.collapsed}>
           <h2>{dayLabel(p.day, { long: true })}</h2>
           <p className="sum">
-            {openCount} of {p.placed.length} have a table for two{hotOpen ? `, ${hotOpen} of them hard to get` : ''}.
+            {openCount} of {p.placed.length} have a table for two{hotOpen ? `; ${hotOpen} of those are hard to get` : ''}.
           </p>
           <span className="sheet-toggle" aria-hidden="true">
-            {p.collapsed ? 'List ▴' : 'Map ▾'}
+            {p.collapsed ? `Show ${active.length || q ? '' : 'all '}${rows.length} restaurant${rows.length === 1 ? '' : 's'} ▴` : 'Show the map ▾'}
           </span>
         </button>
-        <div className="filters">
-          <button className="chip" aria-pressed={p.openOnly} onClick={() => p.onOpenOnly(!p.openOnly)}>
-            Free only
-          </button>
-          <button className="chip" aria-pressed={p.hotOnly} onClick={() => p.onHotOnly(!p.hotOnly)}>
-            Hard to get
-          </button>
-          <input className="search" type="search" placeholder="Name or area  /" value={p.query} onChange={(e) => p.onQuery(e.target.value)} aria-label="Find a restaurant" />
+        {active.length > 0 && (
+          <p className="active">
+            Only: {active.join(', ')}
+            <button className="link" onClick={() => p.onFilters(NO_FILTERS)}>
+              Show all
+            </button>
+          </p>
+        )}
+        <div className="filters" role="group" aria-label="Show">
+          {CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
+            <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>
+              {label}
+              {k === 'fav' && p.favs.size ? ` ${p.favs.size}` : ''}
+            </button>
+          ))}
+          <input className="search" type="search" placeholder="Name, area or food  /" value={p.query} onChange={(e) => p.onQuery(e.target.value)} aria-label="Find a restaurant" />
         </div>
+        {p.me?.note && <p className="note">{p.me.note}</p>}
       </div>
-      <ul className="rows">
+      <ul className="rows" ref={scroller} onScroll={check}>
         {rows.length === 0 && (
           <li className="empty">
-            {p.openOnly ? `Nothing free on ${dayLabel(p.day)}.` : 'No restaurant by that name here.'}
-            {p.openOnly && p.nextOpen && (
+            {f.open ? `Nothing free on ${dayLabel(p.day)}${anyKind ? ' among these' : ''}.` : q ? 'No restaurant matches that.' : 'None of these yet.'}
+            {f.fav && !p.favs.size && <div>Save a restaurant from its card with ♥ and it shows here.</div>}
+            {f.open && p.nextOpen && (
               <div>
                 <button className="btn small" onClick={() => p.onDay(p.nextOpen!)}>
                   Next day with a table: {dayLabel(p.nextOpen)}
@@ -530,19 +681,26 @@ function List(p: ListProps) {
             )}
           </li>
         )}
-        {rows.map(({ r, s }) => {
-          const head = s !== last;
+        {rows.map(({ r, s, m }) => {
+          const head = !p.me && s !== last;
           last = s;
+          const next = s !== 'open' && r.readable ? firstFree(r, p.data, p.day) : null;
           return (
             <li key={r.id}>
               {head && <div className="group label">{GROUP_WORD[s]}</div>}
               <button className="row" onClick={() => p.onPick(r.id)}>
                 <span className="stud" style={{ background: STATUS_COLOUR[s] }} />
-                <span>
-                  <span className="nm">{r.name}</span>
-                  {r.hot ? <span className="hot">{'★'.repeat(r.hot)}</span> : null}
-                  <br />
-                  <span className="ar">{r.area}</span>
+                <span className="who">
+                  <span className="nm">
+                    {r.name}
+                    {p.favs.has(r.id) && <span className="fav-dot" aria-label="saved"> ♥</span>}
+                  </span>
+                  <Marks r={r} />
+                  <span className="ar">
+                    {p.me ? `${walk(m)} · ` : ''}
+                    {r.area}
+                    {next ? ` · free ${dayLabel(next).slice(0, 10)}` : ''}
+                  </span>
                 </span>
                 <span className="badge" style={{ background: STATUS_COLOUR[s] }}>
                   {badgeFor(r, s, p.day)}
@@ -552,9 +710,17 @@ function List(p: ListProps) {
           );
         })}
       </ul>
+      {more && <MoreBar />}
       <div className="list-foot">
         <span>Calendars read {ago(p.data.generatedAt)}</span>
-        <span>★ hard to book</span>
+        <span className="key">
+          {hasMichelin && (
+            <>
+              <Marks r={{ michelin: '1' } as MapRestaurant} /> MICHELIN Star · <Marks r={{ michelin: 'bib' } as MapRestaurant} /> Bib Gourmand ·{' '}
+            </>
+          )}
+          <Marks r={{ hot: 1 } as MapRestaurant} /> hard to get
+        </span>
       </div>
     </section>
   );
@@ -570,30 +736,74 @@ function RoomCanvas({ kind, status, free, seed }: { kind: string; status: Status
   return <canvas ref={ref} width={ROOM_W} height={ROOM_H} role="img" aria-label={`Inside: ${STATUS_WORD[status].toLowerCase()}`} />;
 }
 
-function Card({ r, offMap, data, day, status, onClose, onDay }: { r: MapRestaurant; offMap: boolean; data: MapData; day: string; status: Status; onClose: () => void; onDay: (d: string) => void }) {
-  const times = r.t[day] ?? [];
-  const book = r.book[day] ?? r.link;
-  const seed = useMemo(() => [...r.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 1000, [r.id]);
-  // Calendar: weeks from the Monday on or before the first day.
-  const lead = (weekday(data.start) + 6) % 7;
-  const cells: Array<string | null> = [...Array(lead).fill(null), ...Array.from({ length: data.days }, (_, i) => dateAt(data, i))];
-  // A shade at the bottom edge while more of the card is below the fold.
-  const scroller = useRef<HTMLDivElement>(null);
+interface CardProps {
+  r: MapRestaurant;
+  offMap: boolean;
+  data: MapData;
+  day: string;
+  status: Status;
+  saved: boolean;
+  onSave: () => void;
+  onClose: () => void;
+  onDay: (d: string) => void;
+}
+
+/** True while a scrolling box has more below its fold (then a MoreBar shows under it). */
+function useMore<T extends HTMLElement>(key: unknown): [RefObject<T | null>, boolean, () => void] {
+  const ref = useRef<T>(null);
   const [more, setMore] = useState(false);
   const check = useCallback(() => {
-    const e = scroller.current;
+    const e = ref.current;
     if (e) setMore(e.scrollTop + e.clientHeight < e.scrollHeight - 4);
   }, []);
   useEffect(() => {
-    const e = scroller.current;
+    const e = ref.current;
     if (!e) return;
     check();
     const ro = new ResizeObserver(check);
     ro.observe(e);
+    for (const child of e.children) ro.observe(child);
     return () => ro.disconnect();
-  }, [check, r.id]);
+  }, [check, key]);
+  return [ref, more, check];
+}
+
+/** Share the card's link: the phone's share sheet where there is one, else copy it. */
+async function share(r: MapRestaurant, day: string): Promise<string> {
+  const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(r.id)}&date=${day}`;
+  const text = `${r.name}, ${dayLabel(day, { long: true })}`;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: r.name, text, url });
+      return '';
+    }
+    await navigator.clipboard.writeText(url);
+    return 'Link copied';
+  } catch {
+    return '';
+  }
+}
+
+function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay }: CardProps) {
+  const times = r.t[day] ?? [];
+  const lunch = times.filter((t) => t < '16:00');
+  const dinner = times.filter((t) => t >= '16:00');
+  const next = status !== 'open' && r.readable ? firstFree(r, data, day) : null;
+  const [shared, setShared] = useState('');
+  // The time the guest picked; the first free one until they pick. Book and the hint follow it.
+  const [picked, setPicked] = useState<string | null>(null);
+  useEffect(() => setPicked(null), [r.id, day]);
+  const pick = picked && times.includes(picked) ? picked : times[0] ?? null;
+  const words = michelinWords(r);
+  const dayLink = r.book[day] ?? r.link;
+  const book = status === 'open' && pick && dayLink ? linkAt(dayLink, pick) : dayLink;
+  const seed = useMemo(() => [...r.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 1000, [r.id]);
+  // Calendar: weeks from the Monday on or before the first day.
+  const lead = (weekday(data.start) + 6) % 7;
+  const cells: Array<string | null> = [...Array(lead).fill(null), ...Array.from({ length: data.days }, (_, i) => dateAt(data, i))];
+  const [scroller, more, check] = useMore<HTMLDivElement>(r.id);
   return (
-    <section className={`px card${more ? ' more' : ''}`}>
+    <section className="px card">
       <div className="card-scroll" ref={scroller} onScroll={check}>
         <div className="room">
           <RoomCanvas kind={r.kind} status={status} free={times.length || 3} seed={seed} />
@@ -602,11 +812,21 @@ function Card({ r, offMap, data, day, status, onClose, onDay }: { r: MapRestaura
           </button>
         </div>
         <div className="card-body">
-          <h2>{r.name}</h2>
+          <div className="title-row">
+            <h2>{r.name}</h2>
+            <button className={`btn small save${saved ? ' on' : ''}`} aria-pressed={saved} onClick={onSave} title={saved ? 'Saved on this device' : 'Save on this device'}>
+              {saved ? '♥ Saved' : '♡ Save'}
+            </button>
+          </div>
           <p className="where">
             {KIND_WORD[r.kind] ?? 'Restaurant'} · {r.area}
-            {r.hot ? <span className="hot">{'★'.repeat(r.hot)} hard to book</span> : null}
           </p>
+          {(words || r.hot) && (
+            <p className="distinction">
+              <Marks r={r} />
+              <span>{[words, r.hot ? 'hard to get' : null].filter(Boolean).join(' · ')}</span>
+            </p>
+          )}
           {offMap && <p className="where">Outside the city map, so it has no sign there.</p>}
           <div className="state">
             <span className="stud" style={{ background: STATUS_COLOUR[status] }} />
@@ -618,25 +838,47 @@ function Card({ r, offMap, data, day, status, onClose, onDay }: { r: MapRestaura
               {r.readable && <span className="seen">Seen {ago(r.readAt)}: tables can go fast.</span>}
             </div>
           </div>
-          {book && NO_DATE_LINK.has(r.platform) && (
+          {status === 'open' &&
+            [
+              ['Lunch', lunch],
+              ['Dinner', dinner],
+            ].map(([label, list]) =>
+              (list as string[]).length ? (
+                <div key={label as string} className="times">
+                  {lunch.length > 0 && dinner.length > 0 && <span className="label">{label as string}</span>}
+                  {(list as string[]).map((t) => (
+                    <button key={t} className="time" aria-pressed={t === pick} onClick={() => setPicked(t)}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              ) : null,
+            )}
+          {next && (
             <p className="hint">
-              {r.platform}'s page opens on its own date: pick {dayLabel(day, { long: true })}
-              {status === 'open' && times.length ? `, ${times[0]}` : ''} there.
+              <button className="btn small" onClick={() => onDay(next)}>
+                First free day: {dayLabel(next, { long: true })}
+              </button>
             </p>
           )}
-          {status === 'open' && times.length > 0 && (
-            <div className="times">
-              {times.map((t) => (
-                <a key={t} className="time" href={book ?? undefined} target="_blank" rel="noopener">
-                  {t}
-                </a>
-              ))}
-            </div>
+          {book && NO_DATE_LINK.has(r.platform) && (
+            <p className="hint">
+              {r.platform}'s page opens on its own date: pick <b>{dayLabel(day, { long: true })}</b>
+              {status === 'open' && pick ? (
+                <>
+                  {' '}
+                  and <b>{pick}</b>
+                </>
+              ) : (
+                ''
+              )}{' '}
+              there.
+            </p>
           )}
           <div className="actions">
             {book && (
               <a className={`btn${status === 'open' ? ' primary' : ''}`} href={book} target="_blank" rel="noopener">
-                {status === 'open' ? 'Book' : 'Booking page'} on {r.readable ? r.platform : 'their site'}
+                {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
               </a>
             )}
             {r.site && r.site !== book && (
@@ -644,6 +886,12 @@ function Card({ r, offMap, data, day, status, onClose, onDay }: { r: MapRestaura
                 Website
               </a>
             )}
+            <a className="btn" href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&travelmode=walking`} target="_blank" rel="noopener">
+              Directions
+            </a>
+            <button className="btn" onClick={() => share(r, day).then(setShared)}>
+              {shared || 'Share'}
+            </button>
           </div>
           {r.why && <p className="why">{r.why}</p>}
           {r.readable && (
@@ -675,11 +923,21 @@ function Card({ r, offMap, data, day, status, onClose, onDay }: { r: MapRestaura
             </div>
           )}
           <p className="meta">
-            {r.readable ? `Read from ${r.platform} ${ago(r.readAt)}.` : `We can't read ${r.platform === 'other' ? 'this booking system' : r.platform} yet.`} You always book with the restaurant itself.
+            {r.readable ? `Read from ${r.platform} ${ago(r.readAt)}, for two people.` : `We can't read ${r.platform === 'other' ? 'this booking system' : r.platform} yet.`} Another party size: their booking page shows it. You always book with the restaurant itself.
           </p>
         </div>
       </div>
+      {more && <MoreBar />}
     </section>
+  );
+}
+
+/** Says a box scrolls on: its own strip under the box, so it never covers what is in it. */
+function MoreBar() {
+  return (
+    <div className="more-bar" aria-hidden="true">
+      Scroll for more ↓
+    </div>
   );
 }
 
@@ -694,12 +952,12 @@ function Dialog({ kind, onClose }: { kind: 'about' | 'restaurants'; onClose: () 
             <h2 id="dlg-title">How this works</h2>
             <p>
               Every sign on this map is a restaurant in Amsterdam, most of them hard to book. Pick a day and the signs show who still
-              has a table for two.
+              has a table for two, and at how many times. The green bar under each day shows how many restaurants have a table then.
             </p>
             <h3>Where it comes from</h3>
             <p>
-              A few times a day we read each restaurant's own public booking calendar (Tebi, Zenchef, Formitable, SevenRooms,
-              Guestplan): the same calendar any guest sees. A few restaurants are watched more closely, so their signs change sooner.
+              About every 15 minutes we read each restaurant's own public booking calendar (Tebi, Zenchef, Formitable, SevenRooms,
+              Guestplan, Frank): the same calendar any guest sees. A few restaurants are watched more closely, so their signs change sooner.
             </p>
             <h3>The city</h3>
             <p>

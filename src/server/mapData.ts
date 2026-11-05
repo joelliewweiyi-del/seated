@@ -18,7 +18,12 @@ export interface Place {
   kind: string;
   /** Roof height in metres of the building at the address (3DBAG), so the map's sign stands on its roof. */
   roof?: number;
+  /** MICHELIN Guide distinction, merged in from data/map-michelin.json (press coverage of the current edition). */
+  michelin?: Michelin;
 }
+
+/** Stars or Bib Gourmand. */
+export type Michelin = '3' | '2' | '1' | 'bib';
 
 export interface MapRestaurant {
   id: string;
@@ -29,6 +34,7 @@ export interface MapRestaurant {
   kind: string;
   /** Roof height in metres, or null when 3DBAG has no building there. */
   roof: number | null;
+  michelin: Michelin | null;
   platform: string;
   site: string | null;
   hot: number | null;
@@ -59,9 +65,15 @@ export interface MapData {
 
 const PLACES_URL = new URL('../../data/map-places.json', import.meta.url);
 const OPTOUT_URL = new URL('../../data/map-optout.json', import.meta.url);
+const MICHELIN_URL = new URL('../../data/map-michelin.json', import.meta.url);
 
+/** data/map-places.json, with each restaurant's MICHELIN distinction from data/map-michelin.json. They are separate
+ * files so that placing restaurants again never drops a distinction. */
 export function loadPlaces(): Record<string, Place> {
-  return JSON.parse(readFileSync(PLACES_URL, 'utf8')) as Record<string, Place>;
+  const places = JSON.parse(readFileSync(PLACES_URL, 'utf8')) as Record<string, Place>;
+  const guide = JSON.parse(readFileSync(MICHELIN_URL, 'utf8')) as { restaurants: Record<string, { michelin: Michelin }> };
+  for (const [id, { michelin }] of Object.entries(guide.restaurants)) if (places[id]) places[id].michelin = michelin;
+  return places;
 }
 
 /** data/map-optout.json: restaurants that asked to be left off the map. Esra is on it from the start. */
@@ -151,6 +163,7 @@ export function buildMapData({ store, platforms, places, optOut, city = 'Amsterd
       lng: place.lng,
       kind: place.kind,
       roof: place.roof ?? null,
+      michelin: place.michelin ?? null,
       platform: platform?.label ?? r.platform,
       site: r.website,
       hot: r.hot ?? null,

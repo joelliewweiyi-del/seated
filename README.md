@@ -31,11 +31,12 @@ The hard part of getting a table is not booking it. Booking takes 30 seconds. Th
 | SevenRooms | Yes | Pre-filled: date, time, party | No |
 | Tebi | Yes | The restaurant's Tebi page | Yes, through its booking page in Chrome (table seats only; a deposit only up to `AUTOBOOK_MAX_DEPOSIT`) |
 | Guestplan | Yes | The restaurant's Guestplan page | No |
+| Frank | Yes | The restaurant's Frank page | No |
 | TableCheck, TheFork | Not yet | | |
 
 Seated books only where a booking system allows it without a captcha or another bot check. It never works around one.
 
-The list in [data/restaurants.json](data/restaurants.json) has 297 restaurants in the Netherlands, 119 in Amsterdam. 40 of them carry a hard-to-book score (1 to 3): 35 from food guides and reviews, 5 added by hand. Seated can read 29 of those 40; the search box ranks them first. You can add any other Formitable restaurant from the dashboard by pasting its website.
+The list in [data/restaurants.json](data/restaurants.json) has 312 restaurants in the Netherlands, 134 in Amsterdam, among them every Amsterdam restaurant with MICHELIN stars or a Bib Gourmand in the 2026 guide. 40 of them carry a hard-to-book score (1 to 3): 35 from food guides and reviews, 5 added by hand. Seated can read 30 of those 40; the search box ranks them first. You can add any other Formitable restaurant from the dashboard by pasting its website.
 
 ### What we learned watching Amsterdam's hardest tables
 

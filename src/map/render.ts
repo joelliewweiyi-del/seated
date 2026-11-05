@@ -39,6 +39,8 @@ export class MapView {
   /** Images the current view shows but has not got yet. Tests wait for 0. */
   private waiting = 0;
   private markers: Marker[] = [];
+  /** Where you are, in world pixels, when "Near me" knows it. */
+  private you: { x: number; y: number } | null = null;
   private hits: Array<{ id: string; x: number; y: number; w: number; h: number }> = [];
   private raf = 0;
   private dirty = true;
@@ -80,14 +82,21 @@ export class MapView {
     this.dirty = true;
   }
 
+  setYou(p: { x: number; y: number } | null): void {
+    this.you = p;
+    this.dirty = true;
+  }
+
   /** Back to the first view. */
   reset(z?: number): void {
     this.flyTo(this.home.x, this.home.y, z ?? this.home.z);
   }
 
-  setHomeZoom(z: number): void {
-    this.home.z = z;
-    this.cam.z = z;
+  /** The first view, and where ⌂ goes back to. */
+  setHome(x: number, y: number, z: number): void {
+    this.home = this.clamp({ x, y, z });
+    this.cam = { ...this.home };
+    this.target = null;
     this.dirty = true;
   }
 
@@ -168,7 +177,7 @@ export class MapView {
       moving = true;
       this.onCamera(this.cam);
     }
-    const bobbing = !!this.selected && !this.reducedMotion;
+    const bobbing = (!!this.selected || !!this.you) && !this.reducedMotion;
     if (this.dirty || moving || bobbing) this.draw(now);
     this.dirty = false;
   };
@@ -251,7 +260,16 @@ export class MapView {
     } else if (z >= 0.5) waiting = this.drawLevel(0, toX, toY, W, H);
     else if (z >= 0.25) waiting = this.drawLevel(1, toX, toY, W, H);
     this.waiting = waiting;
+    if (this.you) this.drawYou(ctx, Math.round(toX(this.you.x)), Math.round(toY(this.you.y)), now);
     this.drawMarkers(ctx, toX, toY, W, H, now);
+  }
+
+  /** You are here: a blue dot with a ring that breathes (still when motion is reduced). */
+  private drawYou(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
+    const r = this.reducedMotion ? 9 : 8 + Math.round((Math.sin(now / 400) + 1) * 2);
+    pxCircle(ctx, x, y, r, '#2d6fb544');
+    pxCircle(ctx, x, y, 6, '#ffffff');
+    pxCircle(ctx, x, y, 4, '#2d6fb5');
   }
 
   // ── signs ────────────────────────────────────────────────────────────────
@@ -272,7 +290,8 @@ export class MapView {
       const x = Math.round(toX(m.ax));
       const y = Math.round(toY(m.ay));
       if (x < -120 || y < -60 || x > W + 120 || y > H + 60) continue;
-      const showName = z >= 0.5 || m.id === this.selected || m.id === this.hovered || (z >= 0.25 && m.rank >= 300);
+      // Names from the city view in; zoomed further out only free places keep theirs. Crowded names shrink to pins.
+      const showName = z >= 0.25 || m.id === this.selected || m.id === this.hovered || (z >= 0.125 && m.rank >= 300);
       const full = showName;
       ctx.font = '600 13px "Pixelify Sans", ui-monospace, monospace';
       const label = full ? `${m.name}  ${m.badge}` : m.badge;

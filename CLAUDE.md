@@ -79,6 +79,7 @@ The city is sezlab's art; everything on top of it is ours (Joel, 5 Nov 2026). Ne
 - `GET /availability/{uid}/monthWeeks/{month}/{year}/{party}/en` returns a status code per day. Validated on 119 days at 31 restaurants (Oct 2026): code 0 had open tables 61 of 62 times; codes 1, 3 and 6 never did; 2 = past, 5 = today when nothing is left. `openDates()` skips only those known-empty codes.
 - Many restaurants load the Formitable widget with JavaScript only (Gitane, Massalia). HTML detection misses them; a headless browser sees the `widget-api.formitable.com/api/restaurant/{uid}` request.
 - A dead Formitable widget can stay on a site after a move to Tebi (Alba). It answers with no availability. Check the site for a Tebi token before calling a restaurant "fully booked".
+- **A switched-off calendar answers code 1 on every day** ("No availability at this time. Please try again later." in the widget), with no `zenchefId`. On 5 Nov 2026, 16 Amsterdam restaurants did; most had moved (Marie and Badcuyp to SevenRooms, Helling 7 to Tebi, Entrepot, Oriental City to Guestplan, Sinne, MOS and Het Bosch to Frank, The White Room to TableCheck). `calendar()` calls 28+ days of only code 1 unknown, not full. Find where the site's Reserve button goes now (`scripts/map-verify.ts` and a browser look).
 - `GET /restaurant/{uid}/status`: the `live` flag is **not** a bookability signal. Many bookable restaurants report `live: false`.
 - Deep link (checked in Chrome, Oct 2026): `https://widget.formitable.com/side/en/{uid}/book?partysize=N&date=YYYY-MM-DD&time={minutes}`.
 - Booking: `GET /product/{uid}/search/{slot.time}/{party}/en` for the product, then `POST /booking/{uid}`. The payload is in `formitable.ts`. It booked real tables in June 2026.
@@ -90,7 +91,7 @@ The city is sezlab's art; everything on top of it is ours (Joel, 5 Nov 2026). Ne
 - Reads need no captcha. Base `https://live.tebi.co/api/reservations-guest/ledgers/{uid}`, headers `Tebi-Version-Code: 1680400`, Origin and Referer `https://live.tebi.co`.
 - `GET /reservation-dates/{YYYY-MM-DD}?groupSize=N` gives `timeslots[{ time, availabilityType }]`.
 - `GET /reservation-months/{YYYY-MM}?groupSize=N` gives `[{ date, availability: Available|Waitlist|Unavailable }]`; `openDates()` uses it so only Available days get a slot read.
-- Seeded ledger ids rotate and then return `400 invalid ledger id`. Refresh with `GET https://live.tebi.co/api/widget/{oldUid}` (Referer = restaurant site); the 302 `Location` holds the new id. `tebi.ts` does this on any 400 and saves the new id through `onUidChange`.
+- Seeded ledger ids rotate and then return `400 invalid ledger id`. Refresh with `GET https://live.tebi.co/api/widget/{oldUid}` (Referer = restaurant site); the 302 `Location` holds the new id. `tebi.ts` does this on any 400 and saves the new id through `onUidChange`. A restart re-seeds the id in `data/restaurants.json`, so copy refreshed ids from the database into it now and then (18 had rotated by 5 Nov 2026; Wolf Atelier's map link was a blank page).
 - Restaurant websites embed a **widget token** (`data-widget-token="…"` on `widget-manager.js`). It is not the ledger id: resolve it with the same `/api/widget/{token}` redirect.
 - The booking page `https://live.tebi.co/ecom/reservations/{uid}` reads no date or party from the link (only `serviceId`), so Tebi links cannot be pre-filled.
 - Tebi is also a till and web shop: a `tebi.co` link on a site does not prove Tebi takes the bookings.
@@ -118,11 +119,18 @@ The city is sezlab's art; everything on top of it is ours (Joel, 5 Nov 2026). Ne
 - uid is `<accessKey>:<accountId>`: one key can cover several restaurants. A time is a table only when it is open online and bookable for the party.
 - The widget link cannot be pre-filled. Never fake its `rwg_token`.
 
+### Frank (meetfrank.app)
+
+- Read-only, plain GETs on `https://api.workspace.meetfrank.app/widget-api/{widgetId}/`: `time-slots/month?month&year&number_of_people` (whole weeks; `available`, `waitlist` = full, `unavailable` = no table) and `time-slots/day?date&number_of_people` (times with the restaurant's own offset). Without an `Accept-Language` header it answers 400.
+- The widget id is the uuid in `widget.workspace.meetfrank.app/{id}/open`; a site's Reserve button points at `#frank-app-open`. Sinne, Bolenius, MOS, Het Bosch and Sea Palace use it (Nov 2026). Many offer paid tickets next to tables (Sinne: €40 deposit menu).
+- The link cannot be pre-filled.
+
 ## Restaurant data
 
 - `data/restaurants.json`: `hot` (1 to 3) and `hotWhy` mark the hard-to-book list (40 Amsterdam restaurants, 29 readable; 35 researched 6 Oct 2026 from Time Out, Amsterdam Foodie, Your Little Black Book, Michelin and others; Weinlokal Stern, Kamer, KID, September and Bacalar added by Joel on 7 Oct, scored from Seated's own reads).
 - On 6 Oct 2026, 29 restaurants listed as Formitable had moved to Tebi; they were switched with ids resolved from their websites.
-- `scripts/detect.ts <url>` finds the booking system on a website.
+- `scripts/detect.ts <url>` finds the booking system on a website. It reads HTML only: Frank, Formitable's JavaScript-only widgets and Tebi tokens added by script need a browser look.
+- **MICHELIN** (`data/map-michelin.json`): every Amsterdam restaurant with stars or a Bib Gourmand in the 2026 guide (announced 5 Oct 2026; 34 places, 15 added on 5 Nov), each with two or more press sources. Read by hand from press coverage. Never script guide.michelin.com: its robots.txt forbids automated access and asks for a licence. The Selected list (no star, no Bib) is not in Seated for that reason. The Green Star is being phased out during 2026 (Mindful Voices replaces it), so Seated does not show it. Kept apart from `map-places.json` so placing restaurants again never drops one; `loadPlaces()` merges them.
 
 ## Radar behaviour
 

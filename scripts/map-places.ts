@@ -32,12 +32,15 @@ const KIND: Record<string, string> = {
   'het-bosch-waterfront-kitchen': 'brasserie', 'mos-amsterdam': 'brasserie', 'baut-oost': 'brasserie', neni: 'brasserie',
   'hotel-de-goudfazant': 'brasserie', 'ikaria-park': 'brasserie', 'oriental-city': 'brasserie', 'de-belhamel': 'bistro',
   barracuda: 'brasserie', pelusa: 'brasserie', kien: 'brasserie', toet: 'brasserie', 'ja': 'cafe', salmuera: 'brasserie',
+  'restaurant-212': 'fine', 'bistro-de-la-mer': 'bistro', bougainville: 'fine', rijks: 'fine', 'ron-gastrobar': 'fine',
+  yamazato: 'japanese', zoldering: 'wine', 'a-fusion': 'brasserie', auberge: 'bistro', 'boon-de-koot': 'bistro',
+  'fulu-mandarijn': 'brasserie', 'sea-palace': 'brasserie', 'serre-okura': 'brasserie', 'utage-sake-bar': 'japanese',
+  'wils-bakery-cafe': 'cafe',
 };
 
 /** Addresses read by hand where neither the list nor the website gave one (Nov 2026). */
 const MANUAL: Record<string, string> = {
   blauw: 'Amstelveenseweg 158, 1075 XN Amsterdam',
-  bolenius: 'George Gershwinlaan 30, 1082 MT Amsterdam',
   'ciel-bleu': 'Ferdinand Bolstraat 333, 1072 LH Amsterdam',
   gartine: 'Taksteeg 7, 1012 PB Amsterdam',
   'hotel-de-goudfazant': 'Aambeeldstraat 10, 1021 KB Amsterdam',

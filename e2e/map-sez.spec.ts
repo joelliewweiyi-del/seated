@@ -14,7 +14,7 @@ const png = Buffer.from(
 
 function restaurant(id: string, roof: number | null): MapRestaurant {
   return {
-    id, name: id, roof,
+    id, name: id, roof, michelin: null,
     lat: 52.3731, lng: 4.8926, area: 'Centrum', kind: 'bistro',
     platform: 'Fixture', site: null, hot: null, why: null,
     readable: true, d: 'o'.repeat(63), t: {}, book: {},

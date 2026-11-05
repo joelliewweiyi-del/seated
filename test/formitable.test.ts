@@ -262,3 +262,39 @@ describe('restaurants that moved to Zenchef', () => {
     expect(slots[0]!.open).toBe(true);
   });
 });
+
+describe('the map calendar', () => {
+  const month = (m: number, days: number, status: (d: number) => number) =>
+    json(Array.from({ length: days }, (_, i) => ({ dayString: `2026-${String(m).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`, status: status(i + 1) })));
+  const dates = [...Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, '0')}`), '2026-12-01', '2026-12-02'];
+
+  it('calls weeks of code 1 and nothing else a calendar switched off: unknown, not full (Marie, Helling 7, 5 Nov 2026)', async () => {
+    const { impl } = fakeFetch([
+      [/\/status$/, () => json({ live: false, zenchefId: null })],
+      [/monthWeeks\/11\//, () => month(11, 30, () => 1)],
+      [/monthWeeks\/12\//, () => month(12, 31, () => 1)],
+    ]);
+    const days = await formitable({ fetchImpl: impl, gapMs: 0 }).calendar!(klepel, dates, 2);
+    expect(days.size).toBe(0);
+  });
+
+  it('keeps code 1 as none when other days are open or closed: a full restaurant stays full', async () => {
+    const { impl } = fakeFetch([
+      [/\/status$/, () => json({ live: false, zenchefId: null })],
+      [/monthWeeks\/11\//, () => month(11, 30, (d) => (d === 30 ? 0 : 1))],
+      [/monthWeeks\/12\//, () => month(12, 31, () => 1)],
+    ]);
+    const days = await formitable({ fetchImpl: impl, gapMs: 0 }).calendar!(klepel, dates, 2);
+    expect(days.get('2026-11-01')).toBe('none');
+    expect(days.get('2026-11-30')).toBe('open');
+  });
+
+  it('keeps a short all-code-1 read as none: a few full days are not a dead calendar', async () => {
+    const { impl } = fakeFetch([
+      [/\/status$/, () => json({ live: false, zenchefId: null })],
+      [/monthWeeks\/11\//, () => month(11, 30, () => 1)],
+    ]);
+    const days = await formitable({ fetchImpl: impl, gapMs: 0 }).calendar!(klepel, dates.slice(0, 5), 2);
+    expect(days.get('2026-11-01')).toBe('none');
+  });
+});

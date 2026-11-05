@@ -3,7 +3,7 @@
 :root {
   --ink: #2b2733;
   --ink-2: #4a4554;
-  --muted: #6f6a78;
+  --muted: #5f5a68;
   --panel: #fffaf0;
   --panel-2: #f4eee2;
   --line: #e4dccd;
@@ -72,8 +72,8 @@ a {
     2px 0 0 0 var(--ink);
 }
 .label {
-  font: 600 11px/1 var(--px);
-  letter-spacing: 0.06em;
+  font: 700 11px/1.2 var(--text);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -187,8 +187,21 @@ a {
   gap: 6px;
   flex: none;
 }
+.strip-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.chip.later {
+  flex: none;
+  font-size: 18px;
+  padding: 8px 9px 7px;
+}
 .strip {
   display: flex;
+  min-width: 0;
   gap: 6px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
@@ -197,7 +210,7 @@ a {
   padding: 3px 14px 7px;
   scroll-behavior: smooth;
   /* Days scroll: fade the ends so a cut day reads as "more this way". */
-  mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 28px), transparent);
 }
 .strip::-webkit-scrollbar {
   display: none;
@@ -289,6 +302,10 @@ a {
 }
 .chip:active {
   transform: translateY(1px);
+}
+.quick .chip[aria-pressed='true'] {
+  background: var(--sun);
+  color: var(--ink);
 }
 
 /* ── side panel: list and card ───────────────────────────────────────── */
@@ -398,6 +415,91 @@ a {
   margin-left: 5px;
   letter-spacing: 0.04em;
 }
+/* Marks after a name: ★ is MICHELIN only; "hard to get" is a flame; no MICHELIN logos. */
+.marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+.mk-michelin {
+  font: 600 11px/1 var(--px);
+  color: #b8322a;
+  letter-spacing: 0.02em;
+}
+.mk-michelin.bib {
+  color: #fff;
+  background: #b8322a;
+  padding: 2px 4px 1px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.mk-flame {
+  width: 10px;
+  height: 13px;
+  display: inline-block;
+}
+.mk-words {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.row .who {
+  min-width: 0;
+}
+.row .who .ar {
+  display: block;
+}
+.fav-dot {
+  color: #e0604c;
+  font-size: 12px;
+}
+.head-toggle {
+  padding: 0;
+  display: block;
+  cursor: default;
+}
+.list-head .note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.list-foot .key {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.list-foot .key .marks {
+  margin: 0 3px 0 0;
+}
+.title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.btn.save {
+  flex: none;
+  margin-top: 2px;
+}
+.btn.save.on {
+  color: #b8322a;
+}
+.card .distinction {
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.card .distinction .marks {
+  margin: 0;
+}
+.times .label {
+  flex-basis: 100%;
+  margin: 4px 0 -2px;
+}
 .group {
   padding: 10px 14px 4px;
 }
@@ -407,6 +509,28 @@ a {
 }
 .empty .btn {
   margin-top: 10px;
+}
+.list-head .active {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.link {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: 600 13px/1 var(--px);
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.foot .short,
+.foot .tiny {
+  display: none;
 }
 .list-foot {
   padding: 8px 14px;
@@ -425,17 +549,19 @@ a {
   max-height: 100%;
   overflow: hidden;
 }
-/* More below: a two-step pixel shade over the bottom edge (set by Card in App.tsx). */
-.card.more::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10px;
-  pointer-events: none;
-  background: linear-gradient(transparent 0 4px, rgb(43 39 51 / 0.1) 4px 7px, rgb(43 39 51 / 0.22) 7px);
+/* More below (MoreBar in App.tsx): a strip of its own under the scrolling box. */
+.more-bar {
+  flex: none;
+  padding: 5px 0 4px;
+  text-align: center;
+  font: 700 12px/1.2 var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--sun);
+  border-top: 2px solid var(--line);
 }
+
 .card-scroll {
   overflow-y: auto;
   min-height: 0;
@@ -452,7 +578,7 @@ a {
 }
 .room canvas {
   width: 100%;
-  max-width: 368px;
+  max-width: 276px;
   height: auto;
   image-rendering: pixelated;
   display: block;
@@ -528,7 +654,14 @@ a {
 }
 .time {
   font: 600 14px/1 var(--px);
-  padding: 7px 9px 6px;
+  min-height: 44px;
+  min-width: 58px;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  cursor: pointer;
+  padding: 0 11px;
   background: #fff;
   text-decoration: none;
   box-shadow:
@@ -539,7 +672,11 @@ a {
   margin: 2px;
 }
 .time:hover {
+  background: #fff3c9;
+}
+.time[aria-pressed='true'] {
   background: var(--sun);
+  transform: translateY(-2px);
 }
 .actions {
   display: flex;
@@ -780,7 +917,39 @@ a {
     max-height: 62%;
   }
   .room canvas {
-    max-width: 230px;
+    max-width: 148px;
+  }
+  .room {
+    padding-top: 4px;
+  }
+  /* Thumb-sized targets: 44 px or more. */
+  .btn {
+    min-height: 44px;
+  }
+  .btn.small {
+    min-height: 40px;
+    padding: 9px 12px 8px;
+  }
+  .chip {
+    padding: 10px 12px;
+  }
+  .filters .chip {
+    padding: 11px 12px;
+  }
+  .search {
+    padding: 11px 10px;
+    font-size: 16px; /* 16 px keeps iOS from zooming in on focus */
+  }
+  .row {
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+  .foot .short {
+    display: inline;
+  }
+  .list-foot {
+    flex-direction: column;
+    gap: 4px;
   }
   .side {
     /* Up to 70% of the screen, but never over the date strip (its height is measured in App.tsx). */
@@ -792,20 +961,27 @@ a {
   .list-head .row {
     position: relative;
   }
+  /* The whole head opens and closes the sheet; this bar says so, full width and thumb-sized. */
   .sheet-toggle {
     display: block;
-    position: absolute;
-    top: 0;
-    right: 0;
-    padding: 5px 8px 4px;
-    font: 600 12px/1 var(--px);
+    margin: 10px 2px 2px;
+    padding: 13px 10px 12px;
+    font: 600 14px/1 var(--px);
+    text-align: center;
     text-transform: uppercase;
-    background: var(--panel-2);
+    letter-spacing: 0.04em;
+    color: #fff;
+    background: var(--primary);
     box-shadow:
       0 -2px 0 0 var(--ink),
       0 2px 0 0 var(--ink),
       -2px 0 0 0 var(--ink),
-      2px 0 0 0 var(--ink);
+      2px 0 0 0 var(--ink),
+      0 4px 0 0 var(--ink);
+  }
+  .side:not(.collapsed) .sheet-toggle {
+    color: var(--ink);
+    background: var(--panel-2);
   }
   .side.collapsed .sum {
     margin-bottom: 0;
@@ -834,13 +1010,63 @@ a {
     display: none;
   }
   .foot .credit {
-    overflow: hidden;
     white-space: nowrap;
-    text-overflow: ellipsis;
   }
   .toast {
     top: auto;
     bottom: 120px;
+  }
+}
+
+/* Small phones: the shortest credit that still names sezlab and OpenStreetMap in full. */
+@media (max-width: 360px) {
+  .foot .mid {
+    display: none;
+  }
+  .foot .tiny {
+    display: inline;
+  }
+  .foot {
+    gap: 8px;
+  }
+}
+
+/* Short screens (a phone on its side): one row of controls on top, so the map keeps its height. */
+@media (max-width: 900px) and (max-height: 500px) {
+  .top {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .brand {
+    flex: none;
+  }
+  .brand > div {
+    display: none;
+  }
+  .dates {
+    flex-direction: row;
+    align-items: center;
+  }
+  .strip {
+    padding-top: 6px;
+  }
+  .day.month-start::before {
+    display: none;
+  }
+  .day .bar {
+    display: none;
+  }
+  .side {
+    left: auto;
+    width: 340px;
+    max-height: calc(100% - var(--top-h, 80px) - 44px);
+  }
+  .side.collapsed .sum {
+    display: none;
+  }
+  .sheet-toggle {
+    margin-top: 6px;
+    padding: 9px 10px 8px;
   }
 }
 

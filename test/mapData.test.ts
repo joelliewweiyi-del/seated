@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/server/db';
 import { CENSUS_DAYS, runCensus } from '../src/server/census';
-import { buildMapData, dayCodes, type Place } from '../src/server/mapData';
+import { buildMapData, dayCodes, loadPlaces, type Place } from '../src/server/mapData';
 import type { DayState, Platform, Restaurant } from '../src/server/platforms/types';
 import { addDays } from '../src/server/time';
 import { censusMinutes } from '../src/server/config';
@@ -156,7 +157,7 @@ describe('census and map data', () => {
     for (const secret of ['Secret', 'joel@private.example', '+31611112222', 'private-topic']) expect(text).not.toContain(secret);
     expect(data.restaurants.map((r) => r.id).sort()).toEqual(['bistro-a', 'phone-e', 'wine-b']);
     expect(Object.keys(data.restaurants[0]!).sort()).toEqual(
-      ['area', 'book', 'd', 'hot', 'id', 'kind', 'lat', 'link', 'lng', 'name', 'platform', 'readAt', 'readable', 'roof', 'site', 't', 'why', 'win'].sort(),
+      ['area', 'book', 'd', 'hot', 'id', 'kind', 'lat', 'link', 'lng', 'michelin', 'name', 'platform', 'readAt', 'readable', 'roof', 'site', 't', 'why', 'win'].sort(),
     );
     const phone = data.restaurants.find((r) => r.id === 'phone-e')!;
     expect(phone).toMatchObject({ readable: false, link: 'https://phone-e.example' });
@@ -170,5 +171,20 @@ describe('census interval', () => {
     expect(censusMinutes('3')).toBe(10);
     expect(censusMinutes('0')).toBe(0);
     expect(censusMinutes('soon')).toBe(0);
+  });
+});
+
+describe('MICHELIN distinctions', () => {
+  // Kept in their own file so that placing restaurants again (map-places.ts --all) never drops one.
+  it('reach the map for every restaurant the guide file names, and only for those', () => {
+    const guide = JSON.parse(readFileSync('data/map-michelin.json', 'utf8')) as { restaurants: Record<string, { michelin: string }> };
+    const places = loadPlaces();
+    for (const [id, { michelin }] of Object.entries(guide.restaurants)) {
+      expect(places[id], `${id} has no place`).toBeDefined();
+      expect(places[id]!.michelin).toBe(michelin);
+    }
+    const marked = Object.entries(places).filter(([, p]) => p.michelin).map(([id]) => id);
+    expect(marked.sort()).toEqual(Object.keys(guide.restaurants).sort());
+    expect(new Set(Object.values(guide.restaurants).map((r) => r.michelin))).toEqual(new Set(['2', '1', 'bib']));
   });
 });

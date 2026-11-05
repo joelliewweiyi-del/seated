@@ -1,0 +1,330 @@
+{
+ "edition": "MICHELIN Guide Netherlands 2026, announced 5 October 2026",
+ "how": "Read by hand from press coverage of the announcement, at least two sources each. Never from guide.michelin.com: its robots.txt forbids automated access and its list needs a licence. Stars and Bib Gourmand only; the Selected list is not here. The Green Star is being phased out during 2026 and is not shown.",
+ "checked": "2026-11-05",
+ "restaurants": {
+  "ciel-bleu": {
+   "name": "Ciel Bleu",
+   "michelin": "2",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "flore": {
+   "name": "Flore",
+   "michelin": "2",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "restaurant-212": {
+   "name": "Restaurant 212",
+   "michelin": "2",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "vinkeles": {
+   "name": "Vinkeles",
+   "michelin": "2",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "bistro-de-la-mer": {
+   "name": "Bistro de la Mer",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "bolenius": {
+   "name": "Bolenius Rembrandtpark",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "bougainville": {
+   "name": "Bougainville",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "choux": {
+   "name": "Choux",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "cue": {
+   "name": "CUE",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "de-kas": {
+   "name": "De Kas",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "lars": {
+   "name": "Lars Amsterdam",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "mos-amsterdam": {
+   "name": "MOS",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "showw": {
+   "name": "Restaurant Showw",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "rijks": {
+   "name": "RIJKS®",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "ron-gastrobar": {
+   "name": "RON Gastrobar",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "sinne": {
+   "name": "Sinne",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "the-white-room": {
+   "name": "The White Room by Jacob Jan Boerma",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "wils": {
+   "name": "Wils",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "yamazato": {
+   "name": "Yamazato",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "zoldering": {
+   "name": "Zoldering",
+   "michelin": "1",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  },
+  "a-fusion": {
+   "name": "A-Fusion",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "alba": {
+   "name": "Alba",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "auberge": {
+   "name": "Auberge - cuisine française",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "boon-de-koot": {
+   "name": "Boon & De Koot",
+   "michelin": "bib",
+   "new": true,
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "fa-pekelhaaring": {
+   "name": "Fa. Pekelhaaring",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "fulu-mandarijn": {
+   "name": "FuLu Mandarijn",
+   "michelin": "bib",
+   "new": true,
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "gitane": {
+   "name": "Gitane",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "marie": {
+   "name": "Marie",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.gault-millau.nl/en/restaurants/marie-amsterdam"
+   ]
+  },
+  "rijsel": {
+   "name": "Rijsel",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "scheepskameel": {
+   "name": "Scheepskameel",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "sea-palace": {
+   "name": "Sea Palace",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "serre-okura": {
+   "name": "Serre Restaurant",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "utage-sake-bar": {
+   "name": "Utage Sake Bar",
+   "michelin": "bib",
+   "new": true,
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  },
+  "wils-bakery-cafe": {
+   "name": "Wils Bakery Café",
+   "michelin": "bib",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.gourmet-report.de/artikel/420292/michelin-niederlande-2026-mario-ridder-und-ralf-berendsen-erhalten-zwei-sterne-alle-sterne-und-bib-gourmands/",
+    "https://www.kokswereld.nl/bib-gourmand/"
+   ]
+  }
+ },
+ "lost": [
+  {
+   "name": "Daalder",
+   "was": "1 Star",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.at5.nl/artikelen/240256/geen-nieuwe-restaurants-met-michelin-ster-in-amsterdam-een-restaurant-verliest-ster"
+   ]
+  },
+  {
+   "name": "De Juwelier",
+   "was": "1 Star",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://www.at5.nl/artikelen/240256/geen-nieuwe-restaurants-met-michelin-ster-in-amsterdam-een-restaurant-verliest-ster"
+   ]
+  },
+  {
+   "name": "Oriole",
+   "was": "Bib Gourmand",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://redactie.rtl.nl/sites/default/files/content/documents/2025/10/06/LIJSt_michelin_2025.pdf"
+   ]
+  },
+  {
+   "name": "Spectrum (closed May 2026)",
+   "was": "2 Stars",
+   "sources": [
+    "https://nltimes.nl/2026/10/05/michelin-awards-two-stars-two-new-dutch-restaurants-seven-get-first",
+    "https://eatstreet.nl/michelin"
+   ]
+  }
+ ]
+}

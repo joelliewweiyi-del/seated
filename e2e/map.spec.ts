@@ -32,7 +32,7 @@ test('Esra never appears on the map (CLAUDE.md hard rule 2), and the data holds 
   for (const secret of ['demo@example.com', '+31600000000', 'Demo Guest']) expect(text).not.toContain(secret);
   await page.goto('/map/');
   await page.getByLabel('Find a restaurant').fill('esra');
-  await expect(page.getByText('No restaurant by that name here.')).toBeVisible();
+  await expect(page.getByText('No restaurant matches that.')).toBeVisible();
 });
 
 test('picking a restaurant flies to it and opens its card with a link to its own booking page', async ({ page }) => {
@@ -93,4 +93,44 @@ test('on a phone the map, the date strip and the list sheet all fit', async ({ b
   await settled(page);
   await shot(page, '04-phone-card');
   await page.close();
+});
+
+test('picking a free time makes it the one to book: the Book button and its link follow it', async ({ page }) => {
+  // One restaurant with two free times today and a Formitable link, which carries the time in minutes.
+  await page.route('**/map/data.json', async (route) => {
+    const data = await (await route.fetch()).json();
+    const r = data.restaurants[0];
+    r.d = `o${r.d.slice(1)}`;
+    r.t[data.start] = ['18:00', '20:30'];
+    r.book[data.start] = `https://widget.formitable.com/side/en/abc12345/book?partysize=2&date=${data.start}&time=1080`;
+    route.fulfill({ json: data });
+  });
+  await page.goto('/map/');
+  const id = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants[0].id);
+  await page.goto(`/map/?r=${id}`);
+  const times = page.locator('.card .time');
+  await expect(times).toHaveText(['18:00', '20:30']);
+  await expect(times.first()).toHaveAttribute('aria-pressed', 'true'); // the first free time until you pick
+  await times.nth(1).click();
+  await expect(times.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(times.first()).toHaveAttribute('aria-pressed', 'false');
+  const book = page.locator('.card').getByRole('link', { name: /^Book 20:30 on/ });
+  await expect(book).toHaveAttribute('href', /[?&]time=1230(&|$)/);
+});
+
+test('the keyboard reaches the list past the date strip in a few steps, and arrow keys change the day', async ({ page }) => {
+  await page.goto('/map/');
+  await expect(page.locator('.list-head h2')).toBeVisible();
+  const before = await page.locator('.day[aria-pressed="true"]').getAttribute('aria-label');
+  // Today, Fri, Sat (and New Year's Eve in December), the chosen day, the later-days button, then the list.
+  let reached = false;
+  for (let i = 0; i < 9 && !reached; i++) {
+    await page.keyboard.press('Tab');
+    reached = await page.evaluate(() => !!document.activeElement?.closest('.list'));
+  }
+  expect(reached).toBe(true);
+  await page.locator('.day[aria-pressed="true"]').focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.day[aria-pressed="true"]')).not.toHaveAttribute('aria-label', before!);
+  await expect(page.locator('.day[aria-pressed="true"]')).toBeFocused();
 });
