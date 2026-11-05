@@ -1,68 +1,65 @@
-// Paints the city, tile by tile, into a Pix buffer. All art is drawn here in code: ground, canals and their
-// stone walls, bridges, trees, houseboats, and the buildings (gabled canal houses in the centre, brick rows in
-// the 19th-century belt, modern blocks further out, warehouses on industrial land).
+// Paints the city, cell by cell (4 m), into a Pix buffer. All art is drawn here in code from the world's data:
+// ground, canals and quays, bridges, real trees, houseboats, and every building at its real height, with its roof
+// colour from the aerial photo and walls and windows by the year it was built.
 import { darken, dither, hash, lighten, mix, Pix, rgb } from './pix';
-import { F, S, T, TH, TW, World } from './world';
+import { AGE, F, PX_PER_M, T, TH, TW, World } from './world';
 
 const c = rgb;
 export const PAL = {
-  water: c('#6cb4c4'),
-  waterDeep: c('#5aa3b6'),
-  waterLight: c('#a6dbe2'),
-  wallTop: c('#b8a893'),
-  wall: c('#7b6656'),
-  wallDark: c('#5c4a3f'),
-  paving: c('#d6cbb8'),
-  pavingDot: c('#c4b8a3'),
-  asphalt: c('#a9a39a'),
-  asphaltDot: c('#9b958c'),
-  square: c('#e2d8c6'),
-  squareLine: c('#d1c5b0'),
-  grass: c('#a9d07c'),
-  grassDark: c('#93c06a'),
-  woods: c('#8ab95f'),
-  field: c('#cbd88e'),
-  fieldLine: c('#b9c97c'),
-  concrete: c('#d2cdc3'),
-  concreteLine: c('#c2bcb1'),
-  sand: c('#ecdba8'),
-  gravel: c('#b2a898'),
+  water: c('#2f86a8'),
+  waterDeep: c('#28799a'),
+  waterLight: c('#5fb0cc'),
+  quay: c('#e4dccb'),
+  quayWall: c('#7d7263'),
+  paving: c('#d9c9a7'),
+  pavingDot: c('#cbbb98'),
+  pavement: c('#e4d8bb'),
+  pavementLine: c('#d6c9aa'),
+  asphalt: c('#b9ae98'),
+  asphaltDot: c('#ab9f88'),
+  square: c('#e6dab9'),
+  squareLine: c('#d8cba8'),
+  grass: c('#72b843'),
+  grassDark: c('#5aa236'),
+  grassLight: c('#8fcb57'),
+  garden: c('#63a83d'),
+  gardenDark: c('#4f9031'),
+  woods: c('#4f9a33'),
+  field: c('#a9c86a'),
+  fieldLine: c('#97b85c'),
+  concrete: c('#cfc8ba'),
+  concreteLine: c('#bfb7a8'),
+  sand: c('#e8d49c'),
+  gravel: c('#a99f8e'),
   rail: c('#6f6860'),
-  sleeper: c('#8b6f55'),
-  tram: c('#8e877e'),
-  deck: c('#c9bba5'),
-  railing: c('#8d7f6e'),
-  roof: c('#6e5a52'),
-  roofDark: c('#5a4842'),
-  zinc: c('#8c939b'),
-  glass: c('#5f7d90'),
-  glassHi: c('#a9c6d4'),
+  tram: c('#8a8278'),
+  deck: c('#d9cfbc'),
+  railing: c('#5c544c'),
+  glass: c('#2e3742'),
+  glassHi: c('#62798a'),
+  trim: c('#efe7d6'),
   lit: c('#ffd56b'),
   litHi: c('#fff1b8'),
-  trim: c('#f4efe4'),
   ink: c('#2b2733'),
-  leaf: c('#6aa84f'),
-  leafLight: c('#8cc66a'),
-  leafDark: c('#4f8a3c'),
-  trunk: c('#7a5a3c'),
+  leaf: c('#2f7d2a'),
+  leafLight: c('#78c04e'),
+  leafMid: c('#47983a'),
+  leafDark: c('#225f20'),
+  trunk: c('#6b4a33'),
   flowerA: c('#fff0a0'),
   flowerB: c('#f4a7c3'),
 };
 
-/** Facade colours. Canal houses: brick, painted black-green, white plaster, sand. */
-const CANAL = ['#9e4a3c', '#7e3d34', '#5b3b33', '#38443b', '#ece4d2', '#c9a878', '#8a5642', '#4a4f5c', '#b36b4f', '#e7dcc4'].map((h) => c(h));
-const BRICK = ['#9a4c3b', '#8b5a45', '#a8694c', '#7f4637', '#b98b62', '#94604c'].map((h) => c(h));
-const MODERN = ['#e8e4dc', '#d4d0c8', '#c88b6a', '#9aa6ad', '#d9c7a5', '#7d8a80', '#f0ebe0', '#b5a28a'].map((h) => c(h));
-const WARE = ['#8f9a8a', '#a8735a', '#c4b79c', '#7c8a95', '#9c8f7a'].map((h) => c(h));
-/**
- * Roofs at half size, where roofs are most of what you see: slate and dark tile in the canal ring, orange tile
- * and some flat grey in the 19th-century belt, pale flat roofs in newer areas. The mix tells the districts apart.
- */
-const FAR_ROOFS = [
-  ['#5f6672', '#6d5a54', '#8f4f3d', '#565b66', '#7a4a3e'],
-  ['#b5603f', '#9c4f3a', '#9c9a94', '#a9a7a0', '#c08a5c', '#7f7b78'],
-  ['#d6d1c6', '#c4c0b6', '#b0b4b6', '#cfc8b8'],
-  ['#9aa09a', '#8f9893', '#a7a294'],
+/** Walls by period: canal-house brick and paint; 19th-century brick; Amsterdam School; post-war; late 20th; new. */
+const WALLS: number[][] = [
+  ['#b8a99a'],
+  ['#a5503b', '#8a3e2e', '#6b3a30', '#3f4a40', '#ece2cc', '#cfae7c', '#934f3c', '#4b5160', '#b96b4f', '#e6d9bf'],
+  ['#a8432c', '#963b28', '#b65434', '#8e4a35', '#dccaa6', '#a24a30'],
+  ['#a0432e', '#8c3826', '#ab4a30', '#9f5034', '#7f3123'],
+  ['#d8d0bf', '#c4bfb3', '#c9a86e', '#a9adb0', '#e3dccb', '#b98b55'],
+  ['#a06c52', '#b5805f', '#8f9396', '#cbbba0', '#86604b'],
+  ['#ebe7df', '#5d6166', '#c9714c', '#aeb5b8', '#45494d', '#dacdb3', '#8e6c50'],
+  ['#a9553d', '#8b5a45', '#c9b9a0', '#9da3a6'],
 ].map((list) => list.map((h) => c(h)));
 
 export interface Special {
@@ -72,13 +69,19 @@ export interface Special {
 }
 
 const pick = <X>(list: X[], r: number) => list[Math.floor(r * list.length) % list.length]!;
+const roofCache = new WeakMap<object, number[]>();
+function roofPalette(w: World): number[] {
+  let pal = roofCache.get(w.meta);
+  if (!pal) roofCache.set(w.meta, (pal = w.meta.roofPalette.map((h) => c(h))));
+  return pal;
+}
 
-/** Calls fn for every pixel of a tile's diamond. u runs along +x, v along +y, both 0..1. */
+/** Calls fn for every pixel of a cell's diamond (exact 2:1 tiling). u runs along +x, v along +y, both 0..1. */
 function diamond(p: Pix, ox: number, oy: number, fn: (px: number, py: number, u: number, v: number) => number | null): void {
   for (let r = 0; r < TH; r++) {
-    const hw = r < TH / 2 ? 2 * (r + 1) : 2 * (TH - r);
+    const half = (TW / 2) * (1 - Math.abs(r + 0.5 - TH / 2) / (TH / 2));
     const py = oy + r;
-    for (let px = ox - hw; px < ox + hw; px++) {
+    for (let px = Math.ceil(ox - half - 0.5); px < ox + half - 0.5; px++) {
       const a = (px - ox + 0.5) / (TW / 2);
       const b = (r + 0.5) / (TH / 2);
       const col = fn(px, py, (a + b) / 2, (b - a) / 2);
@@ -87,348 +90,259 @@ function diamond(p: Pix, ox: number, oy: number, fn: (px: number, py: number, u:
   }
 }
 
-const isWater = (w: World, x: number, y: number) => w.terrain(x, y) === T.water && !(w.flags(x, y) & F.bridge);
-
-/** A built tile whose eight neighbours are all built: the inside of a block, so often a garden. */
-export function isCourtyard(w: World, x: number, y: number): boolean {
-  if (w.terrain(x, y) !== T.land) return false;
-  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (!w.isBuilt(x + dx, y + dy)) return false;
-  return hash(x, y, 7) < 0.72;
+/** Ground in the shade of a building on its upper left, where the light comes from. */
+function shaded(w: World, x: number, y: number): boolean {
+  if (w.isBuilt(x - 1, y) || w.isBuilt(x, y - 1)) return true;
+  return w.heightM(x - 2, y) > 12 || w.heightM(x - 1, y - 1) > 10;
 }
 
-/** Ground of one tile. gx, gy offset the buffer into world pixels, so textures run on across tiles. */
+/** Ground of one cell. gx, gy offset the buffer into world pixels, so textures run on across cells. */
 export function paintGround(p: Pix, w: World, x: number, y: number, ox: number, oy: number, gx: number, gy: number): void {
   const t = w.terrain(x, y);
   const fl = w.flags(x, y);
-  const G = (px: number, py: number) => [px + gx, py + gy] as const;
+  const shade = shaded(w, x, y);
+  const S = (col: number) => (shade ? darken(col, 0.16) : col);
 
   if (t === T.water && !(fl & F.bridge)) {
-    const landL = !isWater(w, x - 1, y);
-    const landT = !isWater(w, x, y - 1);
+    const landL = !w.isWater(x - 1, y);
+    const landT = !w.isWater(x, y - 1);
     diamond(p, ox, oy, (px, py, u, v) => {
-      const [X, Y] = G(px, py);
-      // Canal walls on the two far edges: a stone lip, then brick going down to the water.
-      if (landL && u < 0.16) return u < 0.05 ? PAL.wallTop : u < 0.11 ? PAL.wall : PAL.wallDark;
-      if (landT && v < 0.16) return v < 0.05 ? PAL.wallTop : v < 0.11 ? PAL.wall : PAL.wallDark;
-      const ripple = (X * 3 + Y * 7 + ((Y >> 2) * 11)) % 37 === 0 || (X + Y * 5) % 53 === 0;
-      if (ripple) return PAL.waterLight;
-      return dither(X >> 1, Y, 0.18) ? PAL.waterDeep : PAL.water;
+      const X = px + gx;
+      const Y = py + gy;
+      // The quay: a pale stone lip, then the wall down to the water.
+      if ((landL && u < 0.25) || (landT && v < 0.25)) return PAL.quay;
+      if ((landL && u < 0.34) || (landT && v < 0.34)) return PAL.quayWall;
+      if ((landL && u < 0.44) || (landT && v < 0.44)) return PAL.waterLight; // light catches the water by the wall
+      if ((X * 3 + Y * 7 + (Y >> 2) * 11) % 37 === 0 || (X + Y * 5) % 53 === 0) return PAL.waterLight;
+      return PAL.water;
     });
     return;
   }
 
-  if (t === T.water && fl & F.bridge) {
-    // A bridge: a stone deck with railings along its sides, water showing under the arch.
-    const alongX = w.isStreetLike(x - 1, y) || w.isStreetLike(x + 1, y) || !!(w.flags(x - 1, y) & F.bridge);
-    diamond(p, ox, oy, (px, py, u, v) => {
+  if (t === T.water) {
+    // A bridge: a stone deck with dark railings along its sides.
+    const alongX = w.isStreetLike(x - 1, y) || w.isStreetLike(x + 1, y) || (!!(w.flags(x - 1, y) & F.bridge) && w.terrain(x - 1, y) === T.water);
+    const edgeA = alongX ? w.isWater(x, y - 1) : w.isWater(x - 1, y);
+    const edgeB = alongX ? w.isWater(x, y + 1) : w.isWater(x + 1, y);
+    diamond(p, ox, oy, (_px, _py, u, v) => {
       const side = alongX ? v : u;
-      if (side < 0.1 || side > 0.9) return ((alongX ? u : v) * 8) % 1 < 0.3 ? darken(PAL.railing, 0.25) : PAL.railing;
-      if (side > 0.8) return darken(PAL.deck, 0.15);
-      const [X, Y] = G(px, py);
-      return dither(X, Y, 0.15) ? PAL.pavingDot : PAL.deck;
+      if ((edgeA && side < 0.2) || (edgeB && side > 0.8)) return PAL.railing;
+      return PAL.deck;
     });
     return;
   }
 
-  diamond(p, ox, oy, (px, py, u, v) => {
-    const [X, Y] = G(px, py);
+  diamond(p, ox, oy, (px, py) => {
+    const X = px + gx;
+    const Y = py + gy;
     switch (t) {
       case T.street:
-        return (X + (Y << 1)) % 4 === 0 && Y % 2 === 0 ? PAL.pavingDot : PAL.paving;
+        return S((X + (Y << 1)) % 6 === 0 && Y % 2 === 0 ? PAL.pavingDot : PAL.paving);
       case T.road:
-        return dither(X, Y, 0.22) ? PAL.asphaltDot : PAL.asphalt;
+        return S(hash(X >> 1, Y, 7) < 0.08 ? PAL.asphaltDot : PAL.asphalt);
       case T.square:
-        return (X * 5 + Y * 3) % 11 === 0 ? PAL.squareLine : PAL.square;
+        return S((X * 5 + Y * 3) % 11 === 0 ? PAL.squareLine : PAL.square);
+      case T.pavement:
+        return S((X + Y * 2) % 8 === 0 ? PAL.pavementLine : PAL.pavement);
+      case T.garden:
+        return S(hash(X >> 1, Y, 8) < 0.14 ? PAL.gardenDark : PAL.garden);
       case T.park:
-        if (hash(X, Y) < 0.012) return hash(Y, X) < 0.5 ? PAL.flowerA : PAL.flowerB;
-        return dither(X, Y, 0.3) ? PAL.grassDark : PAL.grass;
+        if (hash(X, Y) < 0.01) return hash(Y, X) < 0.5 ? PAL.flowerA : PAL.flowerB;
+        return S(hash(X >> 1, Y, 9) < 0.1 ? PAL.grassDark : hash(X >> 2, Y >> 1) < 0.12 ? PAL.grassLight : PAL.grass);
       case T.wood:
-        return dither(X, Y, 0.5) ? PAL.grassDark : PAL.woods;
+        return S(dither(X, Y, 0.5) ? PAL.grassDark : PAL.woods);
       case T.field:
         return (X + Y * 2) % 6 < 2 ? PAL.fieldLine : PAL.field;
       case T.sand:
         return dither(X, Y, 0.1) ? darken(PAL.sand, 0.08) : PAL.sand;
       case T.rail:
-        return dither(X, Y, 0.4) ? darken(PAL.gravel, 0.1) : PAL.gravel;
+        return S(dither(X, Y, 0.4) ? darken(PAL.gravel, 0.1) : PAL.gravel);
       case T.industry:
-        return (X + Y * 2) % 16 === 0 ? PAL.concreteLine : PAL.concrete;
+        return S((X + Y * 2) % 16 === 0 ? PAL.concreteLine : PAL.concrete);
       default:
-        // Under a building, or a courtyard garden.
-        return isCourtyard(w, x, y) ? (dither(X, Y, 0.3) ? PAL.grassDark : PAL.grass) : PAL.paving;
+        return S(PAL.pavement);
     }
   });
 
-  // Rails: along whichever axis the line continues.
+  // Rails and tram tracks: two thin lines along whichever axis the line continues.
   const lineFlag = t === T.rail || fl & F.railLine ? F.railLine : fl & F.tram ? F.tram : 0;
   if (lineFlag) {
     const alongX = !!(w.flags(x - 1, y) & lineFlag) || !!(w.flags(x + 1, y) & lineFlag);
-    const railCol = lineFlag === F.tram ? PAL.tram : PAL.rail;
+    const col = lineFlag === F.tram ? PAL.tram : PAL.rail;
     diamond(p, ox, oy, (_px, _py, u, v) => {
       const across = alongX ? v : u;
-      const along = alongX ? u : v;
-      if (lineFlag === F.railLine && Math.abs(across - 0.5) < 0.22 && (along * 6) % 1 < 0.3) return PAL.sleeper;
-      if (Math.abs(across - 0.38) < 0.03 || Math.abs(across - 0.62) < 0.03) return railCol;
-      return null;
-    });
-  }
-
-  // A light kerb where a street meets the canal.
-  if ((t === T.street || t === T.road) && fl & F.quay) {
-    diamond(p, ox, oy, (_px, _py, u, v) => {
-      if ((isWater(w, x + 1, y) && u > 0.92) || (isWater(w, x, y + 1) && v > 0.92)) return PAL.wallTop;
+      if (Math.abs(across - 0.3) < 0.1 || Math.abs(across - 0.7) < 0.1) return col;
       return null;
     });
   }
 }
 
-// ── trees, boats, bikes ────────────────────────────────────────────────────
+// ── trees and boats ────────────────────────────────────────────────────────
 
 const treeCache = new Map<number, Pix>();
-/** A round tree, 16 x 22. Three variants. */
+/** A round street tree, about 12 m across, as Amsterdam's elms are: 15 x 18 pixels. Three variants. */
 export function treeSprite(variant: number): Pix {
   const v = variant % 3;
   if (treeCache.has(v)) return treeCache.get(v)!;
-  const p = new Pix(16, 22);
-  p.rect(7, 14, 2, 7, PAL.trunk);
-  p.set(6, 20, darken(PAL.trunk, 0.2));
-  const r = [6.5, 5.5, 6][v]!;
-  const cx = 8;
-  const cy = [8, 9, 8][v]!;
-  for (let y = 0; y < 18; y++) {
-    for (let x = 0; x < 16; x++) {
-      const d = Math.hypot((x - cx + 0.5) / r, (y - cy + 0.5) / (r * 0.95));
+  const p = new Pix(15, 18);
+  p.rect(7, 14, 1, 4, PAL.trunk);
+  const r = [6.6, 5.9, 7][v]!;
+  const cx = 7.5;
+  const cy = [7.5, 8, 7.5][v]!;
+  for (let y = 0; y < 15; y++) {
+    for (let x = 0; x < 15; x++) {
+      const d = Math.hypot((x + 0.5 - cx) / r, (y + 0.5 - cy) / (r * 0.92));
       if (d > 1) continue;
-      const light = x - cx + (y - cy) < -2;
-      const dark = x - cx + (y - cy) > 3 || d > 0.85;
-      p.set(x, y, light ? PAL.leafLight : dark ? PAL.leafDark : dither(x, y, 0.25) ? PAL.leafDark : PAL.leaf);
+      const k = x + 0.5 - cx + (y + 0.5 - cy);
+      p.set(x, y, k < -4 ? PAL.leafLight : k < -0.5 ? PAL.leafMid : d > 0.84 || k > 4 ? PAL.leafDark : PAL.leaf);
     }
   }
-  p.outline(darken(PAL.leafDark, 0.35));
   treeCache.set(v, p);
   return p;
 }
 
 const boatCache = new Map<number, Pix>();
-/** A houseboat: hull, cabin, a few windows and plants on the roof. */
+/** A houseboat, 12 x 7: hull, a cream cabin with a yellow or white roof. */
 function boatSprite(variant: number): Pix {
   const v = variant % 4;
   if (boatCache.has(v)) return boatCache.get(v)!;
-  const p = new Pix(22, 14);
+  const p = new Pix(12, 7);
   const hull = [c('#2f4a3c'), c('#3b4f6b'), c('#5b2f2a'), c('#2d2d33')][v]!;
   const cabin = [c('#e9e1cf'), c('#cfd9d6'), c('#f0d9a8'), c('#d8c2a8')][v]!;
-  p.poly([[1, 8], [21, 8], [19, 12], [3, 12]], hull);
-  p.hline(1, 21, 8, lighten(hull, 0.25));
-  p.rect(4, 3, 14, 5, cabin);
-  p.rect(4, 2, 14, 1, darken(cabin, 0.35));
-  for (let i = 0; i < 3; i++) p.rect(6 + i * 4, 4, 2, 2, PAL.glass);
-  if (v % 2 === 0) {
-    p.set(15, 1, PAL.leaf);
-    p.set(16, 1, PAL.leafLight);
-    p.set(16, 0, PAL.flowerB);
-  }
+  p.rect(0, 4, 12, 2, hull);
+  p.rect(1, 6, 10, 1, darken(hull, 0.2));
+  p.rect(2, 1, 8, 3, cabin);
+  p.rect(2, 0, 8, 1, v % 2 ? c('#e8c04a') : c('#f4f1ea'));
+  p.set(4, 2, PAL.glass);
+  p.set(7, 2, PAL.glass);
   boatCache.set(v, p);
   return p;
 }
 
-function paintBikes(p: Pix, ox: number, oy: number, n: number, seed: number): void {
-  const wheel = c('#5a5462');
-  for (let i = 0; i < n; i++) {
-    const bx = ox - 5 + i * 4;
-    const by = oy + 9 + (i % 2);
-    const frame = [c('#b8473b'), c('#3c6e8f'), c('#e6b33a'), c('#5b8f4e')][Math.floor(hash(seed, i) * 4)]!;
-    p.set(bx, by, wheel);
-    p.set(bx + 2, by, wheel);
-    p.set(bx + 1, by - 1, frame);
-    p.set(bx + 2, by - 2, frame);
-  }
-}
-
-/** Things that stand on a tile: trees on quays and in parks, houseboats along canals, parked bikes. */
+/** Things that stand on a cell: the city's own trees, more in parks and woods, houseboats along the quays. */
 export function paintProps(p: Pix, w: World, x: number, y: number, ox: number, oy: number, simple = false): void {
+  if (w.isBuilt(x, y)) return;
   const t = w.terrain(x, y);
-  const fl = w.flags(x, y);
   const r = hash(x, y, 3);
-  if (t === T.water && !(fl & F.bridge)) {
-    const quay = w.isStreetLike(x - 1, y) || w.isStreetLike(x, y - 1) || w.isStreetLike(x + 1, y) || w.isStreetLike(x, y + 1);
-    const canalSide = w.style(x, y) <= S.brick;
-    if (quay && canalSide && r < 0.16) p.blit(boatSprite(Math.floor(r * 100)), ox - 11, oy + 1);
+  if (w.isWater(x, y)) {
+    const quay = !w.isWater(x - 1, y) || !w.isWater(x, y - 1) || !w.isWater(x + 1, y) || !w.isWater(x, y + 1);
+    if (!simple && quay && r < 0.07 && w.isWater(x + 1, y) && w.isWater(x - 1, y)) p.blit(boatSprite(Math.floor(r * 100)), ox - 6, oy - 3);
     return;
   }
-  const tree =
-    ((t === T.street || t === T.square) && fl & F.quay && r < 0.55) ||
-    (t === T.park && r < 0.2) ||
-    (t === T.wood && r < 0.75) ||
-    (!simple && isCourtyard(w, x, y) && r < 0.35); // far away a courtyard reads better as one green patch
-  if (tree) p.blit(treeSprite(Math.floor(r * 30)), ox - 8, oy - 12);
-  else if (!simple && t === T.street && fl & F.quay && r > 0.55 && r < 0.68) paintBikes(p, ox, oy, 2 + Math.floor(hash(x, y, 8) * 2), x * 7 + y);
+  const tree = !!(w.details(x, y) & 1) || (t === T.park && r < 0.12) || (t === T.wood && r < 0.35) || (t === T.garden && r < (simple ? 0.04 : 0.08));
+  if (tree) p.blit(treeSprite(Math.floor(r * 30)), ox - 7, oy - 15);
 }
 
 // ── buildings ──────────────────────────────────────────────────────────────
 
-/** Height above the facade line, per column (0..7) of a house front. */
-const GABLES: number[][] = [
-  [2, 4, 4, 7, 7, 4, 4, 2], // step gable
-  [1, 3, 5, 6, 6, 5, 3, 1], // bell gable
-  [1, 1, 5, 7, 7, 5, 1, 1], // neck gable
-  [2, 3, 4, 5, 5, 4, 3, 2], // spout gable
-  [1, 1, 1, 1, 1, 1, 1, 1], // flat with a cornice
-];
-
-interface Facade {
-  colour: number;
-  gable: number[] | null;
-  trimmed: boolean;
-  floors: number;
+/** Height in screen pixels at the top corner of cell (cx, cy): pitched roofs share their corners, so they slope. */
+function corner(w: World, x: number, y: number, cx: number, cy: number, own: number): number {
+  const d = w.details(x, y);
+  if (!(d & 8)) return own;
+  const key = w.roof(x, y) * 16 + (d >> 4);
+  let sum = 0;
+  let n = 0;
+  for (const [ax, ay] of [[cx - 1, cy - 1], [cx, cy - 1], [cx - 1, cy], [cx, cy]] as const) {
+    const da = w.details(ax, ay);
+    if (!w.isBuilt(ax, ay) || !(da & 8) || w.roof(ax, ay) * 16 + (da >> 4) !== key) continue;
+    sum += w.heightM(ax, ay);
+    n++;
+  }
+  return n ? Math.min(own + 8, Math.round((sum / n) * PX_PER_M)) : own;
 }
 
 /**
- * Draws one block on a tile. The two faces you see point to +y (left) and +x (right); each holds two houses.
- * Gables go only on fronts that face a street, a canal or a park, like the real thing.
+ * Draws the building on a cell: a roof (flat, or part of a pitched roof that slopes with its neighbours) and the two
+ * walls you see, facing +y (left, in the light) and +x (right, in the shade), down to the ground. Cells are painted
+ * back to front, so the cells in front cover what they should.
  */
-/** `simple` leaves out windows: at half size they only add speckle. */
 export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number, oy: number, special?: Special, simple = false): void {
-  const t = w.terrain(x, y);
-  if (t !== T.land && t !== T.industry) return;
-  if (!special && isCourtyard(w, x, y)) return;
-  const style = t === T.industry ? S.warehouse : w.style(x, y);
-  const r = hash(x, y, 1);
-  if (style === S.warehouse && !special && r < 0.35) return; // open yard
-  // At half size blocks are drawn a third to half as tall (buildingSize), so streets, canals and courtyards show between them. A
-  // restaurant keeps its full height: it stands out, and its sign (placed for full height) sits on its roof.
-  const { floors, floorH, H } = buildingSize(w, x, y, simple && !special);
-  const palette = style === S.canal ? CANAL : style === S.brick ? BRICK : style === S.modern ? MODERN : WARE;
+  const own = w.heightPx(x, y);
+  if (!own) return;
+  const d = w.details(x, y);
+  const age = d & 7;
+  const pitched = !!(d & 8);
+  const seed = d >> 4;
+  const roofCol = roofPalette(w)[w.roof(x, y)] ?? PAL.concrete;
+  const hT = corner(w, x, y, x, y, own);
+  const hR = corner(w, x, y, x + 1, y, own);
+  const hB = corner(w, x, y, x + 1, y + 1, own);
+  const hL = corner(w, x, y, x, y + 1, own);
 
-  // Roof.
-  const roof = style === S.modern ? PAL.zinc : style === S.warehouse ? c('#9aa09a') : PAL.roof;
-  // Canal houses and brick rows get pitched roofs whose ridges run back from the main front: two houses, two
-  // slopes each, so four strips, lit on one side. Modern blocks are flat with a rim; warehouses have sawtooth roofs.
-  const mainFront = !w.isBuilt(x, y + 1) ? 'left' : !w.isBuilt(x + 1, y) ? 'right' : hash(x, y, 9) < 0.5 ? 'left' : 'right';
-  // Far away, one roof colour per patch of 3 x 3 tiles (one in five tiles differs): per-tile colours are noise.
-  const tileRoof = simple
-    ? pick(FAR_ROOFS[style]!, hash(x, y, 18) < 0.2 ? hash(x, y, 17) : hash(Math.floor(x / 3), Math.floor(y / 3), 17))
-    : style === S.canal
-      ? pick([c('#7a5248'), c('#6e5a52'), c('#5d6066'), c('#80503f')], hash(x, y, 17))
-      : PAL.roof;
-  diamond(p, ox, oy - H, (px, py, u, v) => {
-    if (simple && (style === S.warehouse || style === S.modern)) return u < 0.08 || v < 0.08 ? lighten(tileRoof, 0.2) : tileRoof;
-    if (style === S.warehouse) return (u * 6) % 1 < 0.5 ? roof : darken(roof, 0.12);
-    if (style === S.modern) return u < 0.08 || v < 0.08 ? lighten(roof, 0.25) : dither(px, py, 0.1) ? darken(roof, 0.08) : roof;
-    const across = mainFront === 'left' ? u : v; // position across the fronts
-    const strip = (across * 4) % 1;
-    const ridge = strip > 0.46 && strip < 0.56;
-    const lit = strip < 0.5;
-    if (ridge) return lighten(tileRoof, 0.22);
-    return lit ? lighten(tileRoof, 0.1) : darken(tileRoof, 0.12);
-  });
+  // Roof: lit when it faces up-left, toward the light.
+  const gx = (hR - hT + hB - hL) / 2;
+  const gy = (hL - hT + hB - hR) / 2;
+  // Three shades only (lit, flat, shaded), so a roof reads as clean planes, not a speckle of per-cell shades.
+  const raw = (gx + 0.5 * gy) / 5;
+  const s = raw > 0.2 ? 1 : raw < -0.2 ? -1 : 0;
+  let top = s > 0 ? lighten(roofCol, 0.18 * s) : s < 0 ? darken(roofCol, -0.26 * s) : roofCol;
+  if (pitched && !s) top = darken(roofCol, 0.04);
+  const lowerL = !w.isBuilt(x - 1, y) || w.heightPx(x - 1, y) < own - 2;
+  const lowerT = !w.isBuilt(x, y - 1) || w.heightPx(x, y - 1) < own - 2;
+  p.poly(
+    [
+      [ox, oy - hT],
+      [ox + TW / 2, oy + TH / 2 - hR],
+      [ox, oy + TH - hB],
+      [ox - TW / 2, oy + TH / 2 - hL],
+    ],
+    (px, py) => {
+      // A flat roof's rim catches the light on its two far edges.
+      if (!pitched) {
+        const a = (px - ox + 0.5) / (TW / 2);
+        const b = (py - (oy - own) + 0.5) / (TH / 2);
+        if ((lowerL && (a + b) / 2 < 0.22) || (lowerT && (b - a) / 2 < 0.22)) return lighten(top, 0.14);
+      }
+      return top;
+    },
+  );
 
-  const front = (dx: number, dy: number) => !w.isBuilt(x + dx, y + dy) || isCourtyard(w, x + dx, y + dy);
-  const faces: Array<{ side: 'left' | 'right'; open: boolean }> = [
-    { side: 'left', open: front(0, 1) },
-    { side: 'right', open: front(1, 0) },
-  ];
-  for (const face of faces) {
-    for (let house = 0; house < 2; house++) {
-      const hr = hash(x, y, face.side === 'left' ? 11 : 13, house);
-      const f: Facade = {
-        colour: pick(palette, hr),
-        gable: style === S.canal && face.open ? GABLES[Math.floor(hash(x, y, house, 5) * GABLES.length)]! : style === S.brick && face.open ? GABLES[4]! : null,
-        trimmed: style === S.canal,
-        floors,
-      };
-      paintHouse(p, ox, oy, H, floorH, face.side, house, f, style, x, y, special && face.open ? special : undefined, simple);
-    }
-  }
-}
-
-/** Floors and height in pixels of the block on a tile (0 when it has none). The map's signs sit on top. */
-export function buildingSize(w: World, x: number, y: number, low = false): { floors: number; floorH: number; H: number } {
-  const t = w.terrain(x, y);
-  if (t !== T.land && t !== T.industry) return { floors: 0, floorH: 0, H: 0 };
-  const style = t === T.industry ? S.warehouse : w.style(x, y);
-  const r = hash(x, y, 1);
-  const floorH = style === S.modern ? 5 : 6;
-  const floors =
-    style === S.canal ? 3 + Math.floor(r * 3) : style === S.brick ? 4 + Math.floor(r * 2) : style === S.modern ? 3 + Math.floor(r * 4) + (r > 0.96 ? 8 : 0) : 2;
-  if (low) {
-    // Walls cover more pixels than roofs, so keep them low. Canal houses keep half: their gables are the centre.
-    const f = Math.max(1, Math.round(floors / (style === S.canal ? 2 : 3)));
-    return { floors: f, floorH, H: f * floorH + (style === S.warehouse ? 2 : 0) };
-  }
-  return { floors, floorH, H: floors * floorH + (style === S.warehouse ? 4 : 0) };
-}
-
-function paintHouse(
-  p: Pix,
-  ox: number,
-  oy: number,
-  H: number,
-  floorH: number,
-  side: 'left' | 'right',
-  house: number,
-  f: Facade,
-  style: number,
-  tx: number,
-  ty: number,
-  special?: Special,
-  simple = false,
-): void {
-  const wall = side === 'left' ? f.colour : darken(f.colour, 0.22);
-  const lightWall = f.colour === CANAL[4] || f.colour === CANAL[9] || style === S.modern;
-  for (let i = 0; i < 8; i++) {
-    // Column along the face: left face runs from the left corner to the bottom; right face from bottom to right.
-    const col = side === 'left' ? ox - 16 + house * 8 + i : ox + house * 8 + i;
-    const base = side === 'left' ? oy + 8 + Math.floor((col - (ox - 16)) / 2) + 0 : oy + 16 - 1 - Math.floor((col - ox) / 2);
-    const bottom = side === 'left' ? base : base;
-    const gableH = f.gable ? f.gable[side === 'left' ? i : 7 - i]! : 0;
-    const top = bottom - H - gableH;
-    for (let yy = top; yy <= bottom; yy++) p.set(col, yy, wall);
-    // Gable trim and hoist beam.
-    if (f.gable) {
-      p.set(col, top, f.trimmed ? PAL.trim : lighten(wall, 0.2));
-      if (f.trimmed && (i === 3 || i === 4) && gableH >= 5) p.set(col, top + 2, PAL.ink);
-    } else if (style !== S.warehouse) {
-      p.set(col, top, lighten(wall, 0.15));
-    }
-    // Windows: columns 1-2 and 5-6 of each house, one per floor.
-    const winCol = i === 1 || i === 2 || i === 5 || i === 6;
-    const ribbon = style === S.modern && i > 0 && i < 7;
-    for (let fl = 0; fl < f.floors; fl++) {
-      const fb = bottom - fl * floorH; // floor bottom
-      const ground = fl === 0;
-      if (special && ground) {
-        // A restaurant: a lit shop window and an awning in today's colour.
-        if (i > 0 && i < 7) {
-          for (let yy = fb - 4; yy <= fb - 1; yy++) p.set(col, yy, special.lit ? (yy === fb - 4 ? PAL.litHi : PAL.lit) : PAL.glass);
+  // Walls.
+  const palette = WALLS[age] ?? WALLS[AGE.unknown]!;
+  const base = pick(palette, (seed + 0.5) / 16);
+  const ribbon = age === AGE.postwar || age === AGE.new;
+  const trimmed = age === AGE.old || age === AGE.c19;
+  const face = (side: 'left' | 'right') => {
+    const wall = side === 'left' ? base : darken(base, 0.3);
+    const glass = side === 'left' ? PAL.glass : darken(PAL.glass, 0.1);
+    const glassHi = side === 'left' ? PAL.glassHi : darken(PAL.glassHi, 0.25);
+    const [ax, ay, ah, bx, by, bh] =
+      side === 'left' ? [ox - TW / 2, oy + TH / 2, hL, ox, oy + TH, hB] : [ox, oy + TH, hB, ox + TW / 2, oy + TH / 2, hR];
+    for (let X = ax; X < bx; X++) {
+      const t = (X + 0.5 - ax) / (bx - ax);
+      const ground = ay + (by - ay) * t;
+      const edge = ground - (ah + (bh - ah) * t);
+      const col = X - ax; // 0..3 along this cell's face
+      const y0 = Math.floor(edge - 0.5) + 1;
+      const y1 = Math.floor(ground - 0.5);
+      for (let Y = y0; Y <= y1; Y++) {
+        const hp = ground - (Y + 0.5); // pixels above the ground
+        let px = wall;
+        if (Y === y0) px = trimmed ? (side === 'left' ? PAL.trim : darken(PAL.trim, 0.25)) : lighten(wall, 0.12);
+        else if (hp < 1) px = darken(wall, 0.18);
+        else if (special && hp < 4) px = special.lit ? (hp > 2.5 ? PAL.litHi : PAL.lit) : glass;
+        else if (special && hp < 5) px = col % 2 ? special.awning : lighten(special.awning, 0.3);
+        else if (Y > y0 + 1) {
+          const f = Math.floor(hp) % 4;
+          const win = ribbon ? col !== 0 : col % 2 === 1;
+          if (win && trimmed && (f === 0 || f === 3) && !simple) px = side === 'left' ? PAL.trim : darken(PAL.trim, 0.25); // sill, lintel
+          else if (win && (f === 1 || f === 2) && !(simple && (Math.floor(hp / 4) + col) % 2)) {
+            const lit = hash(x * 4 + col, y, Math.floor(hp / 4), side === 'left' ? 1 : 2) < 0.05;
+            px = lit ? PAL.lit : f === 2 ? glassHi : glass;
+          }
         }
-        p.set(col, fb - 5, i % 2 ? special.awning : lighten(special.awning, 0.35));
-        p.set(col, fb - 6, darken(special.awning, 0.2));
-        continue;
+        p.set(X, Y, px);
       }
-      if (style === S.warehouse) {
-        if (i % 2 === 0) for (let yy = top + 1; yy <= bottom; yy++) p.set(col, yy, darken(wall, 0.08));
-        if (ground && (i === 3 || i === 4)) for (let yy = fb - 5; yy <= fb; yy++) p.set(col, yy, darken(wall, 0.28));
-        continue;
-      }
-      if (!(winCol || ribbon) || (simple && !(winCol && fl % 2 === 1 && (i === 1 || i === 5)))) continue;
-      const lit = hash(tx, ty, fl, i + house * 9 + (side === 'left' ? 0 : 50)) < 0.06;
-      const wy0 = fb - floorH + 2;
-      const wy1 = fb - 2;
-      for (let yy = wy0; yy <= wy1; yy++) {
-        let col2 = lit ? PAL.lit : PAL.glass;
-        if (yy === wy0) col2 = lit ? PAL.litHi : PAL.glassHi;
-        p.set(col, yy, col2);
-      }
-      if (f.trimmed && !lightWall) p.set(col, wy1 + 1, PAL.trim); // white sills on dark brick
     }
-    // A dark seam between the two houses of a face.
-    if (i === 0 && house === 1) for (let yy = top + 1; yy <= bottom; yy++) p.set(col, yy, darken(wall, 0.18));
-  }
+  };
+  face('left');
+  face('right');
 }
 
-/** Mixes for the far-away overview: one colour per tile. */
+/** One colour per cell for the far-away overview. */
 export function overviewColour(w: World, x: number, y: number): number {
-  const t = w.terrain(x, y);
-  switch (t) {
+  if (w.isBuilt(x, y)) return roofPalette(w)[w.roof(x, y)] ?? PAL.concrete;
+  switch (w.terrain(x, y)) {
     case T.water:
       return w.flags(x, y) & F.bridge ? PAL.deck : PAL.water;
     case T.street:
@@ -437,10 +351,14 @@ export function overviewColour(w: World, x: number, y: number): number {
       return PAL.asphalt;
     case T.square:
       return PAL.square;
+    case T.pavement:
+      return PAL.pavement;
+    case T.garden:
+      return PAL.garden;
     case T.park:
       return PAL.grass;
     case T.wood:
-      return PAL.leaf;
+      return PAL.woods;
     case T.field:
       return PAL.field;
     case T.sand:
@@ -448,12 +366,8 @@ export function overviewColour(w: World, x: number, y: number): number {
     case T.rail:
       return PAL.gravel;
     case T.industry:
-      return mix(PAL.concrete, c('#9aa09a'), 0.5);
-    default: {
-      if (isCourtyard(w, x, y)) return PAL.grassDark;
-      const style = w.style(x, y);
-      const pal = style === S.canal ? CANAL : style === S.brick ? BRICK : MODERN;
-      return mix(PAL.roof, pick(pal, hash(x, y, 11, 0)), 0.45);
-    }
+      return PAL.concrete;
+    default:
+      return mix(PAL.pavement, PAL.garden, 0.5);
   }
 }

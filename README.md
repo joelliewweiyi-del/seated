@@ -189,9 +189,9 @@ Seated also serves a public map at `/map`: a pixel drawing of Amsterdam with eve
 - **"Not bookable yet".** A calendar that is open up to some day, and empty after it, has not opened that far yet. The map shows the expected opening date: the day minus the restaurant's booking window.
 - **Opting out.** `data/map-optout.json` lists restaurants that are never read for the map nor shown on it. Set `VITE_MAP_CONTACT` so restaurants can ask.
 - **Hosting it on its own.** `npm run build` writes the map to `dist/map`. It is a static site that needs one `data.json` next to it: `npm run map:export` writes one from your database, `scripts/map-census.ts` runs a census first, and `MAP_EXPORT_DIR` keeps one up to date. To host it on Vercel, set `BLOB_READ_WRITE_TOKEN` so each census uploads `data.json` to a Blob store, point the `/data.json` rewrite in `deploy/map/vercel.json` at it, and deploy with `scripts/map-deploy.sh --prod`.
-- **The city.** `scripts/map-world.ts` turns OpenStreetMap data into `src/map/public/world.bin` (one 16 m tile per byte pair: water, park, street, building style). `scripts/map-places.ts` places each restaurant from its address. All art is drawn in code (`src/map/paint.ts`, `room.ts`); there are no image files.
+- **The city.** `scripts/map-world.ts` builds `src/map/public/world.bin`: Amsterdam as a grid of 4 m cells, with every building at its real height and roof shape from 3DBAG, its roof colour from the PDOK aerial photo, and water, streets, parks and street trees from OpenStreetMap. `scripts/map-places.ts` places each restaurant from its address. All art is drawn in code (`src/map/paint.ts`, `room.ts`); there are no image files.
 
-Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, under the Open Database License. Addresses are looked up with [PDOK](https://www.pdok.nl/) and Nominatim.
+Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, under the Open Database License. Buildings from [3DBAG](https://3dbag.nl/) (TU Delft 3D geoinformation group and 3DGI, CC BY 4.0). Roof colours from the [PDOK](https://www.pdok.nl/) aerial photo (Beeldmateriaal Nederland, CC BY 4.0). Addresses are looked up with [PDOK](https://www.pdok.nl/) and Nominatim.
 
 ## How it works
 
@@ -221,7 +221,7 @@ scripts/
   detect.ts            find which booking system a restaurant website uses
   migrate-zenchef.ts   move restaurants that left Formitable for Zenchef
   watchdog.mjs         restart Seated when it stops checking (Windows task)
-  map-world.ts         build the map's city grid from OpenStreetMap (one Overpass request)
+  map-world.ts         build the map's city (4 m grid) from OpenStreetMap, 3DBAG and the PDOK aerial photo
   map-places.ts        place restaurants on the map from their addresses
   map-census.ts        run one census now and write data.json
   map-export.ts        write data.json from a database

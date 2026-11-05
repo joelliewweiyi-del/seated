@@ -1,10 +1,12 @@
-// Paints one chunk of the city (16 x 16 tiles). Runs in Web Workers (chunk-worker.ts), so the page stays smooth
-// while the city is drawn, and on the main thread when workers are not available.
+// Paints one chunk of the city (64 x 64 cells of 4 m). Runs in Web Workers (chunk-worker.ts), so the page stays
+// smooth while the city is drawn, and on the main thread when workers are not available.
 import { Pix } from './pix';
 import { paintBuilding, paintGround, paintProps, type Special } from './paint';
 import { HEAD, TH, TW, World } from './world';
 
-export const N = 16;
+export const N = 64;
+/** Cells around a chunk that its painter also needs: roof corners, shade, quays. */
+export const MARGIN = 2;
 
 export function chunkOrigin(w: World, cx: number, cy: number): { left: number; top: number } {
   const x0 = cx * N;

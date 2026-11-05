@@ -33,6 +33,8 @@ interface Placed {
   ty: number;
   ax: number;
   ay: number;
+  /** The cells of its building: all get the storefront. */
+  cells: number[];
 }
 
 function readUrl(): { date: string | null; r: string | null } {
@@ -122,7 +124,7 @@ export function App() {
       const b = world.nearestBuilt(t.x, t.y);
       const { sx, sy } = world.screenOf(b.x, b.y);
       const a = view ? view.anchorOf(b.x, b.y) : { ax: sx, ay: sy };
-      return { r, tx: b.x, ty: b.y, ax: a.ax, ay: a.ay };
+      return { r, tx: b.x, ty: b.y, ax: a.ax, ay: a.ay, cells: world.buildingAt(b.x, b.y) };
     });
   }, [world, data, viewRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -166,7 +168,9 @@ export function App() {
         rank: { open: 300, later: 200, full: 100, closed: 50, unknown: 0 }[s] + (p.r.hot ?? 0) * 20,
         dim: (openOnly && s !== 'open') || !match,
       });
-      specials.set(p.ty * world.cols + p.tx, { awning: rgb(STATUS_COLOUR[s]), lit: s !== 'closed' && s !== 'unknown' });
+      // The whole building gets the storefront and awning, so it reads from afar.
+      const sp = { awning: rgb(STATUS_COLOUR[s]), lit: s !== 'closed' && s !== 'unknown' };
+      for (const i of p.cells.length ? p.cells : [p.ty * world.cols + p.tx]) specials.set(i, sp);
     }
     view.setMarkers(markers);
     view.setSpecials(specials);
@@ -367,7 +371,7 @@ export function App() {
           <footer className="foot">
             <span className="credit">
               <span className="long">Read {ago(data.generatedAt)} · </span>Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
-              <span className="long"> contributors</span>
+              <span className="long"> contributors</span> · <a href="https://3dbag.nl/">3DBAG</a> · <a href="https://www.pdok.nl/">PDOK</a>
             </span>
             <nav>
               <button onClick={() => setDialog('about')}>How it works</button>

@@ -1,9 +1,9 @@
 // Draws the city on a canvas: a far-away overview, chunks of painted tiles near by (cached, two levels of
 // detail), little lives on the streets and canals, and a sign over every restaurant.
 import type { FromWorker, ToWorker } from './chunk-worker';
-import { N, paintChunk } from './chunks';
-import { hash, Pix } from './pix';
-import { buildingSize, overviewColour, PAL, type Special } from './paint';
+import { MARGIN, N, paintChunk } from './chunks';
+import { hash, mix, Pix } from './pix';
+import { overviewColour, PAL, type Special } from './paint';
 import { F, HEAD, T, TH, TW, World } from './world';
 
 export interface Marker {
@@ -186,7 +186,7 @@ export class MapView {
   /** Top of the building on a tile, at zoom 1. */
   anchorOf(tx: number, ty: number): { ax: number; ay: number } {
     const { sx, sy } = this.world.screenOf(tx, ty);
-    return { ax: sx, ay: sy + TH / 2 - buildingSize(this.world, tx, ty).H - 4 };
+    return { ax: sx, ay: sy + TH / 2 - this.world.heightPx(tx, ty) - 4 };
   }
 
   /** Chunks still to paint for the current view. Tests wait for 0. */
@@ -244,7 +244,12 @@ export class MapView {
         this.jobs.set(jobId, { key: k, level: job.level, version: this.versions.get(k) ?? 0, id });
         this.inflight.add(id);
         this.busy.set(free, (this.busy.get(free) ?? 0) + 1);
-        free.postMessage({ type: 'paint', id: jobId, cx: job.cx, cy: job.cy, level: job.level, specials: this.specialsIn(job.cx, job.cy) } satisfies ToWorker);
+        const [x0, y0, size] = [job.cx * N - MARGIN, job.cy * N - MARGIN, N + MARGIN * 2];
+        const bytes = this.world.slice(x0, y0, size, size).buffer as ArrayBuffer;
+        free.postMessage(
+          { type: 'paint', id: jobId, cx: job.cx, cy: job.cy, level: job.level, specials: this.specialsIn(job.cx, job.cy), slice: { x0, y0, w: size, h: size, bytes } } satisfies ToWorker,
+          [bytes],
+        );
       } else {
         if (performance.now() - start > 10) break;
         const pix = paintChunk(this.world, job.cx, job.cy, new Map(this.specialsIn(job.cx, job.cy)), job.level);
@@ -277,7 +282,7 @@ export class MapView {
     try {
       for (let i = 0; i < count; i++) {
         const w = new Worker(new URL('./chunk-worker.ts', import.meta.url), { type: 'module' });
-        w.postMessage({ type: 'init', meta: this.world.meta, bytes: this.world.raw.slice().buffer } satisfies ToWorker);
+        w.postMessage({ type: 'init', meta: this.world.meta } satisfies ToWorker);
         w.onmessage = (e: MessageEvent<FromWorker>) => {
           const r = e.data;
           const job = this.jobs.get(r.id);
@@ -310,10 +315,14 @@ export class MapView {
     const bg = PAL.water;
     for (let py = 0; py < oh; py++) {
       for (let px = 0; px < ow; px++) {
-        const t = w.tileAt(px * OVERVIEW + OVERVIEW / 2, py * OVERVIEW + OVERVIEW / 2);
-        const x = Math.floor(t.x);
-        const y = Math.floor(t.y);
-        p.data[py * ow + px] = w.inside(x, y) ? overviewColour(w, x, y) : bg;
+        // Four samples per pixel, averaged: one point per pixel turns the dense city into noise.
+        const at = (fx: number, fy: number) => {
+          const t = w.tileAt((px + fx) * OVERVIEW, (py + fy) * OVERVIEW);
+          const x = Math.floor(t.x);
+          const y = Math.floor(t.y);
+          return w.inside(x, y) ? overviewColour(w, x, y) : bg;
+        };
+        p.data[py * ow + px] = mix(mix(at(0.25, 0.25), at(0.75, 0.25), 0.5), mix(at(0.25, 0.75), at(0.75, 0.75), 0.5), 0.5);
       }
     }
     this.overview = p.toCanvas();
@@ -433,7 +442,8 @@ export class MapView {
         dx,
         dy,
         t: Math.random(),
-        speed: { bike: 1.4, walker: 0.45, boat: 0.35, tram: 1.1, ferry: 0.5 }[kind] * (0.8 + Math.random() * 0.4),
+        // Cells per second: cells are 4 m, so a bike does about 5 m/s.
+        speed: { bike: 1.4, walker: 0.45, boat: 0.35, tram: 1.1, ferry: 0.5 }[kind] * 4 * (0.8 + Math.random() * 0.4),
         colour: colours[Math.floor(Math.random() * colours.length)]!,
         seed: Math.random() * 1000,
       };
@@ -444,14 +454,14 @@ export class MapView {
   private canWalk(kind: Agent['kind'], x: number, y: number): boolean {
     const t = this.world.terrain(x, y);
     const f = this.world.flags(x, y);
-    if (!this.world.inside(x, y)) return false;
+    if (!this.world.inside(x, y) || this.world.isBuilt(x, y)) return false;
     switch (kind) {
       case 'bike':
         return t === T.street || t === T.road || !!(f & F.bridge);
       case 'walker':
-        return t === T.street || t === T.square || t === T.park || !!(f & F.bridge);
+        return t === T.street || t === T.square || t === T.park || t === T.pavement || !!(f & F.bridge);
       case 'boat':
-        return t === T.water && !(f & F.ferry);
+        return t === T.water && !(f & (F.ferry | F.bridge));
       case 'tram':
         return !!(f & F.tram);
       case 'ferry':

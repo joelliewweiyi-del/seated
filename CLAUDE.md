@@ -62,7 +62,8 @@ Warm and restrained, like a concierge, not a SaaS dashboard.
 Light pixel art, our own (Joel, 4 Nov 2026). Never copy a game's name, art, characters or avatars.
 
 - Everything is drawn in code by a software rasterizer (`pix.ts`): hard pixels, no anti-aliasing, no image files. Shown with `image-rendering: pixelated` at whole zoom steps only (`ZOOMS` in `render.ts`).
-- Isometric 2:1, tiles 32 x 16 px at zoom 1. North-west is up.
+- Isometric 2:1, cells of 4 m drawn 8 x 4 px at zoom 1. North-west is up. Buildings stand at their real 3DBAG height (`PX_PER_M` 1.25), pitched roofs slope; roofs keep three shades (lit, flat, shaded), never a per-cell shade (Nov 2026: it read as speckle).
+- Realistic city look, like an aerial photo redrawn in pixels (Joel, 5 Nov 2026: closer to sezlab.dev/amsterdam). Built from open data only; never copy another map's pixels or code.
 - Outlines and shadows are dark violet (`#2b2733`, `darken()` mixes toward `#1d1a24`), never black. `test/mapArt.test.ts` fails on near-black or half-transparent pixels.
 - Panels: cream `#fffaf0`, square corners notched with four offset 2 px box-shadows (`.px`) and a soft 6 px drop below. Pixelify Sans for headings, numbers and buttons; the system font for running text.
 - Status colours (`STATUS_COLOUR` in `data.ts`): free green `#3fae5f`, full red `#e0604c`, closed grey `#8f8a99`, not bookable yet lavender `#8c7bd8`, unknown light grey. They colour the signs, the awnings, the list badges and the calendar.
@@ -147,8 +148,8 @@ Light pixel art, our own (Joel, 4 Nov 2026). Never copy a game's name, art, char
 - **Day codes** in `data.json`: `o` free, `f` full, `c` closed, `n` none, `l` later (after the last bookable day: the calendar has not opened that far), `?` unknown. `win` is the booking window in days; the card shows "opens about" = day − `win`. The extra days to month end stop a sold-out end of the window from reading as `l` (Vuurtoreneiland, 4 Nov 2026).
 - The radar's own sightings for 2 people override the census for that day.
 - **Never on the map:** Esra (hard rule 2, also in `data/map-optout.json`), anything in `map-optout.json`, restaurants outside Amsterdam or without a calendar. `data.json` carries only restaurant facts and calendar states, never settings, watches, bookings or guest details (`test/mapData.test.ts`).
-- **World:** `scripts/map-world.ts` builds `src/map/public/world.bin` from one Overpass request (ODbL: keep the "© OpenStreetMap contributors" credit in the footer). `data/map-places.json` holds each restaurant's coordinates, area and room kind (`scripts/map-places.ts`: PDOK, then Nominatim, then `MANUAL`/`FIXED`).
-- **Rendering:** chunks of 16 x 16 tiles painted in Web Workers, two levels (1x and a half-size "simple" level) plus a 1/8 overview underneath. Signs are drawn in screen space and kept clear of the panels (`view.safe`).
+- **World:** `scripts/map-world.ts [--cache dir]` builds `src/map/public/world.bin` (gzip, four planes of 3569 x 2212 cells of 4 m: terrain and flags, height, roof colour, details) from OpenStreetMap (Overpass: streets, water, parks, trees), 3DBAG (building parts, heights, roof type, year) and the PDOK aerial photo (roof colour per building, judged against the city-wide colour cast). It needs ~8 GB (`NODE_OPTIONS=--max-old-space-size=8192`); the first run downloads ~1 GB into the cache, later runs read the cache. Keep the OpenStreetMap, 3DBAG and PDOK credits in the footer (ODbL, CC BY 4.0). `data/map-places.json` holds each restaurant's coordinates, area and room kind (`scripts/map-places.ts`: PDOK, then Nominatim, then `MANUAL`/`FIXED`).
+- **Rendering:** chunks of 64 x 64 cells painted in Web Workers (each gets its slice of the world plus a 2-cell border), two levels (1x and a half-size "simple" level) plus a 1/8 overview underneath. Signs are drawn in screen space and kept clear of the panels (`view.safe`).
 - Before you call a map change done: `npm run test:e2e` and review the `map-*` screenshots in a subagent.
 
 ## History
