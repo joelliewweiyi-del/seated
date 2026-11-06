@@ -147,8 +147,10 @@ export function App() {
   const placed = useMemo<Placed[]>(() => {
     if (!world || !data) return [];
     return data.restaurants.map((r) => {
-      const a = world.project(r.lat, r.lng, r.roof ?? 10);
-      return { r, ax: a.x, ay: a.y, onMap: world.covers(r.lat, r.lng) };
+      const onMap = world.covers(r.lat, r.lng);
+      // Outside his drawing (Noord, the outer districts) the sign stands on the fog, at ground level.
+      const a = world.project(r.lat, r.lng, onMap ? r.roof ?? 10 : 0);
+      return { r, ax: a.x, ay: a.y, onMap };
     });
   }, [world, data]);
 
@@ -175,7 +177,6 @@ export function App() {
     const q = query.trim().toLowerCase();
     const markers: Marker[] = [];
     for (const p of placed) {
-      if (!p.onMap) continue;
       const s = statusOfR(p.r);
       if (!inKinds(filters, p.r, favs)) continue;
       const match = !q || matches(p.r, q);
@@ -192,6 +193,7 @@ export function App() {
       });
     }
     view.setMarkers(markers);
+    view.keepClear(placed.map((p) => ({ x: p.ax, y: p.ay })));
     view.setYou(me && !me.note && world.covers(me.lat, me.lng) ? world.project(me.lat, me.lng) : null);
   }, [placed, day, data, world, filters, favs, query, statusOfR, me]);
 
@@ -277,7 +279,7 @@ export function App() {
       const p = placed.find((x) => x.r.id === id);
       const view = viewRef.current;
       setSelected(id);
-      if (p && view && p.onMap) {
+      if (p && view) {
         // On a phone the card will cover up to 62% of the height once it opens, so plan for that.
         const c = centred(view, p.ax, p.ay, Math.max(view.cam.z, 1), matchMedia('(max-width: 900px)').matches ? innerHeight * 0.62 + 44 : null);
         view.flyTo(c.x, c.y, c.z);
@@ -880,7 +882,7 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay }: C
               <span>{[words, r.hot ? 'hard to get' : null].filter(Boolean).join(' · ')}</span>
             </p>
           )}
-          {offMap && <p className="where">Outside the city map, so it has no sign there.</p>}
+          {offMap && <p className="where">Outside the drawn city: its sign stands in the fog.</p>}
           <div className="state">
             <span className="stud" style={{ background: STATUS_COLOUR[status] }} />
             <div>

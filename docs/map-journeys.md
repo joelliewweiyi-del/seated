@@ -47,7 +47,7 @@ design answer. Features are named F1..F20 at the end; the journeys say which the
 | 32 | Tourist wants to know a place's distance from the hotel | gap | F5 only from where they are; hotel search out of scope |
 | 33 | Tourist on roaming data, slow connection | part | F12 the map loads the overview first; list works before tiles |
 | 34 | Tourist wants a place with a view (Vuurtoreneiland, rooftop) | part | Card reason line; off-map island still listed |
-| 35 | Tourist taps a restaurant outside the drawn city | ok | Listed, card says outside the city map |
+| 35 | Tourist taps a restaurant outside the drawn city | ok | Its sign stands in the fog (Noord: Bacalar, Pelusa, Goudfazant); the card says so |
 | 36 | Tourist wants walk-ins | gap | No data; card says "book ahead or ask at the door" only where known: out of scope |
 | 37 | Tourist wants to know what "full" means | ok | State line explains |
 | 38 | Tourist wants to know prices before booking | gap | F7 guide price symbol |

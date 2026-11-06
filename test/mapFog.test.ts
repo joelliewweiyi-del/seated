@@ -43,3 +43,17 @@ it('fog reaches over a straight edge of the art by a ragged few pixels, and leav
   expect(Math.min(...depths)).toBeGreaterThanOrEqual(1);
   expect(new Set(depths).size).toBeGreaterThan(1); // ragged, not a straight line
 });
+
+it('never lays the fog edge over a restaurant standing on the art (BAK and De Kas were hidden, 6 Nov 2026)', async () => {
+  const { fogEdgeIndex } = await import('../src/map/render');
+  const w = 200;
+  const h = 200;
+  const alpha = new Uint8Array(w * h).map((_, i) => (i % w < 20 ? 0 : 1)); // no art in the left 20 columns
+  const at = { x: 24, y: 100 }; // a restaurant just inside the art's edge
+  const fogged = fogEdgeIndex(alpha, w, h, 36);
+  expect(fogged[at.y * w + at.x]).toBe(1); // without a clear spot the edge covers it
+  const fog = fogEdgeIndex(alpha, w, h, 36, [at]);
+  expect(fog[at.y * w + at.x]).toBe(0);
+  expect(fog[(at.y - 10) * w + at.x + 10]).toBe(0); // and the ground around it
+  expect(fog[at.y * w + 5]).toBe(1); // where there is no art at all, fog stays
+});

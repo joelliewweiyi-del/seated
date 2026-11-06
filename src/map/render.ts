@@ -85,12 +85,20 @@ function fogCanvas(size = 256): HTMLCanvasElement {
 
 /** How far fog reaches over the art, in overview pixels (8 world pixels each). */
 const FOG_REACH = 36;
+/** The fog edge leaves this many overview pixels (8 world pixels each) clear around a restaurant. */
+const FOG_CLEAR = 24;
 
 /**
  * The fog-over-art mask: opaque where the art is transparent, and also on art within a ragged distance of it or of
  * the image's edge. The distance limit follows smooth noise, so the fringe has the shape of cloud, in whole pixels.
  */
-export function fogEdgeIndex(alpha: Uint8Array, w: number, h: number, reach = FOG_REACH): Uint8Array {
+export function fogEdgeIndex(
+  alpha: Uint8Array,
+  w: number,
+  h: number,
+  reach = FOG_REACH,
+  clear: Array<{ x: number; y: number }> = [],
+): Uint8Array {
   const dist = new Uint8Array(w * h).fill(255);
   const queue = new Int32Array(w * h);
   let head = 0;
@@ -129,10 +137,21 @@ export function fogEdgeIndex(alpha: Uint8Array, w: number, h: number, reach = FO
     const n = 0.5 + 0.25 * Math.sin(x * 0.03 + Math.sin(y * 0.02) * 2) + 0.25 * Math.sin(y * 0.026 + Math.sin(x * 0.013) * 2);
     out[i] = dist[i]! <= Math.round(1 + n * (reach - 1)) ? 1 : 0;
   }
+  // Around a restaurant, the art it stands on stays visible: only where there is no art at all does fog remain.
+  const r = FOG_CLEAR;
+  for (const p of clear) {
+    const cx = Math.round(p.x);
+    const cy = Math.round(p.y);
+    for (let y = Math.max(0, cy - r); y <= Math.min(h - 1, cy + r); y++) {
+      for (let x = Math.max(0, cx - r); x <= Math.min(w - 1, cx + r); x++) {
+        if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r && alpha[y * w + x]) out[y * w + x] = 0;
+      }
+    }
+  }
   return out;
 }
 
-function fogEdgeMask(img: HTMLImageElement): HTMLCanvasElement {
+function fogEdgeMask(img: HTMLImageElement, clear: Array<{ x: number; y: number }>): HTMLCanvasElement {
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   const c = document.createElement('canvas');
@@ -143,7 +162,7 @@ function fogEdgeMask(img: HTMLImageElement): HTMLCanvasElement {
   const data = g.getImageData(0, 0, w, h);
   const alpha = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) alpha[i] = data.data[i * 4 + 3]! > 0 ? 1 : 0;
-  const fog = fogEdgeIndex(alpha, w, h);
+  const fog = fogEdgeIndex(alpha, w, h, FOG_REACH, clear);
   for (let i = 0; i < w * h; i++) {
     data.data.set(fog[i] ? [0, 0, 0, 255] : [0, 0, 0, 0], i * 4);
   }
@@ -165,6 +184,10 @@ export class MapView {
   private fog: CanvasPattern | null = null;
   /** Where fog covers the art's edge, one pixel per overview pixel (built once the overview has loaded). */
   private fogMask: HTMLCanvasElement | null = null;
+  /** Restaurants: the fog edge never covers the ground around one. World pixels. */
+  private clear: Array<{ x: number; y: number }> = [];
+  /** Where the camera may go: his drawing, and every restaurant in the fog around it with some room to spare. */
+  private bounds = { x0: 0, y0: 0, x1: 0, y1: 0 };
   private fogScratch: HTMLCanvasElement | null = null;
   private dpr = 1;
   private overview: Tile;
@@ -193,6 +216,7 @@ export class MapView {
     readonly world: World,
   ) {
     this.ctx = canvas.getContext('2d', { alpha: false })!;
+    this.bounds = { x0: 0, y0: 0, x1: world.width, y1: world.height };
     const dam = world.project(52.3731, 4.8926);
     this.cam = { x: dam.x, y: dam.y, z: 0.5 };
     this.home = { ...this.cam };
@@ -209,6 +233,21 @@ export class MapView {
   }
 
   // ── public ───────────────────────────────────────────────────────────────
+
+  /** The places the fog edge leaves clear (every restaurant). Rebuilds the fog edge when they move. */
+  keepClear(points: Array<{ x: number; y: number }>): void {
+    const key = (ps: Array<{ x: number; y: number }>) => ps.map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join(';');
+    if (key(points) === key(this.clear)) return;
+    this.clear = points;
+    this.fogMask = null;
+    const m = 600;
+    this.bounds = {
+      x0: Math.min(0, ...points.map((p) => p.x - m)),
+      y0: Math.min(0, ...points.map((p) => p.y - m)),
+      x1: Math.max(this.world.width, ...points.map((p) => p.x + m)),
+      y1: Math.max(this.world.height, ...points.map((p) => p.y + m)),
+    };
+  }
 
   setMarkers(markers: Marker[]): void {
     this.markers = markers;
@@ -236,7 +275,8 @@ export class MapView {
   /** Keeps the camera over the map. */
   private clamp(p: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
     const z = Math.max(ZOOMS[0]!, Math.min(ZOOMS.at(-1)!, p.z));
-    return { x: Math.max(0, Math.min(this.world.width, p.x)), y: Math.max(0, Math.min(this.world.height, p.y)), z };
+    const b = this.bounds;
+    return { x: Math.max(b.x0, Math.min(b.x1, p.x)), y: Math.max(b.y0, Math.min(b.y1, p.y)), z };
   }
 
   /** Moves the camera smoothly. */
@@ -347,7 +387,8 @@ export class MapView {
    */
   private drawFogEdge(x: number, y: number, w: number, h: number): void {
     if (!this.fog || !this.overview.ok) return;
-    this.fogMask ??= fogEdgeMask(this.overview.img);
+    const k = this.overview.img.naturalWidth / this.world.width;
+    this.fogMask ??= fogEdgeMask(this.overview.img, this.clear.map((p) => ({ x: p.x * k, y: p.y * k })));
     const { canvas, dpr } = this;
     const sc = (this.fogScratch ??= document.createElement('canvas'));
     if (sc.width !== canvas.width || sc.height !== canvas.height) {
