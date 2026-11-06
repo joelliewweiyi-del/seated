@@ -1042,7 +1042,7 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
               when the window is clear we guess the day it opens.
             </p>
             <h3>Booking</h3>
-            <p>You always book on the restaurant's own page. We never hold, sell or book tables. This page sets no cookies and asks nothing about you.</p>
+            <p>You always book on the restaurant's own page. We never hold, sell or book tables. This page sets no cookies and asks nothing about you; it counts visits without them (Vercel Web Analytics).</p>
             <button className="btn" onClick={() => onKind('restaurants')}>
               For restaurants
             </button>

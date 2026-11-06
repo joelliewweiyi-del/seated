@@ -17,5 +17,8 @@ if [[ -z "${VITE_MAP_CONTACT:-}" ]]; then
 fi
 npx tsx scripts/map-sez-sync.ts # the city art (sezlab, with permission): fetches only what is missing
 npx vite build -c vite.map.config.ts
+npx tsx scripts/map-og.ts dist/map # the share card (og.jpg): built here, never committed (it shows his art)
+# A data.json in the build would shadow the /data.json rewrite and freeze the public map.
+if [[ -e dist/map/data.json ]]; then echo "dist/map/data.json must not exist" >&2; exit 1; fi
 cp deploy/map/vercel.json dist/map/vercel.json
 VERCEL_ORG_ID=team_eUkad93RQyEOnkyPiSoPR4Mr VERCEL_PROJECT_ID=prj_TUZq0gmT8CLbhxEHRADEXdOdsE9h vercel deploy dist/map --prod --yes
