@@ -15,7 +15,7 @@ import { memoryNotifier, ntfyNotifier } from './notify.js';
 import { loadCuratedRestaurants } from './restaurants.js';
 import { addDays, localDate } from './time.js';
 import { runCensus } from './census.js';
-import { buildMapData, loadOptOut, loadPlaces } from './mapData.js';
+import { buildMapData, loadGuides, loadOptOut, loadPlaces } from './mapData.js';
 
 const store = new Store(config.dbPath);
 store.seedRestaurants(loadCuratedRestaurants());
@@ -113,10 +113,11 @@ async function seedDemo(): Promise<void> {
 // A few times a day, one calendar read per Amsterdam restaurant (see census.ts). Separate from the radar.
 const optOut = loadOptOut();
 const places = loadPlaces();
+const guides = loadGuides();
 let mapCache: { at: number; body: string } | null = null;
 function mapJson(): string {
   if (mapCache && Date.now() - mapCache.at < 30_000) return mapCache.body;
-  mapCache = { at: Date.now(), body: JSON.stringify(buildMapData({ store, platforms, places, optOut })) };
+  mapCache = { at: Date.now(), body: JSON.stringify(buildMapData({ store, platforms, places, optOut, guides })) };
   return mapCache.body;
 }
 function exportMap(): void {

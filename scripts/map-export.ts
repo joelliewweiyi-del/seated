@@ -4,11 +4,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { Store } from '../src/server/db.js';
-import { buildMapData, loadOptOut, loadPlaces } from '../src/server/mapData.js';
+import { buildMapData, loadGuides, loadOptOut, loadPlaces } from '../src/server/mapData.js';
 import { createPlatforms } from '../src/server/platforms/index.js';
 
 const [dbPath = process.env.SEATED_DB || 'data/seated.db', out = 'dist/map/data.json'] = process.argv.slice(2);
-const data = buildMapData({ store: new Store(dbPath), platforms: createPlatforms(), places: loadPlaces(), optOut: loadOptOut() });
+const data = buildMapData({ store: new Store(dbPath), platforms: createPlatforms(), places: loadPlaces(), optOut: loadOptOut(), guides: loadGuides() });
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify(data));
 const open = data.restaurants.filter((r) => r.d[0] === 'o').length;

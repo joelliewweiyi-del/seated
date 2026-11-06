@@ -14,7 +14,7 @@ const png = Buffer.from(
 
 function restaurant(id: string, roof: number | null): MapRestaurant {
   return {
-    id, name: id, roof, michelin: null,
+    id, name: id, roof, michelin: null, g: [],
     lat: 52.3731, lng: 4.8926, area: 'Centrum', kind: 'bistro',
     platform: 'Fixture', site: null, hot: null, why: null,
     readable: true, d: 'o'.repeat(63), t: {}, book: {},
@@ -45,7 +45,7 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const data: MapData = {
     v: 1, generatedAt: '2026-11-05T12:00:00Z',
-    city: 'Amsterdam', partySize: 2, start: '2026-11-05', days: 63,
+    city: 'Amsterdam', partySize: 2, start: '2026-11-05', days: 63, guides: [],
     restaurants: [
       restaurant('Roof fixture', 27.5),
       restaurant('Default fixture', null),

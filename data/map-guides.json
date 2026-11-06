@@ -1,0 +1,103 @@
+{
+  "checked": "2026-11-06",
+  "how": "Each guide's own list, read by hand from its page (names only, no text copied). Picks are Seated ids; places Seated cannot place are left out.",
+  "guides": [
+    {
+      "id": "timeout-best-2026",
+      "name": "The best restaurants in Amsterdam for 2026",
+      "by": "Karin Engelbrecht / Time Out Amsterdam",
+      "url": "https://www.timeout.com/amsterdam/restaurants/best-restaurants-in-amsterdam",
+      "date": "2026-05-15"
+    },
+    {
+      "id": "infatuation-best-2026",
+      "name": "The Best Restaurants In Amsterdam",
+      "by": "Paolo Española / The Infatuation",
+      "url": "https://www.theinfatuation.com/amsterdam/guides/best-restaurants-hotels-amsterdam",
+      "date": "2026-05-19"
+    },
+    {
+      "id": "olive-best-2026",
+      "name": "Best restaurants in Amsterdam: an insider shares where locals eat and drink",
+      "by": "Gina Jackson and the olive team / olive magazine",
+      "url": "https://www.olivemagazine.com/travel/europe/amsterdam-best-places-to-eat-and-drink/",
+      "date": "2026-02-26"
+    },
+    {
+      "id": "roadbook-atmospheric-2026",
+      "name": "Atmospheric restaurants in Amsterdam",
+      "by": "Winke Wiegersma, Merel de Beer, Andrea Hak and Rushani Epa / ROADBOOK",
+      "url": "https://roadbook.com/amsterdam/city-guide/best-restaurants-amsterdam/",
+      "date": "2026-10-20"
+    },
+    {
+      "id": "vogue-restaurants-2026",
+      "name": "Van Frans tot vegan: bij deze restaurants in Amsterdam wil je eten",
+      "by": "Vogue Nederland",
+      "url": "https://www.vogue.nl/living/food/beste-restaurants-amsterdam/",
+      "date": "2026-04-15"
+    }
+  ],
+  "picks": {
+    "timeout-best-2026": [
+      "europa",
+      "flore",
+      "bak",
+      "hatsune",
+      "de-kas",
+      "hotel-de-goudfazant",
+      "troef",
+      "vuurtoreneiland",
+      "blauw",
+      "cafe-restaurant-amsterdam",
+      "toscanini",
+      "barracuda",
+      "cafe-parlotte",
+      "nnea"
+    ],
+    "infatuation-best-2026": [
+      "de-plantage",
+      "de-kas",
+      "blauw",
+      "choux",
+      "badcuyp",
+      "kenneh",
+      "helling-7",
+      "cafe-de-klepel"
+    ],
+    "olive-best-2026": [
+      "gitane",
+      "flore",
+      "cafe-restaurant-amsterdam",
+      "daalder",
+      "de-kas",
+      "bistrot-des-alpes",
+      "blauw"
+    ],
+    "roadbook-atmospheric-2026": [
+      "entrepot",
+      "flore",
+      "cornerstore",
+      "copain",
+      "bacalar",
+      "bak",
+      "de-kas",
+      "alba",
+      "cafe-binnenvisser"
+    ],
+    "vogue-restaurants-2026": [
+      "choux",
+      "cafe-caron",
+      "tannay",
+      "bisous",
+      "chez-van-rijn",
+      "toscanini",
+      "daalder",
+      "watergang",
+      "wijmpje-beukers",
+      "nazka",
+      "cafe-binnenvisser",
+      "cornerstore"
+    ]
+  }
+}

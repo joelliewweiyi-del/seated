@@ -20,6 +20,17 @@ export interface Place {
   roof?: number;
   /** MICHELIN Guide distinction, merged in from data/map-michelin.json (press coverage of the current edition). */
   michelin?: Michelin;
+  /** The guides that pick this restaurant, merged in from data/map-guides.json. */
+  guides?: string[];
+}
+
+/** A restaurant guide (press or creator) whose picks the map can show as a lens. */
+export interface Guide {
+  id: string;
+  name: string;
+  by: string;
+  url: string;
+  date: string;
 }
 
 /** Stars or Bib Gourmand. */
@@ -35,6 +46,8 @@ export interface MapRestaurant {
   /** Roof height in metres, or null when 3DBAG has no building there. */
   roof: number | null;
   michelin: Michelin | null;
+  /** Ids of the guides that pick it (see MapData.guides). */
+  g: string[];
   platform: string;
   site: string | null;
   hot: number | null;
@@ -60,12 +73,25 @@ export interface MapData {
   partySize: number;
   start: string;
   days: number;
+  /** The guides the map can show as lenses. */
+  guides: Guide[];
   restaurants: MapRestaurant[];
 }
 
 const PLACES_URL = new URL('../../data/map-places.json', import.meta.url);
 const OPTOUT_URL = new URL('../../data/map-optout.json', import.meta.url);
 const MICHELIN_URL = new URL('../../data/map-michelin.json', import.meta.url);
+const GUIDES_URL = new URL('../../data/map-guides.json', import.meta.url);
+
+interface GuidesFile {
+  guides: Guide[];
+  picks: Record<string, string[]>;
+}
+
+/** data/map-guides.json: each guide and its picks (Seated ids). */
+export function loadGuides(): Guide[] {
+  return (JSON.parse(readFileSync(GUIDES_URL, 'utf8')) as GuidesFile).guides;
+}
 
 /** data/map-places.json, with each restaurant's MICHELIN distinction from data/map-michelin.json. They are separate
  * files so that placing restaurants again never drops a distinction. */
@@ -73,6 +99,10 @@ export function loadPlaces(): Record<string, Place> {
   const places = JSON.parse(readFileSync(PLACES_URL, 'utf8')) as Record<string, Place>;
   const guide = JSON.parse(readFileSync(MICHELIN_URL, 'utf8')) as { restaurants: Record<string, { michelin: Michelin }> };
   for (const [id, { michelin }] of Object.entries(guide.restaurants)) if (places[id]) places[id].michelin = michelin;
+  const { picks } = JSON.parse(readFileSync(GUIDES_URL, 'utf8')) as GuidesFile;
+  for (const [guideId, ids] of Object.entries(picks)) {
+    for (const id of ids) if (places[id]) (places[id].guides ??= []).push(guideId);
+  }
   return places;
 }
 
@@ -107,11 +137,13 @@ export interface MapDataInput {
   platforms: Record<string, Platform>;
   places: Record<string, Place>;
   optOut: Set<string>;
+  /** The guides to list in data.json (their picks come with the places). */
+  guides?: Guide[];
   city?: string;
   now?: Date;
 }
 
-export function buildMapData({ store, platforms, places, optOut, city = 'Amsterdam', now = new Date() }: MapDataInput): MapData {
+export function buildMapData({ store, platforms, places, optOut, guides = [], city = 'Amsterdam', now = new Date() }: MapDataInput): MapData {
   const start = localDate(now);
   // Day codes are worked out over every day read (to the end of the last month), then cut to the days shown.
   const dates = censusDates(start);
@@ -164,6 +196,7 @@ export function buildMapData({ store, platforms, places, optOut, city = 'Amsterd
       kind: place.kind,
       roof: place.roof ?? null,
       michelin: place.michelin ?? null,
+      g: place.guides ?? [],
       platform: platform?.label ?? r.platform,
       site: r.website,
       hot: r.hot ?? null,
@@ -177,5 +210,16 @@ export function buildMapData({ store, platforms, places, optOut, city = 'Amsterd
       readAt: reads.get(r.id)?.readAt ?? null,
     });
   }
-  return { v: 1, generatedAt: now.toISOString(), city, partySize: CENSUS_PARTY, start, days: CENSUS_DAYS, restaurants };
+  // Only guides with a pick on the map are listed.
+  const used = new Set(restaurants.flatMap((r) => r.g));
+  return {
+    v: 1,
+    generatedAt: now.toISOString(),
+    city,
+    partySize: CENSUS_PARTY,
+    start,
+    days: CENSUS_DAYS,
+    guides: guides.filter((g) => used.has(g.id)),
+    restaurants,
+  };
 }

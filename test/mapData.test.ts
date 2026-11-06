@@ -179,11 +179,24 @@ describe('census and map data', () => {
     for (const secret of ['Secret', 'joel@private.example', '+31611112222', 'private-topic']) expect(text).not.toContain(secret);
     expect(data.restaurants.map((r) => r.id).sort()).toEqual(['bistro-a', 'phone-e', 'wine-b']);
     expect(Object.keys(data.restaurants[0]!).sort()).toEqual(
-      ['area', 'book', 'd', 'hot', 'id', 'kind', 'lat', 'link', 'lng', 'michelin', 'name', 'platform', 'readAt', 'readable', 'roof', 'site', 't', 'why', 'win'].sort(),
+      ['area', 'book', 'd', 'g', 'hot', 'id', 'kind', 'lat', 'link', 'lng', 'michelin', 'name', 'platform', 'readAt', 'readable', 'roof', 'site', 't', 'why', 'win'].sort(),
     );
     const phone = data.restaurants.find((r) => r.id === 'phone-e')!;
     expect(phone).toMatchObject({ readable: false, link: 'https://phone-e.example' });
     expect(phone.d).toBe('?'.repeat(CENSUS_DAYS));
+  });
+
+  it('lists only guides with a pick on the map, and gives each restaurant its guide ids', () => {
+    const s = setup({ 'bistro-a': { [TODAY]: 'open' } });
+    const guides = [
+      { id: 'on', name: 'On', by: 'x', url: 'https://x', date: '2026-01-01' },
+      { id: 'off', name: 'Off', by: 'y', url: 'https://y', date: '2026-01-01' },
+    ];
+    const withPick = { ...s.places, 'bistro-a': { ...s.places['bistro-a']!, guides: ['on'] } };
+    const data = buildMapData({ store: s.store, platforms: s.platforms, places: withPick, optOut: new Set(), guides, now: NOW });
+    expect(data.guides.map((g) => g.id)).toEqual(['on']);
+    expect(data.restaurants.find((r) => r.id === 'bistro-a')!.g).toEqual(['on']);
+    expect(data.restaurants.find((r) => r.id === 'wine-b')!.g).toEqual([]);
   });
 });
 
@@ -208,5 +221,21 @@ describe('MICHELIN distinctions', () => {
     const marked = Object.entries(places).filter(([, p]) => p.michelin).map(([id]) => id);
     expect(marked.sort()).toEqual(Object.keys(guide.restaurants).sort());
     expect(new Set(Object.values(guide.restaurants).map((r) => r.michelin))).toEqual(new Set(['2', '1', 'bib']));
+  });
+});
+
+describe('guides', () => {
+  // Joel, 6 Nov 2026: guides as lenses. Kept in their own file, like MICHELIN, so placing restaurants again never drops a pick.
+  it('reach the map: each pick carries its guide, and Esra is never a pick', () => {
+    const file = JSON.parse(readFileSync('data/map-guides.json', 'utf8')) as { guides: Array<{ id: string }>; picks: Record<string, string[]> };
+    const places = loadPlaces();
+    for (const [guideId, ids] of Object.entries(file.picks)) {
+      expect(file.guides.some((g) => g.id === guideId), `${guideId} has no guide entry`).toBe(true);
+      for (const id of ids) {
+        expect(places[id], `${guideId} picks ${id}, which has no place`).toBeDefined();
+        expect(places[id]!.guides).toContain(guideId);
+      }
+    }
+    expect(Object.values(file.picks).flat()).not.toContain('esra');
   });
 });
