@@ -1033,8 +1033,7 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
             <p>
               The city is drawn by sezlab: <a href="https://sezlab.dev/amsterdam">sezlab.dev/amsterdam</a>, used with his permission.
               Like his work? <a href="https://github.com/sponsors/sezkus">Sponsor him</a>. His drawing is made from 3DBAG (TU Delft and
-              3DGI), the PDOK aerial photo (Beeldmateriaal Nederland) and OpenStreetMap. Restaurants outside his drawing are in the
-              list, without a sign.
+              3DGI), the PDOK aerial photo (Beeldmateriaal Nederland) and OpenStreetMap. Noord is drawn by Seated in the same style, from 3DBAG, PDOK and OpenStreetMap. Restaurants outside the drawn city appear in the list and have a sign standing in the fog.
             </p>
             <h3>“Not bookable yet”</h3>
             <p>

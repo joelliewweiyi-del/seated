@@ -169,3 +169,65 @@ test('a card offers a mail link to report something wrong, named after the resta
   }
   await expect(link).toHaveAttribute('href', `mailto:${process.env.VITE_MAP_CONTACT}?subject=${encodeURIComponent(`Seated map: ${name}`)}`);
 });
+
+test('Noord is drawn beneath the city at far, mid and near zooms and across the IJ seam', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const failed: string[] = [];
+  page.on('response', r => { if (/\/(ours|sez)\/.*\.png/.test(r.url()) && !r.ok()) failed.push(r.url()); });
+  await page.goto('/map/?r=bacalar');
+  await settled(page);
+  await expect(page.locator('.card')).not.toContainText('Outside the drawn city');
+  await page.keyboard.press('Escape');
+  for (const [name, lat, lng, z] of [
+    ['far', 52.391508, 4.904063, 0.125],
+    ['mid', 52.391508, 4.904063, 0.5],
+    ['near', 52.391508, 4.904063, 1],
+    ['seam', 52.3838, 4.9025, 0.5],
+  ] as const) {
+    await page.evaluate(({ name, lat, lng, z }) => {
+      const view = (window as unknown as { seatedMap: {
+        world: { covers(lat: number, lng: number): boolean; project(lat: number, lng: number): { x: number; y: number } };
+        setHome(x: number, y: number, z: number): void;
+      } }).seatedMap;
+      if (!view.world.covers(lat, lng)) throw new Error('Noord view is outside the art');
+      const p = view.world.project(lat, lng);
+      view.setHome(p.x + (name === 'near' ? 200 : 0), p.y + (name === 'near' ? -60 : 0), z);
+    }, { name, lat, lng, z });
+    await page.waitForTimeout(100); // let the requested frame discover its visible tiles
+    await settled(page);
+    expect(await page.locator('canvas').first().evaluate(c => (c as HTMLCanvasElement).getContext('2d')!.imageSmoothingEnabled)).toBe(false);
+    expect(await page.evaluate(() => (window as unknown as { seatedMap: { cam: { z: number } } }).seatedMap.cam.z)).toBe(z);
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    if (name === 'far') {
+      // Independent screen-space oracle: compose only the two overview alpha images at the camera transform.
+      // The old overlay hid occupied pixels here; test the actual final framebuffer, not just its mask helper.
+      const fogOverArt = await page.evaluate(() => {
+        const view = (window as unknown as { seatedMap: {
+          cam: {x:number;y:number;z:number};
+          canvas: HTMLCanvasElement;
+          overview: {img:HTMLImageElement}; oursOverview: {img:HTMLImageElement};
+          world: {width:number;height:number;ours:{levels:Array<{x:number;y:number;w:number;h:number;k:number}>}};
+        } }).seatedMap;
+        const {canvas,cam,world} = view, rect = canvas.getBoundingClientRect();
+        const dpr = canvas.width / rect.width, mask = document.createElement('canvas');
+        mask.width=canvas.width; mask.height=canvas.height;
+        const g=mask.getContext('2d')!; g.setTransform(dpr,0,0,dpr,0,0); g.imageSmoothingEnabled=false;
+        const x=(n:number)=>Math.round((n-cam.x)*cam.z+rect.width/2), y=(n:number)=>Math.round((n-cam.y)*cam.z+rect.height/2);
+        const ext=world.ours.levels[2]!;
+        g.drawImage(view.oursOverview.img,x(ext.x/ext.k),y(ext.y/ext.k),Math.round(ext.w/ext.k*cam.z),Math.round(ext.h/ext.k*cam.z));
+        g.drawImage(view.overview.img,x(0),y(0),Math.round(world.width*cam.z),Math.round(world.height*cam.z));
+        const alpha=g.getImageData(0,0,mask.width,mask.height).data;
+        const actual=canvas.getContext('2d')!.getImageData(0,0,canvas.width,canvas.height).data;
+        const fog=new Set(['168,164,188','187,183,203','206,203,218','227,225,234']);
+        let overlap=0;
+        for(let i=0;i<alpha.length;i+=4) if(alpha[i+3]===255 && fog.has(`${actual[i]},${actual[i+1]},${actual[i+2]}`)) overlap++;
+        return overlap;
+      });
+      expect(fogOverArt).toBe(0);
+    }
+    await shot(page, `noord-${name}`);
+  }
+  expect(failed).toEqual([]);
+});

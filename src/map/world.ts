@@ -32,6 +32,14 @@ export interface SezManifest {
   mask: { mw: number; mh: number; cell: number; bits: string };
 }
 
+/** Our independently painted extension, in the same world-pixel coordinates as his art. */
+export interface OursManifest {
+  sezVersion: string;
+  projection: { X0: number; Y0: number; x: number; y: number; scale: number; VZ: number };
+  levels: Array<{ k: number; cs: number; chunks: Array<[number, number]>; x: number; y: number; w: number; h: number }>;
+  coverage: { x: number; y: number; w: number; h: number; runs: number[][] };
+}
+
 const R2 = Math.SQRT1_2;
 
 export class World {
@@ -45,8 +53,16 @@ export class World {
   constructor(
     readonly meta: SezManifest,
     readonly base = './sez/',
+    readonly ours?: OursManifest,
+    readonly oursBase = './ours/',
   ) {
     this.scale = meta.hi.w / meta.w;
+    if (ours) {
+      const p = ours.projection;
+      if (ours.sezVersion !== String(meta.version) || p.X0 !== meta.X0 || p.Y0 !== meta.Y0 || p.x !== meta.x || p.y !== meta.y || p.scale !== this.scale / 2 || p.VZ !== meta.VZ) {
+        throw new Error('Rebuild Noord for this version of the city art: npx tsx scripts/map-noord.ts');
+      }
+    }
     this.width = meta.hi.w;
     this.height = meta.hi.h;
     this.sets = [...meta.levels, meta.hi].map((l) => new Set(l.chunks.map(([x, y]) => `${x}_${y}`)));
@@ -56,7 +72,9 @@ export class World {
   static async load(base = './sez/'): Promise<World> {
     const res = await fetch(`${base}manifest.json`);
     if (!res.ok) throw new Error(`the city map answered ${res.status}`);
-    return new World((await res.json()) as SezManifest, base);
+    const extension = await fetch('./ours/manifest.json');
+    if (!extension.ok) throw new Error(`the Noord map answered ${extension.status}`);
+    return new World((await res.json()) as SezManifest, base, (await extension.json()) as OursManifest);
   }
 
   /** A point at `metres` above the ground -> world pixels. */
@@ -69,15 +87,29 @@ export class World {
     return { x: (px - this.meta.x) * this.scale, y: (py - this.meta.y) * this.scale };
   }
 
-  /** Whether his art is drawn at a place (it follows the city's outline, so the RD box alone is not enough). */
+  /** Whether either layer is drawn at a place (it follows the city's outline, so the RD box alone is not enough). */
   covers(lat: number, lng: number): boolean {
     const { x, y } = this.project(lat, lng);
+    const coverage = this.ours?.coverage;
+    if (coverage) {
+      const mx = Math.floor(x / 8) - coverage.x, my = Math.floor(y / 8) - coverage.y;
+      const row = coverage.runs[my];
+      if (row) for (let i = 0; i < row.length; i += 2) if (mx >= row[i]! && mx < row[i + 1]!) return true;
+    }
     const { mw, mh, cell } = this.meta.mask;
     const mx = Math.floor(x / cell);
     const my = Math.floor(y / cell);
     if (mx < 0 || my < 0 || mx >= mw || my >= mh) return false;
     const i = my * mw + mx;
     return !!(this.mask[i >> 3]! & (1 << (i & 7)));
+  }
+
+  /** Our chunks share his grid; hi reuses level 0 at exactly twice the size. */
+  oursLevel(L: 'hi' | 0 | 1 | 2) {
+    const index = L === 'hi' ? 0 : L;
+    const lv = this.ours!.levels[index]!;
+    const chunks = new Set(lv.chunks.map(([x, y]) => `${x}_${y}`));
+    return { k: lv.k, span: lv.cs / lv.k, has: (x: number, y: number) => chunks.has(`${x}_${y}`), url: (x: number, y: number) => `${this.oursBase}${index === 2 ? '2' : `${index}_${x}_${y}`}.png` };
   }
 
   /**

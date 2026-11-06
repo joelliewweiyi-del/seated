@@ -17,7 +17,7 @@ export interface Marker {
 }
 
 /** Crisp zooms: at each one the chosen image level is shown at a whole multiple of its pixels. */
-const ZOOMS = [0.125, 0.25, 0.5, 1, 2, 3, 4];
+export const ZOOMS = [0.125, 0.25, 0.5, 1, 2, 3, 4];
 const MAX_IMAGES = 48;
 /** Outside the art: fog, so the edge reads as "not explored yet" and never as a gap (Joel, 6 Nov 2026). */
 const FOG_TONES = ['#a8a4bc', '#bbb7cb', '#cecbda', '#e3e1ea'];
@@ -151,23 +151,32 @@ export function fogEdgeIndex(
   return out;
 }
 
-function fogEdgeMask(img: HTMLImageElement, clear: Array<{ x: number; y: number }>): HTMLCanvasElement {
-  const w = img.naturalWidth;
-  const h = img.naturalHeight;
+/** Overview pixels placed on one shared grid. Offsets may be negative; transparent pixels never erase art. */
+export function fogAlphaUnion(layers: Array<{ alpha: Uint8Array; w: number; h: number; x: number; y: number }>) {
+  const x = Math.min(...layers.map(l => l.x)), y = Math.min(...layers.map(l => l.y));
+  const w = Math.max(...layers.map(l => l.x + l.w)) - x;
+  const h = Math.max(...layers.map(l => l.y + l.h)) - y;
+  const alpha = new Uint8Array(w * h);
+  for (const l of layers) for (let row = 0; row < l.h; row++) for (let col = 0; col < l.w; col++) {
+    if (l.alpha[row * l.w + col]) alpha[(row + l.y - y) * w + col + l.x - x] = 1;
+  }
+  return { alpha, x, y, w, h };
+}
+
+/** The ragged transition is OUTSIDE the union. Never cover any opaque overview pixel. */
+export function outsideFogEdge(alpha: Uint8Array, w: number, h: number, clear: Array<{ x: number; y: number }> = []) {
+  const outside = alpha.map(a => a ? 0 : 1);
+  const fringe = fogEdgeIndex(outside, w, h, FOG_REACH, clear);
+  return fringe.map((v, i) => alpha[i] ? 0 : v);
+}
+
+function overviewAlpha(img: HTMLImageElement): Uint8Array {
   const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
   const g = c.getContext('2d')!;
   g.drawImage(img, 0, 0);
-  const data = g.getImageData(0, 0, w, h);
-  const alpha = new Uint8Array(w * h);
-  for (let i = 0; i < w * h; i++) alpha[i] = data.data[i * 4 + 3]! > 0 ? 1 : 0;
-  const fog = fogEdgeIndex(alpha, w, h, FOG_REACH, clear);
-  for (let i = 0; i < w * h; i++) {
-    data.data.set(fog[i] ? [0, 0, 0, 255] : [0, 0, 0, 0], i * 4);
-  }
-  g.putImageData(data, 0, 0);
-  return c;
+  const data = g.getImageData(0, 0, c.width, c.height).data;
+  return Uint8Array.from({ length: c.width * c.height }, (_, i) => +(data[i * 4 + 3]! > 0));
 }
 
 interface Tile {
@@ -191,6 +200,8 @@ export class MapView {
   private fogScratch: HTMLCanvasElement | null = null;
   private dpr = 1;
   private overview: Tile;
+  private oursOverview: Tile | null = null;
+  private fogOrigin = { x: 0, y: 0 };
   private tiles = new Map<string, Tile>();
   /** Images the current view shows but has not got yet. Tests wait for 0. */
   private waiting = 0;
@@ -222,6 +233,7 @@ export class MapView {
     this.home = { ...this.cam };
     this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.overview = this.load(world.level(2).url(0, 0));
+    if (world.ours) this.oursOverview = this.load(world.oursLevel(2).url(0, 0));
     this.bindInput();
     this.resize();
     new ResizeObserver(() => this.resize()).observe(canvas);
@@ -241,11 +253,13 @@ export class MapView {
     this.clear = points;
     this.fogMask = null;
     const m = 600;
+    const ext = this.world.ours?.levels[2];
+    const extBounds = ext ? { x0: ext.x / ext.k, y0: ext.y / ext.k, x1: (ext.x + ext.w) / ext.k, y1: (ext.y + ext.h) / ext.k } : { x0: 0, y0: 0, x1: 0, y1: 0 };
     this.bounds = {
-      x0: Math.min(0, ...points.map((p) => p.x - m)),
-      y0: Math.min(0, ...points.map((p) => p.y - m)),
-      x1: Math.max(this.world.width, ...points.map((p) => p.x + m)),
-      y1: Math.max(this.world.height, ...points.map((p) => p.y + m)),
+      x0: Math.min(0, extBounds.x0, ...points.map((p) => p.x - m)),
+      y0: Math.min(0, extBounds.y0, ...points.map((p) => p.y - m)),
+      x1: Math.max(this.world.width, extBounds.x1, ...points.map((p) => p.x + m)),
+      y1: Math.max(this.world.height, extBounds.y1, ...points.map((p) => p.y + m)),
     };
   }
 
@@ -319,7 +333,7 @@ export class MapView {
 
   /** City images the view still waits for. Tests wait for 0. */
   pending(): number {
-    return this.waiting + (this.overview.ok || this.overview.failed ? 0 : 1);
+    return this.waiting + (this.overview.ok || this.overview.failed ? 0 : 1) + (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed ? 1 : 0);
   }
 
   // ── frame ────────────────────────────────────────────────────────────────
@@ -381,14 +395,27 @@ export class MapView {
 
   /** Draws the visible chunks of one level; returns how many it still waits for. */
   /**
-   * His art ends in straight cuts in places (the edge of his images, the steps of his chunk grid). Fog reaches over
-   * every edge of the art by a ragged few pixels, so the edge reads as cloud and not as a broken image. Drawn on top;
-   * his images themselves are untouched.
+   * A ragged tonal band outside the registered overview union softens the surrounding fog.
+   * Drawn underneath every art level; neither opaque overview pixels nor finer detail can be hidden.
    */
-  private drawFogEdge(x: number, y: number, w: number, h: number): void {
-    if (!this.fog || !this.overview.ok) return;
-    const k = this.overview.img.naturalWidth / this.world.width;
-    this.fogMask ??= fogEdgeMask(this.overview.img, this.clear.map((p) => ({ x: p.x * k, y: p.y * k })));
+  private drawFogEdge(toX: (x: number) => number, toY: (y: number) => number): void {
+    if (!this.fog || !this.overview.ok || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
+    if (!this.fogMask) {
+      const ext = this.oursOverview?.ok ? this.world.ours?.levels[2] : undefined;
+      const layers = [{ alpha: overviewAlpha(this.overview.img), w: this.overview.img.naturalWidth, h: this.overview.img.naturalHeight, x: 0, y: 0 }];
+      if (ext) layers.push({ alpha: overviewAlpha(this.oursOverview!.img), w: ext.w, h: ext.h, x: ext.x, y: ext.y });
+      const union = fogAlphaUnion(layers);
+      const fringe = outsideFogEdge(union.alpha, union.w, union.h, this.clear.map(p => ({ x: p.x / 8 - union.x, y: p.y / 8 - union.y })));
+      const mask = document.createElement('canvas');
+      mask.width = union.w; mask.height = union.h;
+      const g = mask.getContext('2d')!, data = g.createImageData(union.w, union.h);
+      fringe.forEach((a, i) => { data.data[i * 4 + 3] = a ? 255 : 0; });
+      g.putImageData(data, 0, 0);
+      this.fogOrigin = { x: union.x * 8, y: union.y * 8 };
+      this.fogMask = mask;
+    }
+    const x = toX(this.fogOrigin.x), y = toY(this.fogOrigin.y);
+    const w = this.fogMask.width * 8 * this.cam.z, h = this.fogMask.height * 8 * this.cam.z;
     const { canvas, dpr } = this;
     const sc = (this.fogScratch ??= document.createElement('canvas'));
     if (sc.width !== canvas.width || sc.height !== canvas.height) {
@@ -402,16 +429,16 @@ export class MapView {
     g.imageSmoothingEnabled = false;
     g.drawImage(this.fogMask, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
     g.globalCompositeOperation = 'source-in';
-    g.fillStyle = this.fog;
+    g.fillStyle = FOG_TONES[1]!;
     g.fillRect(0, 0, sc.width / dpr, sc.height / dpr);
     this.ctx.drawImage(sc, 0, 0, sc.width / dpr, sc.height / dpr);
   }
 
-  private drawLevel(L: 'hi' | 0 | 1, toX: (x: number) => number, toY: (y: number) => number, W: number, H: number): number {
-    const { span, has, url } = this.world.level(L);
+  private drawLevel(L: 'hi' | 0 | 1, toX: (x: number) => number, toY: (y: number) => number, W: number, H: number, ours = false): number {
+    const { k, span, has, url } = ours ? this.world.oursLevel(L) : this.world.level(L);
     const z = this.cam.z;
-    const x0 = Math.max(0, Math.floor((this.cam.x - W / 2 / z) / span));
-    const y0 = Math.max(0, Math.floor((this.cam.y - H / 2 / z) / span));
+    const x0 = Math.floor((this.cam.x - W / 2 / z) / span);
+    const y0 = Math.floor((this.cam.y - H / 2 / z) / span);
     const x1 = Math.floor((this.cam.x + W / 2 / z) / span);
     const y1 = Math.floor((this.cam.y + H / 2 / z) / span);
     let waiting = 0;
@@ -426,8 +453,8 @@ export class MapView {
         // Whole pixels, so neighbouring chunks meet without a seam.
         const sx = Math.round(toX(cx * span));
         const sy = Math.round(toY(cy * span));
-        const ex = Math.round(toX(cx * span + (t.img.width / this.world.level(L).k)));
-        const ey = Math.round(toY(cy * span + (t.img.height / this.world.level(L).k)));
+        const ex = Math.round(toX(cx * span + (t.img.width / k)));
+        const ey = Math.round(toY(cy * span + (t.img.height / k)));
         this.ctx.drawImage(t.img, sx, sy, ex - sx, ey - sy);
       }
     }
@@ -454,7 +481,16 @@ export class MapView {
     const toX = (wx: number) => (wx - cam.x) * z + W / 2;
     const toY = (wy: number) => (wy - cam.y) * z + H / 2;
 
-    // The overview underneath everything: it shows while chunks load, and alone when far away.
+    // Fog is composited before art too: detail-level pixels can extend beyond overview alpha.
+    this.drawFogEdge(toX, toY);
+
+    // Every pixel of our extension stays below every pixel of his art, including loading fallbacks.
+    let oursWaiting = 0;
+    const ext = this.world.ours?.levels[2];
+    if (this.oursOverview?.ok && ext) ctx.drawImage(this.oursOverview.img, Math.round(toX(ext.x / ext.k)), Math.round(toY(ext.y / ext.k)), Math.round(ext.w / ext.k * z), Math.round(ext.h / ext.k * z));
+    if (this.world.ours && z >= 0.25) oursWaiting = this.drawLevel(z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
+
+    // The overview underneath his chunks: it shows while chunks load, and alone when far away.
     if (this.overview.ok) {
       ctx.imageSmoothingEnabled = z < 0.125;
       ctx.drawImage(this.overview.img, Math.round(toX(0)), Math.round(toY(0)), Math.round(this.world.width * z), Math.round(this.world.height * z));
@@ -467,8 +503,7 @@ export class MapView {
       waiting = this.drawLevel('hi', toX, toY, W, H);
     } else if (z >= 0.5) waiting = this.drawLevel(0, toX, toY, W, H);
     else if (z >= 0.25) waiting = this.drawLevel(1, toX, toY, W, H);
-    this.waiting = waiting;
-    this.drawFogEdge(toX(0), toY(0), this.world.width * z, this.world.height * z);
+    this.waiting = waiting + oursWaiting;
     if (this.you) this.drawYou(ctx, Math.round(toX(this.you.x)), Math.round(toY(this.you.y)), now);
     this.drawMarkers(ctx, toX, toY, W, H, now);
   }
