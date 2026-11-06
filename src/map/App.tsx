@@ -716,10 +716,17 @@ function List(p: ListProps) {
         <span className="key">
           {hasMichelin && (
             <>
-              <Marks r={{ michelin: '1' } as MapRestaurant} /> MICHELIN Star · <Marks r={{ michelin: 'bib' } as MapRestaurant} /> Bib Gourmand ·{' '}
+              <span>
+                <Marks r={{ michelin: '1' } as MapRestaurant} /> MICHELIN Star
+              </span>
+              <span>
+                <Marks r={{ michelin: 'bib' } as MapRestaurant} /> Bib Gourmand
+              </span>
             </>
           )}
-          <Marks r={{ hot: 1 } as MapRestaurant} /> hard to get
+          <span>
+            <Marks r={{ hot: 1 } as MapRestaurant} /> hard to get
+          </span>
         </span>
       </div>
     </section>

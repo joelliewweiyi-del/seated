@@ -464,10 +464,15 @@ a {
   font-size: 12px;
   color: var(--ink-2);
 }
+/* The key: each mark and its words stay together; the items wrap as whole units. */
 .list-foot .key {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
+  gap: 2px 12px;
+}
+.list-foot .key > span {
+  white-space: nowrap;
 }
 .list-foot .key .marks {
   margin: 0 3px 0 0;
@@ -538,8 +543,8 @@ a {
   color: var(--muted);
   font-size: 12px;
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .card {
@@ -653,7 +658,8 @@ a {
   margin: 10px 0 0;
 }
 .time {
-  font: 600 14px/1 var(--px);
+  font: 600 16px/1 var(--px);
+  letter-spacing: 0.04em; /* the pixel digits' middle bars and the colon read as a strike when packed (live pass, 6 Nov) */
   min-height: 44px;
   min-width: 58px;
   justify-content: center;
@@ -946,10 +952,6 @@ a {
   }
   .foot .short {
     display: inline;
-  }
-  .list-foot {
-    flex-direction: column;
-    gap: 4px;
   }
   .side {
     /* Up to 70% of the screen, but never over the date strip (its height is measured in App.tsx). */
