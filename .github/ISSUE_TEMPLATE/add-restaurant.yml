@@ -1,0 +1,41 @@
+name: Add a restaurant
+description: A place in Amsterdam that should be on the map.
+title: "Add: "
+labels: ["restaurant"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Restaurant
+      placeholder: Café de Klepel
+    validations:
+      required: true
+  - type: input
+    id: website
+    attributes:
+      label: Its website
+      placeholder: https://...
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: Booking system, if you know it
+      description: The page the Reserve button opens. Seated reads Tebi, Zenchef, Formitable, SevenRooms, Guestplan and Frank.
+      options:
+        - I don't know
+        - Tebi
+        - Zenchef
+        - Formitable
+        - SevenRooms
+        - Guestplan
+        - Frank (meetfrank.app)
+        - TheFork
+        - TableCheck
+        - Phone or email only
+        - Something else
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it belongs on the list
+      description: Hard to book? A favourite? A short line is enough.

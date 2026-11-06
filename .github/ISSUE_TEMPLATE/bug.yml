@@ -1,0 +1,20 @@
+name: Bug
+description: The map or the radar does something it should not.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      placeholder: 1. Open seated.food on a phone  2. Tap ...
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: iPhone 15, Safari

@@ -1,0 +1,25 @@
+name: Something is wrong on the map
+description: A table that is not there, a closed day shown open, a wrong place or link.
+title: "Wrong: "
+labels: ["data"]
+body:
+  - type: input
+    id: link
+    attributes:
+      label: Link to the restaurant on the map
+      description: Open its card on seated.food and copy the address bar (it holds the restaurant and the day).
+      placeholder: https://seated.food/?r=bacalar&date=2026-11-14
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What the map says, and what the booking page says
+      placeholder: The map says 19:30 is free; the booking page shows nothing that evening.
+    validations:
+      required: true
+  - type: input
+    id: when
+    attributes:
+      label: When you looked
+      placeholder: Fri 7 Nov, 14:10

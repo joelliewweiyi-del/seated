@@ -12,6 +12,17 @@ npm run demo                      # dashboard with fake restaurants at http://12
 
 For live reload, run `npm run dev` and open http://localhost:5173.
 
+## Working on the public map
+
+```bash
+npm run demo        # the demo server, with fake calendars, at http://127.0.0.1:4310
+npm run dev:map     # the map with live reload; it reads its data from the demo server
+```
+
+The city art is by [sezlab](https://sezlab.dev/amsterdam), used with his permission, and is not in this repository. To see the city, copy it once with `npx tsx scripts/map-sez-sync.ts`. It fetches only what your copy lacks, one image at a time. Run it once, never in a loop, and never commit his images (they are gitignored). Signs, rooms and panels are ours and drawn in code.
+
+After a change to `src/map`, run `npm run test:e2e` and look at the `map-*` screenshots in `test-results/screens/`, at phone width too.
+
 ## Before you open a pull request
 
 ```bash

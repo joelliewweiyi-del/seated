@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ideas and general feedback
+    url: https://github.com/joelliewweiyi-del/seated/discussions
+    about: Anything that is not a bug or a missing restaurant.
+  - name: A restaurant that wants off the map
+    url: mailto:hello@seated.food
+    about: One line to hello@seated.food and it is off within a day.

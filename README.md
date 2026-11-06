@@ -2,6 +2,8 @@
 
 A personal table radar for restaurants that are hard to book.
 
+**See it live: [seated.food](https://seated.food)**, a pixel map of Amsterdam that shows, day by day, which hard-to-book restaurants still have a table for two. Feedback is welcome: [add a restaurant](https://github.com/joelliewweiyi-del/seated/issues/new?template=add-restaurant.yml), [report something wrong](https://github.com/joelliewweiyi-del/seated/issues/new?template=wrong-data.yml), or [start a discussion](https://github.com/joelliewweiyi-del/seated/discussions). Pull requests too: see [CONTRIBUTING.md](CONTRIBUTING.md) and the [good first issues](https://github.com/joelliewweiyi-del/seated/labels/good%20first%20issue).
+
 You tell Seated where you want to eat, for how many people, and which evenings suit you. Seated reads the restaurant's booking system every one to five minutes. When a table opens that fits, your phone gets an alert. One tap opens the restaurant's own booking page, with your date, time and party size filled in where the booking system allows it.
 
 If you want, Seated can also book the table for you, in your name.
