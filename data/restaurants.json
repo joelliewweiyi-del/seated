@@ -2884,5 +2884,50 @@
     "website": "https://www.zoldering.nl/",
     "city": "Amsterdam",
     "address": "Utrechtsestraat 141H, 1017 VM Amsterdam"
+  },
+  {
+    "id": "kenneh",
+    "name": "Kenneh",
+    "platform": "tebi",
+    "platformUid": "385879_3d7065909b1141107822b29d22e94c0a0702ed722b79ca293e57d70f63f78dce",
+    "website": "https://restaurantkenneh.com",
+    "city": "Amsterdam",
+    "address": "Nassaukade 153g, Amsterdam"
+  },
+  {
+    "id": "copain",
+    "name": "Copain",
+    "platform": "tebi",
+    "platformUid": "759043_e14bf525dc8f766080121acbfe5bc724160316ab2a4a3df4bb0903347f16d4cb",
+    "website": "https://www.copain.amsterdam",
+    "city": "Amsterdam",
+    "address": "Tt. Vasumweg 42, Amsterdam"
+  },
+  {
+    "id": "omahe",
+    "name": "Omahe",
+    "platform": "tebi",
+    "platformUid": "646349_ac2f307942fe6a7523bdd20b4f3b2666e156f9d09328e89ec12c2650197c391f",
+    "website": "https://omahe.nl",
+    "city": "Amsterdam",
+    "address": "Ruysdaelkade 251, 1072 AX Amsterdam"
+  },
+  {
+    "id": "bisous",
+    "name": "Bisous",
+    "platform": "zenchef",
+    "platformUid": "364554",
+    "website": "https://bisous-official.com",
+    "city": "Amsterdam",
+    "address": "Albert Cuypstraat 31H, Amsterdam"
+  },
+  {
+    "id": "chez-van-rijn",
+    "name": "Chez van Rijn",
+    "platform": "zenchef",
+    "platformUid": "384549",
+    "website": "https://chezvanrijn.nl",
+    "city": "Amsterdam",
+    "address": "Rembrandtplein 17, Amsterdam"
   }
 ]

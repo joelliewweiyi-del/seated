@@ -87,6 +87,14 @@
   "source": "list",
   "roof": 14.5
  },
+ "bisous": {
+  "lat": 52.354726,
+  "lng": 4.887818,
+  "area": "Oude Pijp",
+  "kind": "bistro",
+  "source": "site: AMOUR Instagram Spotify Albert Cuypstraat 31H, 1072 CL Amsterdam",
+  "roof": 16.5
+ },
  "bistro-de-la-mer": {
   "lat": 52.364126,
   "lng": 4.898327,
@@ -239,6 +247,14 @@
   "source": "list",
   "roof": 17.5
  },
+ "chez-van-rijn": {
+  "lat": 52.36643,
+  "lng": 4.896745,
+  "area": "Grachtengordel",
+  "kind": "bistro",
+  "source": "site: Chez van Rijn Rembrandtplein 17, 1017 CT Amsterdam",
+  "roof": 25
+ },
  "choux": {
   "lat": 52.377548,
   "lng": 4.907157,
@@ -254,6 +270,14 @@
   "kind": "fine",
   "source": "manual",
   "roof": 80.5
+ },
+ "copain": {
+  "lat": 52.404386,
+  "lng": 4.893235,
+  "area": "Noordelijke IJ-oevers",
+  "kind": "bistro",
+  "source": "site: Tt. Vasumweg 42, 1033 SC Amsterdam",
+  "roof": 66.5
  },
  "cornerstore": {
   "lat": 52.394316,
@@ -542,6 +566,14 @@
   "source": "list",
   "roof": 17.5
  },
+ "kenneh": {
+  "lat": 52.371476,
+  "lng": 4.874026,
+  "area": "Da Costabuurt",
+  "kind": "bistro",
+  "source": "site: Nassaukade 153g, 1053 LK Amsterdam",
+  "roof": 17
+ },
  "kid-amsterdam": {
   "lat": 52.379882,
   "lng": 4.877033,
@@ -692,6 +724,14 @@
   "kind": "fine",
   "source": "list",
   "roof": 19
+ },
+ "omahe": {
+  "lat": 52.349897,
+  "lng": 4.886892,
+  "area": "Nieuwe Pijp",
+  "kind": "bistro",
+  "source": "site: Location Ruysdaelkade 251, 1072 AX Amsterdam",
+  "roof": 16
  },
  "oocker": {
   "lat": 52.361331,
