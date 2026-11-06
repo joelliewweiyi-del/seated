@@ -932,6 +932,12 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay }: C
           <p className="meta">
             {r.readable ? `Read from ${r.platform} ${ago(r.readAt)}, for two people.` : `We can't read ${r.platform === 'other' ? 'this booking system' : r.platform} yet.`} Another party size: their booking page shows it. You always book with the restaurant itself.
           </p>
+          {CONTACT && (
+            <p className="meta">
+              Something wrong here?{' '}
+              <a href={`mailto:${CONTACT}?subject=${encodeURIComponent(`Seated map: ${r.name}`)}`}>Tell us</a>.
+            </p>
+          )}
         </div>
       </div>
       {more && <MoreBar />}
@@ -966,6 +972,15 @@ function Dialog({ kind, onClose }: { kind: 'about' | 'restaurants'; onClose: () 
               About every 15 minutes we read each restaurant's own public booking calendar (Tebi, Zenchef, Formitable, SevenRooms,
               Guestplan, Frank): the same calendar any guest sees. A few restaurants are watched more closely, so their signs change sooner.
             </p>
+            {CONTACT && (
+              <>
+                <h3>Missing a place?</h3>
+                <p>
+                  Tell us at <a href={`mailto:${CONTACT}?subject=${encodeURIComponent('Seated map: a missing restaurant')}`}>{CONTACT}</a>. It
+                  helps to name its booking system, if you know it.
+                </p>
+              </>
+            )}
             <h3>The city</h3>
             <p>
               The city is drawn by sezlab: <a href="https://sezlab.dev/amsterdam">sezlab.dev/amsterdam</a>, used with his permission.

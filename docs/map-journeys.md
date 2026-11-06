@@ -157,7 +157,7 @@ design answer. Features are named F1..F20 at the end; the journeys say which the
 | F12 | List and cards usable before the city loads; fewer images in memory | 33, 70, 80 | Check |
 | F13 | Phone, tablet, landscape, 320 px, 200% zoom, 44 px targets | 42-44, 63, 73, 76, 78 | Built; 7 Codex screenshot rounds at 1440, 390, 320, 844×390 and 768. 200% zoom not checked yet |
 | F14 | Directions link | 45 | Built |
-| F15 | "Missing a place / something wrong?" mail link | 55, 82, 84 | Build: the address exists now (hello@seated.food) |
+| F15 | "Missing a place / something wrong?" mail link | 55, 82, 84 | Built 6 Nov: "Tell us" on every card, "Missing a place?" in How it works, both to hello@seated.food |
 | F16 | List-first on phones | 56 | Built: a full-width 'Show all N restaurants' bar; an 'Only: …' line shows active filters when the sheet is closed |
 | F17 | Dark panels | 68 | Later |
 | F18 | Screen reader and keyboard pass | 71, 72, 79 | Check |

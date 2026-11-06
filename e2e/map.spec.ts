@@ -139,3 +139,16 @@ test('the keyboard reaches the list past the date strip in a few steps, and arro
   await expect(page.locator('.day[aria-pressed="true"]')).not.toHaveAttribute('aria-label', before!);
   await expect(page.locator('.day[aria-pressed="true"]')).toBeFocused();
 });
+
+test('a card offers a mail link to report something wrong, named after the restaurant, when a contact is set', async ({ page }) => {
+  await page.goto('/map/');
+  await page.locator('.rows .row').first().click();
+  const name = (await page.locator('.card h2').innerText()).trim();
+  const link = page.locator('.card').getByRole('link', { name: 'Tell us' });
+  // The e2e build has no VITE_MAP_CONTACT: then there is no link at all, never an empty mailto.
+  if (!process.env.VITE_MAP_CONTACT) {
+    await expect(link).toHaveCount(0);
+    return;
+  }
+  await expect(link).toHaveAttribute('href', `mailto:${process.env.VITE_MAP_CONTACT}?subject=${encodeURIComponent(`Seated map: ${name}`)}`);
+});
