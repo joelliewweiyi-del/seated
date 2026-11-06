@@ -118,7 +118,7 @@ design answer. Features are named F1..F20 at the end; the journeys say which the
 | 83 | Owner moved to another booking system | part | Verify script finds it; F20 a weekly check |
 | 84 | Owner wants to be on the map | gap | F15 same mail |
 | 85 | Journalist wants to understand the method | ok | "How it works" |
-| 86 | sezlab wants his credit right | ok | Footer, About, sponsors link |
+| 86 | sezlab wants his credit right | ok | Corner credit, About, sponsors link |
 | 87 | Someone asks about privacy | ok | No cookies, nothing asked |
 | 88 | Michelin asks about the use of its data | part | F1 only facts (distinction, link), credited, no texts or photos copied |
 | 89 | A guest finds a closed day shown as full | part | Day codes distinguish closed; verify script |
@@ -136,7 +136,7 @@ design answer. Features are named F1..F20 at the end; the journeys say which the
 | 96 | User wants the map in another city | gap | Out of scope (Amsterdam only) |
 | 97 | User wants to see the whole city at once | ok | Far zoom, overview |
 | 98 | User wants a clean screenshot to share | part | F9 share link instead |
-| 99 | User wants to know data age | ok | Footer "Read N min ago", card "Seen" |
+| 99 | User wants to know data age | ok | List foot "Calendars read N min ago", card "Seen" |
 | 100 | User wants to know what the signs mean | part | F21 a small legend for colours and marks |
 
 ## Features
@@ -163,4 +163,4 @@ design answer. Features are named F1..F20 at the end; the journeys say which the
 | F18 | Screen reader and keyboard pass | 71, 72, 79 | Check |
 | F19 | Status words, not colour alone | 74 | Check |
 | F20 | Weekly booking-system check | 83 | Later (Pilot) |
-| F21 | Legend | 100 | Built: map legend (desktop) and list key with the same marks |
+| F21 | Legend | 100 | Built: the list key holds the status colours and the marks (the floating map legend went on 6 Nov) |

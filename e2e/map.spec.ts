@@ -18,8 +18,9 @@ async function settled(page: Page) {
 test('the map opens on today with every readable restaurant and a list of who has a table', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.getByRole('heading', { name: 'Seated' })).toBeVisible();
-  await expect(page.locator('.list-head h2')).toHaveText(/^\w+day \d{1,2} \w{3}$/);
-  await expect(page.getByText(/of \d+ have a table for two/)).toBeVisible();
+  await expect(page.locator('.daypill')).toHaveText(/^\w+day \d{1,2} \w{3}/);
+  await expect(page.locator('.list-head h2')).toHaveText(/^\d+ with a table$/);
+  await expect(page.locator('.dates')).toHaveCount(0); // the day strip opens on demand
   await expect(page.getByRole('button', { name: 'Free only' })).toBeVisible();
   await settled(page);
   await shot(page, '01-home');
@@ -54,9 +55,9 @@ test('the card calendar changes the day for the whole map, and the link keeps it
   await days.nth(9).click();
   await expect(page).toHaveURL(/[?&]date=\d{4}-\d{2}-\d{2}/);
   const date = new URL(page.url()).searchParams.get('date')!;
-  await expect(page.locator('.day[aria-pressed="true"]')).toHaveCount(1);
+  await expect(page.locator('.daypill')).toHaveText(new RegExp(`\\b${Number(date.slice(8))} `));
   await page.goto(`/map/?date=${date}`);
-  await expect(page.locator('.list-head h2')).toHaveText(new RegExp(`\\b${Number(date.slice(8))} `));
+  await expect(page.locator('.daypill')).toHaveText(new RegExp(`\\b${Number(date.slice(8))} `));
 });
 
 test('a closed day shows a closed room, and restaurants learn how to opt out', async ({ page }) => {
@@ -71,6 +72,7 @@ test('a closed day shows a closed room, and restaurants learn how to opt out', a
   await expect(page.locator('.card .state b')).toContainText('closed');
   await settled(page);
   await shot(page, '03-closed');
+  await page.getByRole('button', { name: 'How it works' }).click();
   await page.getByRole('button', { name: 'For restaurants' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: 'For restaurants' })).toBeVisible();
@@ -79,19 +81,33 @@ test('a closed day shows a closed room, and restaurants learn how to opt out', a
   await expect(dialog).toBeHidden();
 });
 
-test('on a phone the map, the date strip and the list sheet all fit', async ({ browser }) => {
+test('on a phone the map, the day bar and the list sheet all fit, and the chrome stays small', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   await page.goto('/map/');
-  await expect(page.locator('.dates')).toBeVisible();
+  await expect(page.locator('.daypill')).toBeVisible();
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(390);
+  // Closed, the top bar and the list sheet together leave at least 80% of the screen to the map (Joel, 6 Nov 2026).
+  const chrome = await page.evaluate(() => {
+    const h = (sel: string) => document.querySelector(sel)!.getBoundingClientRect().height;
+    return h('.top') + h('.side > *') + h('.foot');
+  });
+  expect(chrome).toBeLessThan(844 * 0.2);
+  await settled(page);
+  await shot(page, '04-phone-home');
+  // The day strip opens from the day, and a picked day closes it again.
+  await page.locator('.daypill').click();
+  await expect(page.locator('.dates')).toBeVisible();
+  await shot(page, '05-phone-days');
+  await page.locator('.day').nth(3).click();
+  await expect(page.locator('.dates')).toHaveCount(0);
   await page.locator('.list-head .row').click();
   await expect(page.locator('.rows')).toBeVisible();
   await page.locator('.rows .row').first().click();
   await expect(page.locator('.card h2')).toBeVisible();
   await expect(page.locator('.card').getByRole('link', { name: /Book|Booking page/ })).toBeInViewport();
   await settled(page);
-  await shot(page, '04-phone-card');
+  await shot(page, '06-phone-card');
   await page.close();
 });
 
@@ -126,14 +142,15 @@ test('picking a free time makes it the one to book: the Book button and its link
 test('the keyboard reaches the list past the date strip in a few steps, and arrow keys change the day', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.locator('.list-head h2')).toBeVisible();
-  const before = await page.locator('.day[aria-pressed="true"]').getAttribute('aria-label');
-  // Today, Fri, Sat (and New Year's Eve in December), the chosen day, the later-days button, then the list.
+  // The day, the next day, Today, Fri, Sat (and New Year's Eve in December), How it works, then the list.
   let reached = false;
   for (let i = 0; i < 9 && !reached; i++) {
     await page.keyboard.press('Tab');
     reached = await page.evaluate(() => !!document.activeElement?.closest('.list'));
   }
   expect(reached).toBe(true);
+  await page.locator('.daypill').click();
+  const before = await page.locator('.day[aria-pressed="true"]').getAttribute('aria-label');
   await page.locator('.day[aria-pressed="true"]').focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.day[aria-pressed="true"]')).not.toHaveAttribute('aria-label', before!);

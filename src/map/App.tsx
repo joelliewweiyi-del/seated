@@ -229,7 +229,9 @@ export function App() {
       const side = document.querySelector('.side > *')?.getBoundingClientRect();
       const foot = document.querySelector('.foot')?.getBoundingClientRect();
       const narrow = innerWidth <= 900;
+      const bar = document.querySelector('.top .topbar')?.getBoundingClientRect();
       if (top) document.documentElement.style.setProperty('--top-h', `${Math.ceil(top.bottom)}px`);
+      if (bar) document.documentElement.style.setProperty('--bar-h', `${Math.ceil(bar.bottom)}px`);
       view.safe = {
         top: top ? top.bottom : 0,
         right: side && !narrow ? innerWidth - side.left + 6 : 0,
@@ -239,7 +241,7 @@ export function App() {
     };
     measure();
     const ro = new ResizeObserver(measure);
-    document.querySelectorAll('.top, .side, .foot').forEach((el) => ro.observe(el));
+    document.querySelectorAll('.top, .top > *, .side, .foot').forEach((el) => ro.observe(el));
     addEventListener('resize', measure);
     return () => {
       ro.disconnect();
@@ -356,16 +358,7 @@ export function App() {
         </div>
       ) : (
         <>
-          <header className="top">
-            <div className="px brand">
-              <Mark />
-              <div>
-                <h1>Seated</h1>
-                <p>Amsterdam · a table for two</p>
-              </div>
-            </div>
-            <DateStrip data={data} day={day} onPick={setDate} />
-          </header>
+          <TopBar data={data} day={day} onPick={setDate} onAbout={() => setDialog('about')} />
 
           <aside className={`side${collapsed && !sel ? ' collapsed' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
@@ -412,16 +405,6 @@ export function App() {
               ⌂
             </button>
           </div>
-          <div className="px-flat legend" aria-hidden="true">
-            {ORDER.map((s) => (
-              <span key={s}>
-                <i style={{ background: STATUS_COLOUR[s] }} />
-                {STATUS_WORD[s]}
-              </span>
-            ))}
-            {data.restaurants.some((r) => r.michelin) && <span>★ MICHELIN</span>}
-          </div>
-
           {Date.now() - Date.parse(data.generatedAt) > 6 * 3600_000 && (
             <div className="px toast" role="status">
               These calendars were read {ago(data.generatedAt)}.
@@ -429,36 +412,12 @@ export function App() {
           )}
 
           <footer className="foot">
-            <span className="credit">
-              <span className="long">Read {ago(data.generatedAt)} · </span>
-              <span className="mid">City art </span>
-              <span className="tiny">Art </span>
-              <a href="https://sezlab.dev/amsterdam">sezlab</a>
-              <span className="long">
-                {' '}
-                (<a href="https://github.com/sponsors/sezkus">sponsor him</a>)
-              </span>{' '}
-              · ©{' '}
-              <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
-              <span className="long">
-                {' '}
-                contributors · <a href="https://3dbag.nl/">3DBAG</a> · <a href="https://www.pdok.nl/">PDOK</a>
-              </span>
-            </span>
-            <nav>
-              <button onClick={() => setDialog('about')}>
-                <span className="long">How it works</span>
-                <span className="short">About</span>
-              </button>
-              <button onClick={() => setDialog('restaurants')}>
-                <span className="long">For restaurants</span>
-                <span className="short">Restaurants</span>
-              </button>
-            </nav>
+            Art <a href="https://sezlab.dev/amsterdam">sezlab</a> (<a href="https://github.com/sponsors/sezkus">sponsor</a>) · ©{' '}
+            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
           </footer>
         </>
       )}
-      {dialog && <Dialog kind={dialog} onClose={() => setDialog(null)} />}
+      {dialog && <Dialog kind={dialog} onKind={setDialog} onClose={() => setDialog(null)} />}
     </div>
   );
 }
@@ -515,31 +474,110 @@ function Mark() {
   );
 }
 
-function DateStrip({ data, day, onPick }: { data: MapData; day: string; onPick: (d: string) => void }) {
+/** True on a phone-sized screen; follows a resize or a turn of the phone. */
+function useNarrow(): boolean {
+  const q = '(max-width: 900px)';
+  const [narrow, setNarrow] = useState(() => matchMedia(q).matches);
+  useEffect(() => {
+    const m = matchMedia(q);
+    const on = () => setNarrow(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return narrow;
+}
+
+/** The days most people look for: today, the coming Friday and Saturday, and New Year's Eve in range. */
+function quickDays(data: MapData): Array<[string, string]> {
+  const days = Array.from({ length: data.days }, (_, i) => dateAt(data, i));
+  const first = (wd: number) => days.find((d) => weekday(d) === wd) ?? days[0]!;
+  const quick: Array<[string, string]> = [
+    ['Today', days[0]!],
+    ['Fri', first(5)],
+    ['Sat', first(6)],
+  ];
+  const nye = days.find((d) => d.endsWith('-12-31'));
+  if (nye) quick.push(['NYE', nye]);
+  return quick;
+}
+
+function Quick({ data, day, onPick }: { data: MapData; day: string; onPick: (d: string) => void }) {
+  return (
+    <div className="quick">
+      {quickDays(data).map(([label, d]) => (
+        <button key={label} className="chip" aria-pressed={d === day} onClick={() => onPick(d)} aria-label={label === 'NYE' ? "New Year's Eve" : undefined}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** One slim bar: the brand, the day with a step either side, and How it works. All days open from the day itself. */
+function TopBar({ data, day, onPick, onAbout }: { data: MapData; day: string; onPick: (d: string) => void; onAbout: () => void }) {
+  const narrow = useNarrow();
+  const [open, setOpen] = useState(false);
+  const i = dayIndex(data, day);
+  const step = (by: number) => {
+    const to = i + by;
+    if (to >= 0 && to < data.days) onPick(dateAt(data, to));
+  };
+  return (
+    <header className="top">
+      <div className="px topbar">
+        <div className="brand">
+          <Mark />
+          <h1>Seated</h1>
+        </div>
+        <div className="daynav">
+          <button className="step" aria-label="Day before" disabled={i <= 0} onClick={() => step(-1)}>
+            ‹
+          </button>
+          <button className="daypill" aria-expanded={open} aria-controls="days" onClick={() => setOpen((o) => !o)}>
+            <span>{dayLabel(day, { long: !narrow })}</span>
+            <span className="caret" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+          <button className="step" aria-label="Day after" disabled={i >= data.days - 1} onClick={() => step(1)}>
+            ›
+          </button>
+        </div>
+        {!narrow && <Quick data={data} day={day} onPick={onPick} />}
+        <button className="about" onClick={onAbout}>
+          <span className="long">How it works</span>
+          <span className="short" aria-hidden="true">
+            ?
+          </span>
+          <span className="sr">How it works</span>
+        </button>
+      </div>
+      {open && (
+        <DateStrip
+          data={data}
+          day={day}
+          quick={narrow}
+          onPick={(d, how) => {
+            onPick(d);
+            if (narrow && how === 'click') setOpen(false);
+          }}
+        />
+      )}
+    </header>
+  );
+}
+
+function DateStrip({ data, day, quick, onPick }: { data: MapData; day: string; quick: boolean; onPick: (d: string, how: 'click' | 'key') => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const days = useMemo(() => Array.from({ length: data.days }, (_, i) => dateAt(data, i)), [data]);
   const readable = data.restaurants.filter((r) => r.readable).length || 1;
   const open = useMemo(() => days.map((_, i) => data.restaurants.filter((r) => r.d[i] === 'o').length), [data, days]);
-  const next = (wd: number) => days.find((d, i) => i > 0 && weekday(d) === wd) ?? days[0]!;
-  const nye = days.find((d) => d.endsWith('-12-31'));
   useEffect(() => {
     ref.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [day]);
-  const quick: Array<[string, string]> = [
-    ['Today', days[0]!],
-    ['Fri', weekday(days[0]!) === 5 ? days[0]! : next(5)],
-    ['Sat', weekday(days[0]!) === 6 ? days[0]! : next(6)],
-  ];
-  if (nye) quick.push(['NYE', nye]);
   return (
-    <nav className="px dates" aria-label="Day">
-      <div className="quick">
-        {quick.map(([label, d]) => (
-          <button key={label} className="chip" aria-pressed={d === day} onClick={() => onPick(d)} aria-label={label === 'NYE' ? "New Year's Eve" : undefined}>
-            {label}
-          </button>
-        ))}
-      </div>
+    <nav className="px dates" id="days" aria-label="Day">
+      {quick && <Quick data={data} day={day} onPick={(d) => onPick(d, 'click')} />}
       <div className="strip-wrap">
       {/* One tab stop for all days: the chosen one. Arrow keys move the day (and not the map). */}
       <div
@@ -551,7 +589,7 @@ function DateStrip({ data, day, onPick }: { data: MapData; day: string; onPick: 
           e.stopPropagation();
           const to = days[days.indexOf(day) + (e.key === 'ArrowRight' ? 1 : -1)];
           if (!to) return;
-          onPick(to);
+          onPick(to, 'key');
           requestAnimationFrame(() => ref.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus());
         }}
       >
@@ -567,7 +605,7 @@ function DateStrip({ data, day, onPick }: { data: MapData; day: string; onPick: 
               tabIndex={d === day ? 0 : -1}
               aria-label={`${dayLabel(d, { long: true })}: ${open[i]} with a table`}
               title={`${open[i]} restaurants with a table for two`}
-              onClick={() => onPick(d)}
+              onClick={() => onPick(d, 'click')}
             >
               <div className="wd">{dayLabel(d).slice(0, 3)}</div>
               <div className="dn">{Number(d.slice(8))}</div>
@@ -640,12 +678,13 @@ function List(p: ListProps) {
     <section className="px list">
       <div className="list-head">
         <button className="row head-toggle" onClick={p.onToggle} aria-expanded={!p.collapsed}>
-          <h2>{dayLabel(p.day, { long: true })}</h2>
+          <span className="stud" style={{ background: STATUS_COLOUR.open }} aria-hidden="true" />
+          <h2>{openCount} with a table</h2>
           <p className="sum">
-            {openCount} of {p.placed.length} have a table for two{hotOpen ? `; ${hotOpen} of those are hard to get` : ''}.
+            for two, of {p.placed.length} restaurants{hotOpen ? `; ${hotOpen} hard to get` : ''}
           </p>
           <span className="sheet-toggle" aria-hidden="true">
-            {p.collapsed ? `Show ${active.length || q ? '' : 'all '}${rows.length} restaurant${rows.length === 1 ? '' : 's'} ▴` : 'Show the map ▾'}
+            {p.collapsed ? 'List ▴' : 'Map ▾'}
           </span>
         </button>
         {active.length > 0 && (
@@ -656,14 +695,16 @@ function List(p: ListProps) {
             </button>
           </p>
         )}
-        <div className="filters" role="group" aria-label="Show">
-          {CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
-            <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>
-              {label}
-              {k === 'fav' && p.favs.size ? ` ${p.favs.size}` : ''}
-            </button>
-          ))}
+        <div className="filters">
           <input className="search" type="search" placeholder="Name, area or food  /" value={p.query} onChange={(e) => p.onQuery(e.target.value)} aria-label="Find a restaurant" />
+          <div className="chips" role="group" aria-label="Show">
+            {CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
+              <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>
+                {label}
+                {k === 'fav' && p.favs.size ? ` ${p.favs.size}` : ''}
+              </button>
+            ))}
+          </div>
         </div>
         {p.me?.note && <p className="note">{p.me.note}</p>}
       </div>
@@ -714,6 +755,11 @@ function List(p: ListProps) {
       <div className="list-foot">
         <span>Calendars read {ago(p.data.generatedAt)}</span>
         <span className="key">
+          {ORDER.map((st) => (
+            <span key={st}>
+              <i className="swatch" style={{ background: STATUS_COLOUR[st] }} /> {STATUS_WORD[st].toLowerCase()}
+            </span>
+          ))}
           {hasMichelin && (
             <>
               <span>
@@ -954,9 +1000,9 @@ function MoreBar() {
   );
 }
 
-function Dialog({ kind, onClose }: { kind: 'about' | 'restaurants'; onClose: () => void }) {
+function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKind: (k: 'about' | 'restaurants') => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => ref.current?.focus(), []);
+  useEffect(() => ref.current?.focus(), [kind]);
   return (
     <div className="scrim" onClick={onClose}>
       <div ref={ref} tabIndex={-1} className="px dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title" onClick={(e) => e.stopPropagation()}>
@@ -995,6 +1041,9 @@ function Dialog({ kind, onClose }: { kind: 'about' | 'restaurants'; onClose: () 
             </p>
             <h3>Booking</h3>
             <p>You always book on the restaurant's own page. We never hold, sell or book tables. This page sets no cookies and asks nothing about you.</p>
+            <button className="btn" onClick={() => onKind('restaurants')}>
+              For restaurants
+            </button>
           </>
         ) : (
           <>
