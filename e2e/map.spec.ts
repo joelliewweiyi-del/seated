@@ -139,6 +139,50 @@ test('picking a free time makes it the one to book: the Book button and its link
   await expect(book).toHaveAttribute('href', /[?&]time=1230(&|$)/);
 });
 
+test('a guide lens: the list keeps its picks, the link keeps the lens, a card names its guides and switches lens', async ({ page }) => {
+  // Two guides over the demo data: one picks the first three restaurants, the other only the first.
+  await page.route('**/map/data.json', async (route) => {
+    const data = await (await route.fetch()).json();
+    const guide = (id: string, short: string) => ({ id, name: `${short} list`, short, by: 'x', url: `https://${id}.example/list`, date: '2026-01-01', line: `${short} line in our words.` });
+    data.guides = [guide('wide', 'Wide'), guide('one', 'One')];
+    data.restaurants.forEach((r: { g: string[] }, i: number) => (r.g = i < 3 ? ['wide'] : []));
+    data.restaurants[0].g.push('one');
+    route.fulfill({ json: data });
+  });
+  await page.goto('/map/');
+  const names = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.map((r: { name: string }) => r.name));
+  const lens = page.getByLabel('Seen through a guide');
+  await expect(lens.locator('option')).toHaveText(['Guides', 'Wide (3)', 'One (1)']);
+  await lens.selectOption('wide');
+  await expect(page.locator('.rows .nm')).toHaveCount(3);
+  for (const n of names.slice(0, 3)) await expect(page.locator('.rows .nm', { hasText: n })).toHaveCount(1);
+  await expect(page.locator('.list-head .sum')).toContainText('of 3 Wide picks');
+  await expect(page.locator('.lens-line')).toContainText('Wide line in our words.');
+  await expect(page.locator('.lens-line').getByRole('link', { name: /Their list/ })).toHaveAttribute('href', 'https://wide.example/list');
+  await expect(page).toHaveURL(/[?&]lens=wide(&|$)/);
+  // On the map every sign stays, and only the picks stay bright.
+  const bright = () => page.evaluate(() => (window as unknown as { seatedMap: { markers: Array<{ dim: boolean }> } }).seatedMap.markers.filter((m) => !m.dim).length);
+  await expect.poll(bright).toBe(3);
+  expect(await page.evaluate(() => (window as unknown as { seatedMap: { markers: unknown[] } }).seatedMap.markers.length)).toBe(names.length);
+  await settled(page);
+  await shot(page, '08-lens');
+  // The lens survives a reload from the link; an unknown lens is ignored.
+  await page.reload();
+  await expect(page.locator('.rows .nm')).toHaveCount(3);
+  // The first pick's card names both guides; picking one shows the map through it.
+  await page.locator('.rows .row', { hasText: names[0] }).click();
+  const guides = page.locator('.card .guides');
+  await expect(guides).toHaveText('In Wide · One');
+  await guides.getByRole('button', { name: 'One' }).click();
+  await expect(page.locator('.rows .nm')).toHaveCount(1);
+  await expect(page).toHaveURL(/[?&]lens=one(&|$)/);
+  await page.locator('.lens-line').getByRole('button', { name: 'Every restaurant' }).click();
+  await expect(page.locator('.rows .nm')).toHaveCount(names.length);
+  await expect(page).not.toHaveURL(/lens=/);
+  await page.goto('/map/?lens=nobody');
+  await expect(page.locator('.rows .nm')).toHaveCount(names.length);
+});
+
 test('the keyboard reaches the list past the date strip in a few steps, and arrow keys change the day', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.locator('.list-head h2')).toBeVisible();

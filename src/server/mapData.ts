@@ -27,11 +27,19 @@ export interface Place {
 /** A restaurant guide (press or creator) whose picks the map can show as a lens. */
 export interface Guide {
   id: string;
+  /** The guide's own title. */
   name: string;
+  /** What the lens picker calls it ("Time Out"). */
+  short: string;
   by: string;
   url: string;
   date: string;
+  /** One line in our own words about the list (never copied from the guide). */
+  line: string;
 }
+
+/** A guide is a lens only when it picks at least this many restaurants on the map. */
+export const MIN_GUIDE_PICKS = 3;
 
 /** Stars or Bib Gourmand. */
 export type Michelin = '3' | '2' | '1' | 'bib';
@@ -210,8 +218,12 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
       readAt: reads.get(r.id)?.readAt ?? null,
     });
   }
-  // Only guides with a pick on the map are listed.
-  const used = new Set(restaurants.flatMap((r) => r.g));
+  // Only guides with enough picks on the map are listed; a restaurant names only listed guides.
+  const count = new Map<string, number>();
+  for (const r of restaurants) for (const g of r.g) count.set(g, (count.get(g) ?? 0) + 1);
+  const listed = guides.filter((g) => (count.get(g.id) ?? 0) >= MIN_GUIDE_PICKS);
+  const ids = new Set(listed.map((g) => g.id));
+  for (const r of restaurants) r.g = r.g.filter((g) => ids.has(g));
   return {
     v: 1,
     generatedAt: now.toISOString(),
@@ -219,7 +231,7 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
     partySize: CENSUS_PARTY,
     start,
     days: CENSUS_DAYS,
-    guides: guides.filter((g) => used.has(g.id)),
+    guides: listed,
     restaurants,
   };
 }

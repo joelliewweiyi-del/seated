@@ -55,6 +55,22 @@
   "source": "list",
   "roof": 9
  },
+ "bam-boa": {
+  "lat": 52.349578,
+  "lng": 4.912683,
+  "area": "Weesperzijde",
+  "kind": "bistro",
+  "source": "osm by name",
+  "roof": 14.5
+ },
+ "bar-botanique": {
+  "lat": 52.363427,
+  "lng": 4.93034,
+  "area": "Dapperbuurt",
+  "kind": "bistro",
+  "source": "site: Eerste van Swindenstraat 581, 1093 LC Amsterdam",
+  "roof": 14.5
+ },
  "bar-centraal": {
   "lat": 52.367316,
   "lng": 4.86643,
@@ -62,6 +78,14 @@
   "kind": "cafe",
   "source": "list",
   "roof": 16
+ },
+ "barlotta": {
+  "lat": 52.371337,
+  "lng": 4.931205,
+  "area": "Oostelijke Eilanden/Kadijken",
+  "kind": "bistro",
+  "source": "osm by name",
+  "roof": 18
  },
  "barracuda": {
   "lat": 52.384539,
@@ -223,6 +247,14 @@
   "source": "list",
   "roof": 10.5
  },
+ "cafe-modern": {
+  "lat": 52.386477,
+  "lng": 4.909048,
+  "area": "Volewijck",
+  "kind": "bistro",
+  "source": "osm by name",
+  "roof": 17.5
+ },
  "cafe-parlotte": {
   "lat": 52.378266,
   "lng": 4.881752,
@@ -246,6 +278,22 @@
   "kind": "wine",
   "source": "list",
   "roof": 17.5
+ },
+ "calisto": {
+  "lat": 52.38238,
+  "lng": 4.887506,
+  "area": "Haarlemmerbuurt",
+  "kind": "pizza",
+  "source": "osm by name",
+  "roof": 13.5
+ },
+ "carmen": {
+  "lat": 52.363964,
+  "lng": 4.889652,
+  "area": "Grachtengordel",
+  "kind": "bistro",
+  "source": "site: Location Keizersgracht 600, 1017 EP Amsterdam",
+  "roof": 18
  },
  "chez-van-rijn": {
   "lat": 52.36643,
@@ -342,6 +390,14 @@
   "kind": "brasserie",
   "source": "list",
   "roof": 18.5
+ },
+ "de-poldervogel": {
+  "lat": 52.352275,
+  "lng": 4.937852,
+  "area": "Middenmeer",
+  "kind": "bistro",
+  "source": "site: Contact Buys Ballotstraat 2H, 1098 ND Amsterdam",
+  "roof": 12
  },
  "de-silveren-spiegel": {
   "lat": 52.377734,
@@ -479,12 +535,28 @@
   "source": "list",
   "roof": 7
  },
+ "hendrik": {
+  "lat": 52.354059,
+  "lng": 4.883158,
+  "area": "Museumkwartier",
+  "kind": "bistro",
+  "source": "list",
+  "roof": 12
+ },
  "het-bosch-waterfront-kitchen": {
   "lat": 52.335469,
   "lng": 4.848689,
   "area": "Buitenveldert",
   "kind": "brasserie",
   "source": "list"
+ },
+ "hoi-tin": {
+  "lat": 52.373427,
+  "lng": 4.900133,
+  "area": "Burgwallen Oude Zijde",
+  "kind": "bistro",
+  "source": "osm by name",
+  "roof": 16
  },
  "hotel-de-goudfazant": {
   "lat": 52.384539,
@@ -550,6 +622,14 @@
   "source": "list",
   "roof": 16.5
  },
+ "kaasbar": {
+  "lat": 52.357281,
+  "lng": 4.890563,
+  "area": "Oude Pijp",
+  "kind": "wine",
+  "source": "osm by name",
+  "roof": 15.5
+ },
  "kamer-bar": {
   "lat": 52.378753,
   "lng": 4.886416,
@@ -589,6 +669,14 @@
   "kind": "brasserie",
   "source": "list",
   "roof": 20
+ },
+ "kims-so-oost": {
+  "lat": 52.361664,
+  "lng": 4.924908,
+  "area": "Dapperbuurt",
+  "kind": "bistro",
+  "source": "site: Linnaeusstraat 35F, 1093 EE Amsterdam",
+  "roof": 15.5
  },
  "klaproos": {
   "lat": 52.39415,
@@ -685,6 +773,14 @@
   "source": "list",
   "roof": 16
  },
+ "nara-nara": {
+  "lat": 52.362111,
+  "lng": 4.928314,
+  "area": "Dapperbuurt",
+  "kind": "bistro",
+  "source": "osm by name",
+  "roof": 16.5
+ },
  "nazka": {
   "lat": 52.353715,
   "lng": 4.901803,
@@ -757,6 +853,14 @@
   "source": "osm by name",
   "roof": 31.5
  },
+ "peijie-hotpot": {
+  "lat": 52.374986,
+  "lng": 4.901071,
+  "area": "Burgwallen Oude Zijde",
+  "kind": "bistro",
+  "source": "site: Star-Studded Spot Zeedijk 57, 1012 AS Amsterdam",
+  "roof": 19
+ },
  "pelusa": {
   "lat": 52.39384,
   "lng": 4.89969,
@@ -772,6 +876,14 @@
   "kind": "pizza",
   "source": "list",
   "roof": 14.5
+ },
+ "pllek": {
+  "lat": 52.399209,
+  "lng": 4.892851,
+  "area": "Noordelijke IJ-oevers",
+  "kind": "brasserie",
+  "source": "site: PLLEK B.V. TT Neveritaweg 59, 1033 WB Amsterdam",
+  "roof": 12.5
  },
  "r21": {
   "lat": 52.37158,
@@ -861,6 +973,14 @@
   "source": "manual",
   "roof": 16
  },
+ "samuels": {
+  "lat": 52.355631,
+  "lng": 4.898219,
+  "area": "Oude Pijp",
+  "kind": "bistro",
+  "source": "osm by name",
+  "roof": 18
+ },
  "satkara": {
   "lat": 52.365871,
   "lng": 4.894182,
@@ -883,6 +1003,14 @@
   "area": "Nieuwmarkt/Lastage",
   "kind": "brasserie",
   "source": "list"
+ },
+ "secret-garden": {
+  "lat": 52.366262,
+  "lng": 4.891168,
+  "area": "Grachtengordel",
+  "kind": "bistro",
+  "source": "osm by name",
+  "roof": 16
  },
  "senses": {
   "lat": 52.365867,
@@ -964,6 +1092,30 @@
   "source": "list",
   "roof": 15.5
  },
+ "thai-thai-poppetje": {
+  "lat": 52.370998,
+  "lng": 4.859838,
+  "area": "Chassébuurt",
+  "kind": "bistro",
+  "source": "site: Barkaart Store Contact Van Speijkstraat 157-HS, 1057 GX Amsterdam",
+  "roof": 13.5
+ },
+ "the-duchess": {
+  "lat": 52.372825,
+  "lng": 4.889405,
+  "area": "Burgwallen Nieuwe Zijde",
+  "kind": "brasserie",
+  "source": "site: Entourage Group Awards Press Spuistraat 172, 1012 VT Amsterdam",
+  "roof": 25.5
+ },
+ "the-jollof-club": {
+  "lat": 52.314946,
+  "lng": 4.953995,
+  "area": "Amsterdamse Poort e.o.",
+  "kind": "bistro",
+  "source": "site: Experiences About Contact Bijlmerplein 508, 1102 DP Amsterdam",
+  "roof": 9
+ },
  "the-white-room": {
   "lat": 52.372729,
   "lng": 4.894385,
@@ -987,6 +1139,14 @@
   "kind": "bistro",
   "source": "list",
   "roof": 17.5
+ },
+ "tozi": {
+  "lat": 52.354266,
+  "lng": 4.866481,
+  "area": "Willemspark",
+  "kind": "pizza",
+  "source": "list",
+  "roof": 23.5
  },
  "troef": {
   "lat": 52.349206,
@@ -1019,6 +1179,14 @@
   "kind": "bistro",
   "source": "list",
   "roof": 21
+ },
+ "vicio": {
+  "lat": 52.366524,
+  "lng": 4.872356,
+  "area": "Van Lennepbuurt",
+  "kind": "pizza",
+  "source": "list",
+  "roof": 18
  },
  "vinkeles": {
   "lat": 52.369279,
@@ -1066,6 +1234,14 @@
   "kind": "cafe",
   "source": "list",
   "roof": 21.5
+ },
+ "wilde-zwijnen": {
+  "lat": 52.363582,
+  "lng": 4.940366,
+  "area": "Indische Buurt",
+  "kind": "bistro",
+  "source": "site: RESTAURANT WILDE ZWIJNEN JAVAPLEIN 23, 1095 CJ Amsterdam",
+  "roof": 15.5
  },
  "wils": {
   "lat": 52.343394,

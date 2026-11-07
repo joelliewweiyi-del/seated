@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/server/db';
 import { CENSUS_DAYS, runCensus } from '../src/server/census';
-import { buildMapData, dayCodes, loadPlaces, type Place } from '../src/server/mapData';
+import { buildMapData, dayCodes, loadPlaces, MIN_GUIDE_PICKS, type Place } from '../src/server/mapData';
 import type { DayState, Platform, Restaurant } from '../src/server/platforms/types';
 import { addDays } from '../src/server/time';
 import { censusMinutes } from '../src/server/config';
@@ -186,17 +186,25 @@ describe('census and map data', () => {
     expect(phone.d).toBe('?'.repeat(CENSUS_DAYS));
   });
 
-  it('lists only guides with a pick on the map, and gives each restaurant its guide ids', () => {
+  it('lists a guide as a lens only with at least 3 picks on the map, and names only listed guides on a restaurant', () => {
     const s = setup({ 'bistro-a': { [TODAY]: 'open' } });
-    const guides = [
-      { id: 'on', name: 'On', by: 'x', url: 'https://x', date: '2026-01-01' },
-      { id: 'off', name: 'Off', by: 'y', url: 'https://y', date: '2026-01-01' },
-    ];
-    const withPick = { ...s.places, 'bistro-a': { ...s.places['bistro-a']!, guides: ['on'] } };
-    const data = buildMapData({ store: s.store, platforms: s.platforms, places: withPick, optOut: new Set(), guides, now: NOW });
-    expect(data.guides.map((g) => g.id)).toEqual(['on']);
-    expect(data.restaurants.find((r) => r.id === 'bistro-a')!.g).toEqual(['on']);
-    expect(data.restaurants.find((r) => r.id === 'wine-b')!.g).toEqual([]);
+    const guide = (id: string) => ({ id, name: id, short: id, by: 'x', url: `https://${id}.example`, date: '2026-01-01', line: 'x' });
+    const guides = [guide('wide'), guide('thin'), guide('none')];
+    const pick = (id: string, g: string[]) => ({ ...s.places[id]!, guides: g });
+    // 'wide' picks three restaurants on the map; 'thin' picks two, plus Esra, who is never on the map.
+    const places = {
+      ...s.places,
+      'bistro-a': pick('bistro-a', ['wide', 'thin']),
+      'wine-b': pick('wine-b', ['wide', 'thin']),
+      'phone-e': pick('phone-e', ['wide']),
+      esra: pick('esra', ['thin']),
+    };
+    const data = buildMapData({ store: s.store, platforms: s.platforms, places, optOut: new Set(), guides, now: NOW });
+    expect(MIN_GUIDE_PICKS).toBe(3);
+    expect(data.guides.map((g) => g.id)).toEqual(['wide']);
+    expect(data.restaurants.find((r) => r.id === 'bistro-a')!.g).toEqual(['wide']);
+    expect(data.restaurants.find((r) => r.id === 'phone-e')!.g).toEqual(['wide']);
+    expect(data.restaurants.find((r) => r.id === 'quiet-c')!.g).toEqual([]);
   });
 });
 
@@ -237,5 +245,18 @@ describe('guides', () => {
       }
     }
     expect(Object.values(file.picks).flat()).not.toContain('esra');
+  });
+
+  it('each guide has a short name for the picker and one line of our own, never its own title', () => {
+    const file = JSON.parse(readFileSync('data/map-guides.json', 'utf8')) as { guides: Array<{ id: string; name: string; short: string; line: string; url: string }> };
+    expect(new Set(file.guides.map((g) => g.id)).size).toBe(file.guides.length);
+    for (const g of file.guides) {
+      expect(g.short.length, g.id).toBeGreaterThan(0);
+      expect(g.short.length, g.id).toBeLessThanOrEqual(16);
+      expect(g.line.length, g.id).toBeGreaterThan(10);
+      expect(g.line.length, g.id).toBeLessThanOrEqual(100);
+      expect(g.line.toLowerCase(), g.id).not.toContain(g.name.toLowerCase());
+      expect(g.url, g.id).toMatch(/^https:\/\//);
+    }
   });
 });

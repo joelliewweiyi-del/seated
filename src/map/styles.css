@@ -387,6 +387,21 @@ a {
 .chip:active {
   transform: translateY(1px);
 }
+/* The guide picker: a native select dressed as a chip, with a pixel arrow. */
+.chip.lens {
+  appearance: none;
+  -webkit-appearance: none;
+  color: var(--ink);
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h8v1H7v1H6v1H5v1H3V3H2V2H1V1H0z' fill='%232b2733'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+.chip.lens[data-on] {
+  background-color: var(--ink);
+  color: var(--panel);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h8v1H7v1H6v1H5v1H3V3H2V2H1V1H0z' fill='%23fffaf0'/%3E%3C/svg%3E");
+}
 .quick .chip[aria-pressed='true'] {
   background: var(--sun);
   color: var(--ink);
@@ -615,6 +630,21 @@ a {
 }
 .empty .btn {
   margin-top: 10px;
+}
+.list-head .lens-line {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.list-head .lens-line a {
+  color: var(--primary);
+  font-weight: 600;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+.card .guides .link {
+  font: 600 13px/1.4 var(--px);
 }
 .list-head .active {
   margin: 8px 0 0;
@@ -1126,6 +1156,7 @@ a {
   }
   .side.collapsed .sum,
   .side.collapsed .active,
+  .side.collapsed .lens-line,
   .side.collapsed .rows,
   .side.collapsed .list-foot,
   .side.collapsed .filters {

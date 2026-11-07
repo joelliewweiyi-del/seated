@@ -1,41 +1,87 @@
 {
-  "checked": "2026-11-06",
-  "how": "Each guide's own list, read by hand from its page (names only, no text copied). Picks are Seated ids; places Seated cannot place are left out.",
+  "checked": "2026-11-07",
+  "how": "Each guide's own list, read by hand from its page (names only, no text copied). Picks are Seated ids; places Seated cannot place are left out. 'line' is our own one-line description. Press guides only: a creator's list becomes a lens only after the creator says yes.",
   "guides": [
     {
       "id": "timeout-best-2026",
       "name": "The best restaurants in Amsterdam for 2026",
+      "short": "Time Out",
       "by": "Karin Engelbrecht / Time Out Amsterdam",
       "url": "https://www.timeout.com/amsterdam/restaurants/best-restaurants-in-amsterdam",
-      "date": "2026-05-15"
+      "date": "2026-05-15",
+      "line": "Time Out Amsterdam's yearly list of the city's best restaurants."
     },
     {
       "id": "infatuation-best-2026",
       "name": "The Best Restaurants In Amsterdam",
+      "short": "The Infatuation",
       "by": "Paolo Española / The Infatuation",
       "url": "https://www.theinfatuation.com/amsterdam/guides/best-restaurants-hotels-amsterdam",
-      "date": "2026-05-19"
-    },
-    {
-      "id": "olive-best-2026",
-      "name": "Best restaurants in Amsterdam: an insider shares where locals eat and drink",
-      "by": "Gina Jackson and the olive team / olive magazine",
-      "url": "https://www.olivemagazine.com/travel/europe/amsterdam-best-places-to-eat-and-drink/",
-      "date": "2026-02-26"
-    },
-    {
-      "id": "roadbook-atmospheric-2026",
-      "name": "Atmospheric restaurants in Amsterdam",
-      "by": "Winke Wiegersma, Merel de Beer, Andrea Hak and Rushani Epa / ROADBOOK",
-      "url": "https://roadbook.com/amsterdam/city-guide/best-restaurants-amsterdam/",
-      "date": "2026-10-20"
+      "date": "2026-05-19",
+      "line": "The Infatuation's list of the best places to eat in Amsterdam."
     },
     {
       "id": "vogue-restaurants-2026",
       "name": "Van Frans tot vegan: bij deze restaurants in Amsterdam wil je eten",
+      "short": "Vogue NL",
       "by": "Vogue Nederland",
       "url": "https://www.vogue.nl/living/food/beste-restaurants-amsterdam/",
-      "date": "2026-04-15"
+      "date": "2026-04-15",
+      "line": "Vogue Nederland's list of restaurants to eat at, from French to vegan."
+    },
+    {
+      "id": "olive-best-2026",
+      "name": "Best restaurants in Amsterdam: an insider shares where locals eat and drink",
+      "short": "Olive",
+      "by": "Gina Jackson and the olive team / olive magazine",
+      "url": "https://www.olivemagazine.com/travel/europe/amsterdam-best-places-to-eat-and-drink/",
+      "date": "2026-02-26",
+      "line": "Olive magazine's Amsterdam guide, with picks from someone who lives here."
+    },
+    {
+      "id": "roadbook-atmospheric-2026",
+      "name": "Atmospheric restaurants in Amsterdam",
+      "short": "Roadbook",
+      "by": "Winke Wiegersma, Merel de Beer, Andrea Hak and Rushani Epa / ROADBOOK",
+      "url": "https://roadbook.com/amsterdam/city-guide/best-restaurants-amsterdam/",
+      "date": "2026-10-20",
+      "line": "Roadbook's picks for restaurants where the room matters as much as the plate."
+    },
+    {
+      "id": "ylbb-new-2026",
+      "name": "Nieuwe restaurants in Amsterdam: dé 2026 lijst met meer dan 100 hotspots",
+      "short": "YLBB",
+      "by": "Anne de Buck / Your Little Black Book",
+      "url": "https://www.yourlittleblackbook.me/nieuwe-restaurants-in-amsterdam/",
+      "date": "2026-08-21",
+      "line": "Your Little Black Book's running list of new openings."
+    },
+    {
+      "id": "iamsterdam-stylish-2026",
+      "name": "Most stylish restaurants and cafes in Amsterdam",
+      "short": "I amsterdam",
+      "by": "I amsterdam",
+      "url": "https://www.iamsterdam.com/en/see-and-do/restaurant-and-bars/stylish-restaurants-and-cafes-in-amsterdam",
+      "date": "2026-04-20",
+      "line": "The city's own list of its most stylish restaurants and cafés."
+    },
+    {
+      "id": "andrew-harper-top-2026",
+      "name": "Top Amsterdam Restaurants",
+      "short": "Andrew Harper",
+      "by": "Andrew Harper Editor / Andrew Harper",
+      "url": "https://andrewharper.com/read/article/top-amsterdam-restaurants/",
+      "date": "2026-07-31",
+      "line": "A travel editor's notes on recent openings."
+    },
+    {
+      "id": "eater-best-2025",
+      "name": "The 23 Best Restaurants in Amsterdam",
+      "short": "Eater",
+      "by": "Katharine Khamhaengwong / Eater",
+      "url": "https://www.eater.com/maps/best-amsterdam-restaurants-netherlands-guide",
+      "date": "2025-03-12",
+      "line": "Eater's map of the city's best places to eat, cheap eats included."
     }
   ],
   "picks": {
@@ -53,7 +99,10 @@
       "toscanini",
       "barracuda",
       "cafe-parlotte",
-      "nnea"
+      "nnea",
+      "hoi-tin",
+      "wilde-zwijnen",
+      "thai-thai-poppetje"
     ],
     "infatuation-best-2026": [
       "de-plantage",
@@ -63,27 +112,9 @@
       "badcuyp",
       "kenneh",
       "helling-7",
-      "cafe-de-klepel"
-    ],
-    "olive-best-2026": [
-      "gitane",
-      "flore",
-      "cafe-restaurant-amsterdam",
-      "daalder",
-      "de-kas",
-      "bistrot-des-alpes",
-      "blauw"
-    ],
-    "roadbook-atmospheric-2026": [
-      "entrepot",
-      "flore",
-      "cornerstore",
-      "copain",
-      "bacalar",
-      "bak",
-      "de-kas",
-      "alba",
-      "cafe-binnenvisser"
+      "cafe-de-klepel",
+      "kaasbar",
+      "vicio"
     ],
     "vogue-restaurants-2026": [
       "choux",
@@ -97,7 +128,54 @@
       "wijmpje-beukers",
       "nazka",
       "cafe-binnenvisser",
-      "cornerstore"
+      "cornerstore",
+      "cafe-modern",
+      "tozi"
+    ],
+    "olive-best-2026": [
+      "gitane",
+      "flore",
+      "cafe-restaurant-amsterdam",
+      "daalder",
+      "de-kas",
+      "bistrot-des-alpes",
+      "blauw",
+      "calisto",
+      "carmen",
+      "pllek"
+    ],
+    "roadbook-atmospheric-2026": [
+      "entrepot",
+      "flore",
+      "cornerstore",
+      "copain",
+      "bacalar",
+      "bak",
+      "de-kas",
+      "alba",
+      "cafe-binnenvisser"
+    ],
+    "ylbb-new-2026": [
+      "the-jollof-club",
+      "kenneh",
+      "samuels",
+      "de-poldervogel",
+      "nara-nara",
+      "omahe"
+    ],
+    "iamsterdam-stylish-2026": [
+      "bar-botanique",
+      "bam-boa",
+      "secret-garden",
+      "the-duchess"
+    ],
+    "andrew-harper-top-2026": [
+      "boon-de-koot",
+      "ottolenghi",
+      "hendrik"
+    ],
+    "eater-best-2025": [
+      "kenneh"
     ]
   }
 }

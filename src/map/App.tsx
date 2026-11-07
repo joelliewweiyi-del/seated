@@ -62,9 +62,14 @@ interface Placed {
   onMap: boolean;
 }
 
-function readUrl(): { date: string | null; r: string | null } {
+function readUrl(): { date: string | null; r: string | null; lens: string | null } {
   const q = new URLSearchParams(location.search);
-  return { date: q.get('date'), r: q.get('r') };
+  return { date: q.get('date'), r: q.get('r'), lens: q.get('lens') };
+}
+
+/** A guide's picks only, when a lens is chosen. */
+function inLens(lens: string | null, r: MapRestaurant): boolean {
+  return !lens || r.g.includes(lens);
 }
 
 function badgeFor(r: MapRestaurant, status: Status, date: string): string {
@@ -109,6 +114,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(readUrl().date);
   const [selected, setSelected] = useState<string | null>(readUrl().r);
+  // The guide the map is seen through: from the link, so a lens can be shared. Unknown ids are ignored.
+  const [lensId, setLens] = useState<string | null>(readUrl().lens);
   const [filters, setFilters] = useRemembered<Filters>('seated.map.filters', NO_FILTERS);
   const [saved, setSaved] = useRemembered<{ ids: string[] }>('seated.map.saved', { ids: [] });
   const favs = useMemo(() => new Set(saved.ids), [saved]);
@@ -168,6 +175,8 @@ export function App() {
     };
   }, [world]);
 
+  const lens = data?.guides.some((g) => g.id === lensId) ? lensId : null;
+
   const statusOfR = useCallback((r: MapRestaurant) => (day && data ? statusOf(codeOn(r, data, day)) : 'unknown'), [day, data]);
 
   // Signs for the day.
@@ -188,14 +197,14 @@ export function App() {
         ay: p.ay,
         colour: STATUS_COLOUR[s],
         badge: badgeFor(p.r, s, day),
-        rank: { open: 300, later: 200, full: 100, closed: 50, unknown: 0 }[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0),
-        dim: (filters.open && s !== 'open') || !match,
+        rank: { open: 300, later: 200, full: 100, closed: 50, unknown: 0 }[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0) + (lens && inLens(lens, p.r) ? 400 : 0),
+        dim: (filters.open && s !== 'open') || !match || !inLens(lens, p.r),
       });
     }
     view.setMarkers(markers);
     view.keepClear(placed.map((p) => ({ x: p.ax, y: p.ay })));
     view.setYou(me && !me.note && world.covers(me.lat, me.lng) ? world.project(me.lat, me.lng) : null);
-  }, [placed, day, data, world, filters, favs, query, statusOfR, me]);
+  }, [placed, day, data, world, filters, favs, query, statusOfR, me, lens]);
 
   // Near me: ask once, when the filter is turned on. Outside Amsterdam (or refused), distances start at the Dam.
   useEffect(() => {
@@ -265,6 +274,7 @@ export function App() {
     const q = new URLSearchParams();
     if (day !== data.start) q.set('date', day);
     if (selected) q.set('r', selected);
+    if (lens) q.set('lens', lens);
     const next = `${location.pathname}${q.toString() ? `?${q}` : ''}`;
     if (next === `${location.pathname}${location.search}`) return;
     try {
@@ -272,7 +282,7 @@ export function App() {
     } catch {
       // A sandboxed frame (an embed, a preview) may refuse a URL change. The map works without it.
     }
-  }, [day, selected, data]);
+  }, [day, selected, data, lens]);
 
   const focus = useCallback(
     (id: string) => {
@@ -370,6 +380,10 @@ export function App() {
                 data={data}
                 day={day}
                 status={statusOfR(sel)}
+                onLens={(id) => {
+                  setLens(id);
+                  setSelected(null);
+                }}
                 saved={favs.has(sel.id)}
                 onSave={() => toggleFav(sel.id)}
                 onClose={() => setSelected(null)}
@@ -383,6 +397,8 @@ export function App() {
                 statusOf={statusOfR}
                 filters={filters}
                 onFilters={setFilters}
+                lens={lens}
+                onLens={setLens}
                 favs={favs}
                 me={filters.near ? me : null}
                 query={query}
@@ -391,7 +407,7 @@ export function App() {
                 onQuery={setQuery}
                 onPick={focus}
                 onDay={setDate}
-                nextOpen={nextOpenDay(data, day, (r) => inKinds(filters, r, favs))}
+                nextOpen={nextOpenDay(data, day, (r) => inKinds(filters, r, favs) && inLens(lens, r))}
               />
             )}
           </aside>
@@ -633,6 +649,9 @@ interface ListProps {
   statusOf: (r: MapRestaurant) => Status;
   filters: Filters;
   onFilters: (f: Filters) => void;
+  /** The guide the list is seen through, or null for every restaurant. */
+  lens: string | null;
+  onLens: (id: string | null) => void;
   favs: Set<string>;
   /** Where distances start, when "Near me" is on. */
   me: { lat: number; lng: number; note?: string } | null;
@@ -661,7 +680,7 @@ function List(p: ListProps) {
   const hasMichelin = p.placed.some((x) => x.r.michelin);
   const rows = p.placed
     .map((x) => ({ r: x.r, s: p.statusOf(x.r), m: p.me ? metres(p.me, x.r) : 0 }))
-    .filter(({ r, s }) => inKinds(f, r, p.favs) && (!f.open || s === 'open') && (!q || matches(r, q)))
+    .filter(({ r, s }) => inLens(p.lens, r) && inKinds(f, r, p.favs) && (!f.open || s === 'open') && (!q || matches(r, q)))
     .sort((a, b) =>
       p.me
         ? a.m - b.m
@@ -670,11 +689,13 @@ function List(p: ListProps) {
           (b.r.hot ?? 0) - (a.r.hot ?? 0) ||
           a.r.name.localeCompare(b.r.name),
     );
-  const openCount = p.placed.filter((x) => p.statusOf(x.r) === 'open').length;
-  const hotOpen = p.placed.filter((x) => x.r.hot && p.statusOf(x.r) === 'open').length;
+  const guide = p.data.guides.find((g) => g.id === p.lens) ?? null;
+  const seen = p.placed.filter((x) => inLens(p.lens, x.r));
+  const openCount = seen.filter((x) => p.statusOf(x.r) === 'open').length;
+  const hotOpen = seen.filter((x) => x.r.hot && p.statusOf(x.r) === 'open').length;
   const anyKind = f.stars || f.bib || f.hot || f.fav;
   const active = CHIPS.filter(([k]) => f[k]).map(([, label]) => label);
-  const [scroller, more, check] = useMore<HTMLUListElement>(`${rows.length}${q}${active}`);
+  const [scroller, more, check] = useMore<HTMLUListElement>(`${rows.length}${q}${active}${p.lens}`);
   let last: Status | null = null;
   return (
     <section className="px list">
@@ -683,12 +704,24 @@ function List(p: ListProps) {
           <span className="stud" style={{ background: STATUS_COLOUR.open }} aria-hidden="true" />
           <h2>{openCount} with a table</h2>
           <p className="sum">
-            for two, of {p.placed.length} restaurants{hotOpen ? `; ${hotOpen} hard to get` : ''}
+            for two, of {guide ? `${seen.length} ${guide.short} picks` : `${p.placed.length} restaurants`}
+            {hotOpen ? `; ${hotOpen} hard to get` : ''}
           </p>
           <span className="sheet-toggle" aria-hidden="true">
             {p.collapsed ? 'List ▴' : 'Map ▾'}
           </span>
         </button>
+        {guide && (
+          <p className="lens-line">
+            <span>{guide.line}</span>{' '}
+            <a href={guide.url} target="_blank" rel="noopener noreferrer">
+              Their list ↗
+            </a>
+            <button className="link" onClick={() => p.onLens(null)}>
+              Every restaurant
+            </button>
+          </p>
+        )}
         {active.length > 0 && (
           <p className="active">
             Only: {active.join(', ')}
@@ -700,6 +733,16 @@ function List(p: ListProps) {
         <div className="filters">
           <input className="search" type="search" placeholder="Name, area or food  /" value={p.query} onChange={(e) => p.onQuery(e.target.value)} aria-label="Find a restaurant" />
           <div className="chips" role="group" aria-label="Show">
+            {p.data.guides.length > 0 && (
+              <select className="chip lens" data-on={p.lens ? '' : undefined} value={p.lens ?? ''} onChange={(e) => p.onLens(e.target.value || null)} aria-label="Seen through a guide">
+                <option value="">Guides</option>
+                {p.data.guides.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.short} ({p.placed.filter((x) => x.r.g.includes(g.id)).length})
+                  </option>
+                ))}
+              </select>
+            )}
             {CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
               <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>
                 {label}
@@ -801,6 +844,8 @@ interface CardProps {
   onSave: () => void;
   onClose: () => void;
   onDay: (d: string) => void;
+  /** Show the map through one of the guides that pick this restaurant. */
+  onLens: (id: string) => void;
 }
 
 /** True while a scrolling box has more below its fold (then a MoreBar shows under it). */
@@ -839,7 +884,7 @@ async function share(r: MapRestaurant, day: string): Promise<string> {
   }
 }
 
-function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay }: CardProps) {
+function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onLens }: CardProps) {
   const times = freeTimes(r, day);
   const lunch = times.filter((t) => t < '16:00');
   const dinner = times.filter((t) => t >= '16:00');
@@ -880,6 +925,21 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay }: C
             <p className="distinction">
               <Marks r={r} />
               <span>{[words, r.hot ? 'hard to get' : null].filter(Boolean).join(' · ')}</span>
+            </p>
+          )}
+          {r.g.length > 0 && (
+            <p className="where guides">
+              In{' '}
+              {data.guides
+                .filter((g) => r.g.includes(g.id))
+                .map((g, i) => (
+                  <span key={g.id}>
+                    {i > 0 && ' · '}
+                    <button className="link" onClick={() => onLens(g.id)} title={g.line}>
+                      {g.short}
+                    </button>
+                  </span>
+                ))}
             </p>
           )}
           {offMap && <p className="where">Outside the drawn city: its sign stands in the fog.</p>}

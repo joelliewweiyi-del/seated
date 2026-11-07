@@ -2929,5 +2929,203 @@
     "website": "https://chezvanrijn.nl",
     "city": "Amsterdam",
     "address": "Rembrandtplein 17, Amsterdam"
+  },
+  {
+    "id": "hoi-tin",
+    "name": "Hoi Tin",
+    "platform": "guestplan",
+    "platformUid": "ce5845d55f2b0f232d304d4af9ed40eb3ce7b2f8:60694",
+    "website": "https://www.hoitin.nl",
+    "city": "Amsterdam",
+    "address": "Zeedijk 122, Amsterdam"
+  },
+  {
+    "id": "wilde-zwijnen",
+    "name": "Wilde Zwijnen",
+    "platform": "tebi",
+    "platformUid": "686158_6debb032b89557587106c4caacf2cee2a55a7c0191997e91f9493ab40e6d49a5",
+    "website": "https://www.wildezwijnenwinkel.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "thai-thai-poppetje",
+    "name": "Thai Thai Poppetje",
+    "platform": "tebi",
+    "platformUid": "809073_11e615cc75429c3111efbe82b1ad7bc786b902e8f1a8d9da76087be4663dbbfd",
+    "website": "https://thaithaipoppetje.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "kaasbar",
+    "name": "Kaasbar",
+    "platform": "tebi",
+    "platformUid": "596389_70d5adc708626068380dcf6800033d874e3e117ad601d6e665aef96193f3142f",
+    "website": "https://kaasbar.amsterdam",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "vicio",
+    "name": "Vicio il Mastro Pastaio",
+    "platform": "zenchef",
+    "platformUid": "382132",
+    "website": "https://vicioilmastropastaio.com",
+    "city": "Amsterdam",
+    "address": "Bilderdijkstraat 192H, 1053 LE Amsterdam"
+  },
+  {
+    "id": "peijie-hotpot",
+    "name": "Peijie Hotpot",
+    "platform": "guestplan",
+    "platformUid": "7187480a4250fc18b3d43c0936e344d30c52e778:2255",
+    "website": "https://peijiehotpot.com",
+    "city": "Amsterdam",
+    "address": "Zeedijk 57, Amsterdam"
+  },
+  {
+    "id": "kims-so-oost",
+    "name": "Kim's So Korean Food Oost",
+    "platform": "zenchef",
+    "platformUid": "376476",
+    "website": "https://linnaeusstraat.kimsso.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "calisto",
+    "name": "Calisto",
+    "platform": "tebi",
+    "platformUid": "296122_1c8568201c71f97ca693548a27d6aa3c2ba60b187d7d21ddb835b9816fec9632",
+    "website": "https://calistoamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Haarlemmerdijk 61, 1013 KB Amsterdam"
+  },
+  {
+    "id": "carmen",
+    "name": "Carmen",
+    "platform": "tebi",
+    "platformUid": "290681_9ecfd5cbe5b85d0d052c9849bec8afffeede347c104846fdfe9200d7cd252567",
+    "website": "https://www.carmenamsterdam.com",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "pllek",
+    "name": "Pllek",
+    "platform": "zenchef",
+    "platformUid": "374048",
+    "website": "https://pllek.info",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "the-jollof-club",
+    "name": "The Jollof Club",
+    "platform": "tebi",
+    "platformUid": "948106_48a4872659df394fc2b8499556614e056e6f0212bd797d4cd6e6a800ad601feb",
+    "website": "https://thejollofclub.com",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "samuels",
+    "name": "Samuel's",
+    "platform": "tebi",
+    "platformUid": "616144_f2360c6c68ec45b3f671ebeeb8c7b169b6db5b3bbab05b063243b1d7fb538d2a",
+    "website": "https://samuel-s.nl",
+    "city": "Amsterdam",
+    "address": "Tweede Jan Steenstraat 1, Amsterdam"
+  },
+  {
+    "id": "de-poldervogel",
+    "name": "De Poldervogel",
+    "platform": "tebi",
+    "platformUid": "729395_990049f501616f3158c7f844c892e1f710c8f10761cac4fa9e3b0b5cb25d5134",
+    "website": "https://www.restaurantdepoldervogel.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "nara-nara",
+    "name": "Nara Nara",
+    "platform": "tebi",
+    "platformUid": "557602_400eb14c5412d470014a1fd8e428a638dea93ab357321391720acae9d43dc1b1",
+    "website": "https://www.naranara-amsterdam.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "cafe-modern",
+    "name": "Café Modern",
+    "platform": "tebi",
+    "platformUid": "964373_b20d386432db0950733460f0d33082a5e8b817650ef7075317c7d2162b717fe1",
+    "website": "https://modernamsterdam.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "tozi",
+    "name": "TOZI",
+    "platform": "zenchef",
+    "platformUid": "387210",
+    "website": "https://www.toziamsterdam.com",
+    "city": "Amsterdam",
+    "address": "Koninginneweg 34, 1075 CZ Amsterdam"
+  },
+  {
+    "id": "bar-botanique",
+    "name": "Bar Botanique",
+    "platform": "zenchef",
+    "platformUid": "387656",
+    "website": "https://www.barbotanique.nl",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "bam-boa",
+    "name": "Bam Boa",
+    "platform": "guestplan",
+    "platformUid": "de128523b5d94cc0352cad3ca0307b656a9a8c17:51060",
+    "website": "https://www.bam-boa-amsterdam.com",
+    "city": "Amsterdam",
+    "address": "Weesperzijde 135, Amsterdam"
+  },
+  {
+    "id": "secret-garden",
+    "name": "Secret Garden",
+    "platform": "sevenrooms",
+    "platformUid": "secretgardenamsterdam",
+    "website": "https://secretgardenamsterdam.com",
+    "city": "Amsterdam",
+    "address": "Reguliersdwarsstraat 38, 1017 BM Amsterdam"
+  },
+  {
+    "id": "the-duchess",
+    "name": "The Duchess",
+    "platform": "sevenrooms",
+    "platformUid": "theduchessamsterdam",
+    "website": "https://the-duchess.com",
+    "city": "Amsterdam",
+    "address": null
+  },
+  {
+    "id": "hendrik",
+    "name": "Hendrik",
+    "platform": "zenchef",
+    "platformUid": "382781",
+    "website": "https://restauranthendrik.nl",
+    "city": "Amsterdam",
+    "address": "Ruysdaelstraat 50, 1071 XE Amsterdam"
+  },
+  {
+    "id": "barlotta",
+    "name": "Barlotta",
+    "platform": "zenchef",
+    "platformUid": "382164",
+    "website": "https://barlotta.nl",
+    "city": "Amsterdam",
+    "address": null
   }
 ]
