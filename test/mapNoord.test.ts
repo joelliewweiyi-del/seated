@@ -3,11 +3,11 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { World, type OursManifest, type SezManifest } from '../src/map/world';
 import { readPNG, writePNG } from '../src/map/noord-png';
-import { measureAlignment, tileReader } from '../src/map/noord-alignment';
-import { ZOOMS, fogEdgeIndex, fogAlphaUnion, outsideFogEdge } from '../src/map/render';
+import { tileReader } from '../src/map/noord-alignment';
+import { ZOOMS, fogEdgeIndex, fogAlphaUnion } from '../src/map/render';
 import { Pix } from '../src/map/pix';
 import { PAL, paintGround, finishBridges, finishQuays, treeSprite } from '../src/map/noord-paint';
-import { World as Grid, T, F } from '../src/map/noord-grid';
+import { World as Grid, T, F, gapMask } from '../src/map/noord-grid';
 import { rdToWgs } from '../src/shared/rd';
 import { cleanSlivers, parkOrStoneTerrain } from '../src/map/noord-tags';
 
@@ -72,12 +72,13 @@ describe('Seated Noord', () => {
     expect((q.y - p.y) / 2).toBeCloseTo(1, 2);
     expect(ours.heightScale).toBeCloseTo(sez.VZ * world.scale / 2, 10);
   });
-  it('cross-correlates the actual level-0 water masks at the IJ south shore within two pixels', () => {
-    const result = measureAlignment(sez);
-    console.log('Noord alignment', result);
-    expect(result.correlation).toBeGreaterThan(0.7);
-    expect(Math.abs(result.dx)).toBeLessThanOrEqual(2);
-    expect(Math.abs(result.dy)).toBeLessThanOrEqual(2);
+  it('lines up with his water at the IJ south shore within two pixels (measured by the build on the whole painting)', () => {
+    // The tiles keep only his gaps and a strip over his edge (gapMask), so the build measures before that cut.
+    const a = (ours as unknown as { alignment: { dx: number; dy: number; correlation: number; samples: number } }).alignment;
+    expect(a.samples).toBeGreaterThan(1000);
+    expect(a.correlation).toBeGreaterThan(0.7);
+    expect(Math.abs(a.dx)).toBeLessThanOrEqual(2);
+    expect(Math.abs(a.dy)).toBeLessThanOrEqual(2);
   });
   it('uses measured colours within RGB distance 24, with no interpolated colours or partial alpha in any tile', () => {
     for (const m of ours.measurements) {
@@ -105,7 +106,7 @@ describe('Seated Noord', () => {
   it('has intact deterministic files and fits within ten megabytes', () => {
     const names = readdirSync('src/map/public/ours');
     expect(names.sort()).toEqual([...ours.files.map(f => f.name), 'manifest.json'].sort());
-    expect(names.reduce((n, f) => n + statSync(`src/map/public/ours/${f}`).size, 0)).toBeLessThanOrEqual(12_000_000);
+    expect(names.reduce((n, f) => n + statSync(`src/map/public/ours/${f}`).size, 0)).toBeLessThanOrEqual(13_000_000);
     for (const f of ours.files) {
       const bytes = readFileSync(`src/map/public/ours/${f.name}`);
       expect(bytes.length).toBe(f.bytes);
@@ -131,39 +132,38 @@ describe('Seated Noord', () => {
       expect(decoded.alpha[1]).toBe(255);
     }
   });
-  it('unions translated overview alpha without clearing overlaps or fogging either source', () => {
+  it('unions translated overview alpha: the fog covers every pixel outside both and reaches only the edge of either', () => {
     const layers = [
       { x: 0, y: 0, w: 100, h: 80, alpha: new Uint8Array(8000).fill(1) },
       { x: 50, y: -40, w: 100, h: 120, alpha: Uint8Array.from({ length: 12000 }, (_, i) => +(i % 100 < 70 && Math.floor(i / 100) < 110)) },
     ];
     const u = fogAlphaUnion(layers);
     expect([u.x, u.y, u.w, u.h]).toEqual([0, -40, 150, 120]);
-    const fog = outsideFogEdge(u.alpha, u.w, u.h);
-    let occupied = 0, covered = 0;
+    const fog = fogEdgeIndex(u.alpha, u.w, u.h, 36);
+    let occupied = 0;
     for (let y = 0; y < u.h; y++) for (let x = 0; x < u.w; x++) {
       const expected = layers.some(l => {
         const lx = x + u.x - l.x, ly = y + u.y - l.y;
         return lx >= 0 && ly >= 0 && lx < l.w && ly < l.h && !!l.alpha[ly * l.w + lx];
       });
       expect(!!u.alpha[y * u.w + x]).toBe(expected);
-      if (expected) { occupied++; covered += fog[y * u.w + x]!; }
+      if (expected) occupied++;
+      else expect(fog[y * u.w + x]).toBe(1);
     }
     expect(occupied).toBeGreaterThan(8000);
-    expect(covered).toBe(0);
-    expect(fog.some(v => v === 1)).toBe(true);
+    // Where the two drawings overlap, far from any edge, the art stays clear: the seam between them is not an edge.
+    expect(fog[(40 + 40) * u.w + 75]).toBe(0);
   });
-  it('keeps a ragged tonal boundary outside, including around isolated artwork', () => {
-    const w = 200, h = 200;
-    const alpha = Uint8Array.from({length: w * h}, (_, i) => +(i % w < 80));
-    const fog = outsideFogEdge(alpha, w, h);
-    const depths = [];
-    for (let y = 40; y < 160; y++) {
-      let d = 0; while (fog[y * w + 80 + d]) d++;
-      depths.push(d);
-      expect(fog[y * w + 79]).toBe(0);
-    }
-    expect(new Set(depths).size).toBeGreaterThan(1);
-    expect(Math.max(...depths)).toBeLessThanOrEqual(36);
+  it('keeps our drawing only in the gaps of his and a margin under his edge (Oost, 8 Nov 2026)', () => {
+    // 60 x 40: his art everywhere but a 10-column gap in the middle.
+    const w = 60, h = 40, alpha = Uint8Array.from({ length: w * h }, (_, i) => +(i % w < 25 || i % w >= 35));
+    const keep = gapMask(alpha, w, h, 4);
+    const at = (x: number, y: number) => keep[y * w + x];
+    for (let x = 25; x < 35; x++) expect(at(x, 20)).toBe(1); // the gap: ours
+    expect(at(22, 20)).toBe(1); // 3 pixels under his edge: ours too, so no seam opens
+    expect(at(10, 20)).toBe(0); // deep in his art: left out
+    expect(at(50, 20)).toBe(0);
+    expect(at(10, 1)).toBe(1); // near the border of his image: treated as an edge
   });
   it('paints diagonal bridge railings only on the completed water-facing boundary, never across its deck', () => {
     const n = 20, planes = new Uint8Array(n * n * 4);

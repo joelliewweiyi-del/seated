@@ -122,3 +122,33 @@ export class World {
   }
 
 }
+
+/**
+ * Where our drawing is needed: every pixel of his overview that is transparent, and opaque pixels within `margin`
+ * pixels of one (so our ground runs a little way under his edge and no seam opens). 1 = keep ours, 0 = his art
+ * covers it anyway. Outside his image counts as transparent.
+ */
+export function gapMask(alpha: Uint8Array, w: number, h: number, margin: number): Uint8Array {
+  const dist = new Uint16Array(w * h).fill(65535);
+  const queue = new Int32Array(w * h);
+  let head = 0, tail = 0;
+  for (let i = 0; i < w * h; i++) {
+    const x = i % w, y = (i - x) / w;
+    if (!alpha[i]) dist[i] = 0;
+    else if (x === 0 || y === 0 || x === w - 1 || y === h - 1) dist[i] = 1;
+    else continue;
+    queue[tail++] = i;
+  }
+  while (head < tail) {
+    const i = queue[head++]!, d = dist[i]!;
+    if (d >= margin) continue;
+    const x = i % w, y = (i - x) / w;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      const j = ny * w + nx;
+      if (dist[j]! > d + 1) { dist[j] = d + 1; queue[tail++] = j; }
+    }
+  }
+  return Uint8Array.from(dist, (d) => +(d <= margin));
+}

@@ -163,13 +163,6 @@ export function fogAlphaUnion(layers: Array<{ alpha: Uint8Array; w: number; h: n
   return { alpha, x, y, w, h };
 }
 
-/** The ragged transition is OUTSIDE the union. Never cover any opaque overview pixel. */
-export function outsideFogEdge(alpha: Uint8Array, w: number, h: number, clear: Array<{ x: number; y: number }> = []) {
-  const outside = alpha.map(a => a ? 0 : 1);
-  const fringe = fogEdgeIndex(outside, w, h, FOG_REACH, clear);
-  return fringe.map((v, i) => alpha[i] ? 0 : v);
-}
-
 function overviewAlpha(img: HTMLImageElement): Uint8Array {
   const c = document.createElement('canvas');
   c.width = img.naturalWidth; c.height = img.naturalHeight;
@@ -395,8 +388,9 @@ export class MapView {
 
   /** Draws the visible chunks of one level; returns how many it still waits for. */
   /**
-   * A ragged tonal band outside the registered overview union softens the surrounding fog.
-   * Drawn underneath every art level; neither opaque overview pixels nor finer detail can be hidden.
+   * Fog over the edge of the art: everywhere neither drawing (his, our Noord) has pixels, and a ragged band over the
+   * art's edge, clear around every restaurant. Drawn after the art, so the edge reads as cloud, never as a straight
+   * cut along a tile (Joel, 8 Nov 2026: "wtf is this" at the gap in his drawing in Oost).
    */
   private drawFogEdge(toX: (x: number) => number, toY: (y: number) => number): void {
     if (!this.fog || !this.overview.ok || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
@@ -405,7 +399,7 @@ export class MapView {
       const layers = [{ alpha: overviewAlpha(this.overview.img), w: this.overview.img.naturalWidth, h: this.overview.img.naturalHeight, x: 0, y: 0 }];
       if (ext) layers.push({ alpha: overviewAlpha(this.oursOverview!.img), w: ext.w, h: ext.h, x: ext.x, y: ext.y });
       const union = fogAlphaUnion(layers);
-      const fringe = outsideFogEdge(union.alpha, union.w, union.h, this.clear.map(p => ({ x: p.x / 8 - union.x, y: p.y / 8 - union.y })));
+      const fringe = fogEdgeIndex(union.alpha, union.w, union.h, FOG_REACH, this.clear.map(p => ({ x: p.x / 8 - union.x, y: p.y / 8 - union.y })));
       const mask = document.createElement('canvas');
       mask.width = union.w; mask.height = union.h;
       const g = mask.getContext('2d')!, data = g.createImageData(union.w, union.h);
@@ -429,7 +423,7 @@ export class MapView {
     g.imageSmoothingEnabled = false;
     g.drawImage(this.fogMask, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
     g.globalCompositeOperation = 'source-in';
-    g.fillStyle = FOG_TONES[1]!;
+    g.fillStyle = this.fog;
     g.fillRect(0, 0, sc.width / dpr, sc.height / dpr);
     this.ctx.drawImage(sc, 0, 0, sc.width / dpr, sc.height / dpr);
   }
@@ -481,15 +475,6 @@ export class MapView {
     const toX = (wx: number) => (wx - cam.x) * z + W / 2;
     const toY = (wy: number) => (wy - cam.y) * z + H / 2;
 
-    // Fog is composited before art too: detail-level pixels can extend beyond overview alpha.
-    this.drawFogEdge(toX, toY);
-
-    // Every pixel of our extension stays below every pixel of his art, including loading fallbacks.
-    let oursWaiting = 0;
-    const ext = this.world.ours?.levels[2];
-    if (this.oursOverview?.ok && ext) ctx.drawImage(this.oursOverview.img, Math.round(toX(ext.x / ext.k)), Math.round(toY(ext.y / ext.k)), Math.round(ext.w / ext.k * z), Math.round(ext.h / ext.k * z));
-    if (this.world.ours && z >= 0.25) oursWaiting = this.drawLevel(z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
-
     // The overview underneath his chunks: it shows while chunks load, and alone when far away.
     if (this.overview.ok) {
       ctx.imageSmoothingEnabled = z < 0.125;
@@ -503,7 +488,14 @@ export class MapView {
       waiting = this.drawLevel('hi', toX, toY, W, H);
     } else if (z >= 0.5) waiting = this.drawLevel(0, toX, toY, W, H);
     else if (z >= 0.25) waiting = this.drawLevel(1, toX, toY, W, H);
+    // Our layer on top: it is cut to his gaps plus a strip over his edge (scripts/map-noord.ts, gapMask), so it covers
+    // only where his art is missing or fades out in a dither, and never the rest of his drawing.
+    let oursWaiting = 0;
+    const ext = this.world.ours?.levels[2];
+    if (this.oursOverview?.ok && ext) ctx.drawImage(this.oursOverview.img, Math.round(toX(ext.x / ext.k)), Math.round(toY(ext.y / ext.k)), Math.round(ext.w / ext.k * z), Math.round(ext.h / ext.k * z));
+    if (this.world.ours && z >= 0.25) oursWaiting = this.drawLevel(z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
     this.waiting = waiting + oursWaiting;
+    this.drawFogEdge(toX, toY);
     if (this.you) this.drawYou(ctx, Math.round(toX(this.you.x)), Math.round(toY(this.you.y)), now);
     this.drawMarkers(ctx, toX, toY, W, H, now);
   }

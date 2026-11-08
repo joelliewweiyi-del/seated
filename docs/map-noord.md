@@ -51,6 +51,10 @@ Light comes from the upper left. Boundary walls use the nearest actual 3DBAG pol
 - Stone wins over vegetation on one OSM way (`parkOrStoneTerrain` in `src/map/noord-tags.ts`): `natural=stone|bare_rock` and `man_made=breakwater|groyne` paint as quay stone even when the way also says `landuse=grass` (the strekdammen north of Bacalar, ways 55343276 and 847117009).
 - Green slivers on water (`cleanSlivers`, same file): after the water fill, a park, wood, field or garden cell with water on 5 or more of its 8 neighbours becomes water, repeated until none is left. A park outline that pokes past the water outline (Stenen Hoofd) otherwise leaves thin green strokes and lone trees on open water. The first build with it turned 2,178 cells to water.
 
+### Gaps in his art, and the render order (8 Nov 2026)
+
+His drawing has gaps inside the city (Oost, the Indische Buurt, Watergraafsmeer), and fades out at its edges in a dither about 128 world pixels deep. The box now runs south to RD y 484200. `gapMask` (in `src/map/noord-grid.ts`) keeps our pixels only where his overview is transparent, plus 16 overview pixels (128 world pixels) over his edge. `render.ts` draws our layer **after** his art. Because ours is cut to that strip, it covers only his gaps and his fading edge, never the rest of his drawing. The fog band is drawn last, over the edge of both drawings, in a ragged line (as on 6 Nov). The alignment test moved to Westerdok, where the strip meets the IJ. Building-edge correlation in Oost gives 1 to 3 level-0 pixels, the same as at the IJ. The style change between the two drawings is still visible at the join.
+
 ## Colour measurements
 
 `src/map/noord-palette.ts` counts all opaque pixels in all reference level-0 chunks for version **2611020030**. These are representative semantic swatches identified in the reference and verified against that histogram, not automatically segmented class averages. The counts below are occurrences of the swatch, not the area of its semantic class. Tests also require every listed “ours” swatch to occur in the generated tiles.
@@ -73,18 +77,18 @@ The level-0 output palette has 61 entries, including transparent index zero. It 
 
 ## Tiles, coverage and fog
 
-`src/map/public/ours/` contains **112 files, 11,592,389 bytes** (limit 12,000,000 bytes, checked by the build and by `test/mapNoord.test.ts`; raised from 10 MB on 6 Nov 2026 when the RD box was extended south to y 486800 to close a fog wedge at the Oostelijke Eilanden):
+`src/map/public/ours/` contains **142 files, 12,545,640 bytes** (limit 13,000,000 bytes, checked by the build and by `test/mapNoord.test.ts`; 10 MB at first, 12 MB on 6 Nov 2026 for the Oostelijke Eilanden, 13 MB on 8 Nov 2026 when the RD box went south to y 484200 to fill his gaps in Oost; only his gaps and a strip over his edge are kept, see below). The chunk counts in this list are from 6 Nov:
 
 - 84 level-0 PNG chunks, each 1024×1024, at one image pixel per two world pixels (`k=0.5`). Negative and out-of-reference-range chunk indices are supported.
 - 26 level-1 chunks, also 1024×1024, at `k=0.25`.
 - One level-2 overview, `2.png`, at `k=0.125`, 4096×2560 pixels, with image-grid offset `(512,-1024)`.
 - `manifest.json`: projection/version, RD extent, palette, registration, level offsets and chunk lists, exact overview-alpha row runs, and SHA-256/size records for every PNG.
 
-Level 0 is 8-bit indexed colour. Levels 1 and 2 use a shared 16-colour subset in packed 4-bit PNGs. Each reduction selects the modal opaque colour in a 2×2 block, retaining coverage whenever any source pixel is opaque; it never averages colours. Lossless PNG encoding compares raw and adaptively filtered rows and keeps the smaller stream. The reduced far palette trades subtle material variation at zoom 0.25 and below for more detail at near/mid zoom under the 12 MB cap. Tiles are staged in the cache and the size limit is checked before replacing the public layer. Empty chunks are omitted and stale generated chunks removed.
+Level 0 is 8-bit indexed colour. Levels 1 and 2 use a shared 16-colour subset in packed 4-bit PNGs. Each reduction selects the modal opaque colour in a 2×2 block, retaining coverage whenever any source pixel is opaque; it never averages colours. Lossless PNG encoding compares raw and adaptively filtered rows and keeps the smaller stream. The reduced far palette trades subtle material variation at zoom 0.25 and below for more detail at near/mid zoom under the 13 MB cap. Tiles are staged in the cache and the size limit is checked before replacing the public layer. Empty chunks are omitted and stale generated chunks removed.
 
 `World.load()` loads both manifests. Our coverage is the overview-alpha runs translated back to world coordinates; `covers()` returns the union with the existing reference mask. The App’s existing roof-height and outside-city rules then work for Noord without changing restaurant data or marker behavior. A projection/version mismatch fails explicitly with the rebuild instruction, instead of silently putting stale tiles in the wrong place.
 
-`render.ts` draws our overview and chosen detail level **before all of his art**, including his overview fallback. His pixels therefore always win in overlaps. At zooms 0.125, 0.25, 0.5, 1, 2, 3 and 4 our displayed pixel multiples are 1, 1, 1, 2, 4, 6 and 8. Image smoothing is disabled. The fog mask uses an explicit OR of both overview alphas on one shared grid, including the negative extension offset. The ragged transition is generated with `fogEdgeIndex` on the outside of this union, clipped to empty pixels, and composited before all art levels. Restaurant clearances remain. See the round-2 diagnosis below.
+(Superseded on 8 Nov 2026, see "Gaps in his art" above.) `render.ts` drew our overview and chosen detail level **before all of his art**, including his overview fallback. At zooms 0.125, 0.25, 0.5, 1, 2, 3 and 4 our displayed pixel multiples are 1, 1, 1, 2, 4, 6 and 8. Image smoothing is disabled. The fog mask uses an explicit OR of both overview alphas on one shared grid, including the negative extension offset. The ragged transition is generated with `fogEdgeIndex` on the outside of this union, clipped to empty pixels, and composited before all art levels. Restaurant clearances remain. See the round-2 diagnosis below.
 
 ## Alignment and verification
 

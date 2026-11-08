@@ -214,7 +214,7 @@ test('a card offers a mail link to report something wrong, named after the resta
   await expect(link).toHaveAttribute('href', `mailto:${process.env.VITE_MAP_CONTACT}?subject=${encodeURIComponent(`Seated map: ${name}`)}`);
 });
 
-test('Noord is drawn beneath the city at far, mid and near zooms and across the IJ seam', async ({ page }) => {
+test('Noord is drawn at far, mid and near zooms and across the IJ seam, with fog only on a thin rim of the art', async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -265,11 +265,13 @@ test('Noord is drawn beneath the city at far, mid and near zooms and across the 
         const alpha=g.getImageData(0,0,mask.width,mask.height).data;
         const actual=canvas.getContext('2d')!.getImageData(0,0,canvas.width,canvas.height).data;
         const fog=new Set(['168,164,188','187,183,203','206,203,218','227,225,234']);
-        let overlap=0;
-        for(let i=0;i<alpha.length;i+=4) if(alpha[i+3]===255 && fog.has(`${actual[i]},${actual[i+1]},${actual[i+2]}`)) overlap++;
-        return overlap;
+        let overlap=0, art=0;
+        for(let i=0;i<alpha.length;i+=4) if(alpha[i+3]===255) { art++; if(fog.has(`${actual[i]},${actual[i+1]},${actual[i+2]}`)) overlap++; }
+        return { overlap, art };
       });
-      expect(fogOverArt).toBe(0);
+      // Fog lies over the edge of the art in a ragged band (8 Nov 2026), never over more than a thin rim of it.
+      expect(fogOverArt.art).toBeGreaterThan(100_000);
+      expect(fogOverArt.overlap / fogOverArt.art).toBeLessThan(0.1);
     }
     await shot(page, `noord-${name}`);
   }

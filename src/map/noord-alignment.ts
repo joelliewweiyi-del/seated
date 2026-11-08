@@ -20,10 +20,21 @@ export function tileReader(base: string, level = 0) {
     return { alpha: !!p.alpha[k], water: !!p.alpha[k] && water(p.palette[k]!), colour: p.palette[k]! };
   };
 }
-export function measureAlignment(sez: SezManifest, lat = 52.3833, lng = 4.8953, radius = 220, search = 8) {
+export type Reader = ReturnType<typeof tileReader>;
+
+/** Reads level-0 pixels from an indexed image in memory whose top-left pixel is (x0, y0); index 0 is transparent. */
+export function imageReader(pixels: Uint8Array, w: number, h: number, x0: number, y0: number, palette: string[]): Reader {
+  return (x, y) => {
+    const px = Math.floor(x) - x0, py = Math.floor(y) - y0;
+    const k = px >= 0 && py >= 0 && px < w && py < h ? pixels[py * w + px]! : 0;
+    return k ? { alpha: true, water: water(palette[k]!), colour: palette[k]! } : { alpha: false, water: false, colour: '' };
+  };
+}
+
+export function measureAlignment(sez: SezManifest, lat = 52.3833, lng = 4.8953, radius = 220, search = 8, ours: Reader = tileReader('src/map/public/ours')) {
   const centre = new World(sez).project(lat, lng);
   const x0 = Math.round(centre.x / 2) - radius, y0 = Math.round(centre.y / 2) - radius, size = radius * 2;
-  const ours = tileReader('src/map/public/ours'), theirs = tileReader(`src/map/public/sez/${sez.version}`);
+  const theirs = tileReader(`src/map/public/sez/${sez.version}`);
   // A fixed common-alpha domain for every shift. Ignore occlusion near tall buildings by comparing the
   // water masks along their common shore, within 12 pixels of an actual reference water/land boundary.
   const stride = size + search * 2;

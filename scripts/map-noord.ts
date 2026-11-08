@@ -4,10 +4,11 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFile
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { Pix, rgb } from '../src/map/pix';
-import { World as Grid, TW, TH, T } from '../src/map/noord-grid';
+import { World as Grid, TW, TH, T, gapMask } from '../src/map/noord-grid';
 import { cleanSlivers, parkOrStoneTerrain } from '../src/map/noord-tags';
 import { paintGround, paintBuilding, paintProps, finishBridges, finishQuays } from '../src/map/noord-paint';
-import { writePNG } from '../src/map/noord-png';
+import { readPNG, writePNG } from '../src/map/noord-png';
+import { imageReader, measureAlignment } from '../src/map/noord-alignment';
 import { measurePalette, quantizer, MATERIAL_COLOURS, FAR_PALETTE } from '../src/map/noord-palette';
 import { rdToWgs, wgsToRd } from '../src/shared/rd';
 
@@ -15,8 +16,11 @@ import { rdToWgs, wgsToRd } from '../src/shared/rd';
 const sez = JSON.parse(readFileSync('src/map/public/sez/manifest.json', 'utf8'));
 const SCALE = sez.hi.w / sez.w / 2;
 const CELL_M = (TW / 2) / (Math.SQRT1_2 * SCALE);
-// y0 486800 (was 487600): his art leaves a gap at the Oostelijke eilanden that ours must fill (6 Nov 2026).
-const RD_BOX = { x0: 118000, y0: 486800, x1: 127500, y1: 492500 };
+// y0 484200 (was 486800, before that 487600): his art leaves gaps in Oost, the Indische Buurt and Watergraafsmeer
+// that ours must fill (Joel, 8 Nov 2026). Only those gaps are kept (gapMask), so the box can be large.
+const RD_BOX = { x0: 118000, y0: 484200, x1: 127500, y1: 492500 };
+/** How far our layer reaches over his edge, in his overview pixels (8 world pixels each): his art fades out in a dither about 128 world pixels deep, which ours covers (8 Nov 2026). */
+const UNDER_HIS_EDGE = 16;
 const places = JSON.parse(readFileSync('data/map-places.json', 'utf8'));
 const required = ['bacalar', 'barracuda', 'cornerstore', 'euro-pizza', 'europa', 'helling-7', 'hotel-de-goudfazant', 'klaproos', 'nikotin', 'pelusa'];
 for (const [id, p] of Object.entries(places) as Array<[string, { lat: number; lng: number; area: string }]>) {
@@ -685,6 +689,27 @@ for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1)
 }
 let pixels = new Uint8Array(canvas.data.length);
 for (let i = 0; i < pixels.length; i++) pixels[i] = snap(canvas.data[i]!);
+// Alignment with his art, measured on the whole painting before it is cut to his gaps (the cut leaves little shore).
+const alignment = measureAlignment(sez, undefined, undefined, 220, 8, imageReader(pixels, width, imgHeight, x0, y0, OUTPUT_PALETTE));
+console.log(`[noord] alignment at the IJ south shore: ${alignment.dx}, ${alignment.dy} px (correlation ${alignment.correlation.toFixed(2)})`);
+// Keep ours only where his drawing has no pixels (plus a strip over his edge): elsewhere his art is complete.
+{
+  const his = readPNG(readFileSync(`src/map/public/sez/${sez.version}/2.png`));
+  const alpha = Uint8Array.from(his.pixels, (p) => +(his.alpha[p]! > 0));
+  const keep = gapMask(alpha, his.w, his.h, UNDER_HIS_EDGE);
+  // One overview pixel is 8 world pixels, 4 of our level-0 pixels.
+  let cut = 0;
+  for (let cy = 0; cy < imgHeight; cy++) {
+    const oy = Math.floor((y0 + cy) / 4);
+    for (let cx = 0; cx < width; cx++) {
+      const ox = Math.floor((x0 + cx) / 4);
+      if (ox < 0 || oy < 0 || ox >= his.w || oy >= his.h || keep[oy * his.w + ox]) continue;
+      const i = cy * width + cx;
+      if (pixels[i]) { pixels[i] = 0; cut++; }
+    }
+  }
+  console.log(`[noord] ${cut} pixels under his art left out`);
+}
 // Stage tiles in the cache: a failed build must not replace the checked-in layer.
 const outputDir = 'src/map/public/ours';
 const out = join(CACHE, 'paint');
@@ -745,11 +770,12 @@ const manifest = {
   version: 1, sezVersion: sez.version, projection: { X0: sez.X0, Y0: sez.Y0, x: sez.x, y: sez.y, scale: SCALE, VZ: sez.VZ },
   rd: RD_BOX, cellMeters: CELL_M, heightScale: SCALE * sez.VZ, origin: { exact: origin, pixel: { x: ox, y: oy }, registration },
   credit: 'Noord drawn by Seated; © OpenStreetMap contributors (ODbL); 3DBAG TU Delft/3DGI (CC BY 4.0); PDOK aerial photo Beeldmateriaal Nederland (CC BY 4.0)',
+  alignment: { dx: alignment.dx, dy: alignment.dy, correlation: alignment.correlation, samples: alignment.samples },
   palette: OUTPUT_PALETTE, measurements: measured.table, levels, coverage: { x: px0, y: py0, w, h, runs }, files: outputs,
 };
 save('manifest.json', Buffer.from(JSON.stringify(manifest) + '\n'));
 const total = outputs.reduce((n, f) => n + f.bytes, 0);
-if (total > 12_000_000) throw new Error(`ours exceeds 12 MB: ${total}`);
+if (total > 13_000_000) throw new Error(`ours exceeds 13 MB: ${total}`);
 mkdirSync(outputDir, { recursive: true });
 const names = new Set(outputs.map(f => f.name));
 for (const f of readdirSync(outputDir)) if (/^(?:[01]_-?[\d.]+_-?[\d.]+|2)\.png$/.test(f) && !names.has(f)) unlinkSync(`${outputDir}/${f}`);
