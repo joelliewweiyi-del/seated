@@ -15,6 +15,17 @@ async function settled(page: Page) {
   );
 }
 
+// The host's one-time nudge would pop up over the map mid-test; it has its own test on a fresh page.
+test.beforeEach(({ page }) =>
+  page.addInitScript(() => {
+    try {
+      localStorage.setItem('seated.map.hello', JSON.stringify({ seen: true }));
+    } catch {
+      /* no storage: the nudge test covers it */
+    }
+  }),
+);
+
 test('the map opens on today with every readable restaurant and a list of who has a table', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.getByRole('heading', { name: 'Seated' })).toBeVisible();
@@ -103,6 +114,12 @@ test('on a phone the map, the day bar and the list sheet all fit, and the chrome
   await expect(page.locator('.dates')).toHaveCount(0);
   await page.locator('.list-head .row').click();
   await expect(page.locator('.rows')).toBeVisible();
+  // The picker fits a phone: one column of lists, nothing wider than the screen.
+  await page.locator('.chip.lens').click();
+  await expect(page.getByRole('dialog').locator('.choice').first()).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await shot(page, '06b-phone-lists');
+  await page.keyboard.press('Escape');
   await page.locator('.rows .row').first().click();
   await expect(page.locator('.card h2')).toBeVisible();
   await expect(page.locator('.card').getByRole('link', { name: /Book|Booking page/ })).toBeInViewport();
@@ -151,9 +168,20 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   });
   await page.goto('/map/');
   const names = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.map((r: { name: string }) => r.name));
-  const lens = page.getByLabel('Seen through a guide');
-  await expect(lens.locator('option')).toHaveText(['Guides', 'Wide (3)', 'One (1)']);
-  await lens.selectOption('wide');
+  // The Lists chip opens the picker: every restaurant first, then each guide, with its picks and how many are free.
+  await page.locator('.chip.lens').click();
+  const picker = page.getByRole('dialog');
+  await expect(picker.getByRole('heading', { name: 'Where shall we eat?' })).toBeVisible();
+  await expect(picker.locator('.choice .nm')).toHaveText(['Every restaurant', 'Wide', 'One']);
+  const free = (await page.locator('.list-head h2').innerText()).match(/^(\d+)/)![1];
+  await expect(picker.locator('.choice').nth(0)).toContainText(`${free} free · ${names.length} places`);
+  await expect(picker.locator('.choice').nth(0)).toHaveAttribute('aria-pressed', 'true');
+  await expect(picker.locator('.choice').nth(1)).toContainText(/\d+ free · 3 picks/);
+  await expect(picker.locator('.choice').nth(2)).toContainText(/\d+ free · 1 pick$/);
+  await shot(page, '07-lists');
+  await picker.locator('.choice').nth(1).click();
+  await expect(picker).toBeHidden();
+  await expect(page.locator('.chip.lens')).toHaveText('Wide');
   await expect(page.locator('.rows .nm')).toHaveCount(3);
   for (const n of names.slice(0, 3)) await expect(page.locator('.rows .nm', { hasText: n })).toHaveCount(1);
   await expect(page.locator('.list-head .sum')).toContainText('of 3 Wide picks');
@@ -212,6 +240,58 @@ test('a card offers a mail link to report something wrong, named after the resta
     return;
   }
   await expect(link).toHaveAttribute('href', `mailto:${process.env.VITE_MAP_CONTACT}?subject=${encodeURIComponent(`Seated map: ${name}`)}`);
+});
+
+test('the picker takes a missing restaurant to a mail addressed to us, and only when a contact is set', async ({ page }) => {
+  await page.goto('/map/');
+  await page.getByRole('button', { name: 'Lists' }).click();
+  const form = page.locator('.missing');
+  // The e2e build may have no VITE_MAP_CONTACT: then there is no form at all, never an empty mailto.
+  const contact = process.env.VITE_MAP_CONTACT;
+  if (!contact) {
+    await expect(form).toHaveCount(0);
+    return;
+  }
+  const send = form.locator('a.btn');
+  // Nothing to send until there is a name.
+  await expect(send).toHaveAttribute('aria-disabled', 'true');
+  await expect(send).not.toHaveAttribute('href');
+  await form.getByLabel('Restaurant', { exact: true }).fill(' Café Test & Co ');
+  await form.getByLabel(/Area or website/).fill('De Pijp');
+  await expect(send).toHaveAttribute(
+    'href',
+    `mailto:${contact}?subject=${encodeURIComponent('Seated: please add Café Test & Co')}&body=${encodeURIComponent('Please add: Café Test & Co\nWhere: De Pijp\n\nSent from seated.food')}`,
+  );
+  // Leaving the page for a mail app is the browser's business; the thanks shows the address in case nothing opens.
+  await send.evaluate((a) => a.addEventListener('click', (e) => e.preventDefault(), { once: true }));
+  await send.click();
+  await expect(form.locator('.sent')).toContainText(contact);
+  await shot(page, '09-lists-missing');
+});
+
+test('once per device the host points at the lists after a few seconds, and Show me opens them', async ({ browser }) => {
+  const page = await browser.newPage(); // no beforeEach here: a device that has never seen the nudge
+  await page.clock.install();
+  await page.goto('/map/');
+  await expect(page.locator('.list-head h2')).toBeVisible();
+  await expect(page.locator('.nudge')).toHaveCount(0);
+  await page.clock.fastForward(6500);
+  const nudge = page.locator('.nudge');
+  await expect(nudge).toBeVisible();
+  // It fades in over a quarter second; the screenshot waits for that.
+  await nudge.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  await expect(nudge).toHaveCSS('opacity', '1');
+  await shot(page, '10-nudge');
+  await nudge.getByRole('button', { name: 'Show me' }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Where shall we eat?' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  // Seen once, never again on this device.
+  await page.reload();
+  await expect(page.locator('.list-head h2')).toBeVisible();
+  await page.clock.fastForward(10_000);
+  await expect(page.locator('.nudge')).toHaveCount(0);
+  await page.close();
 });
 
 test('Noord is drawn at far, mid and near zooms and across the IJ seam, with fog only on a thin rim of the art', async ({ page }) => {

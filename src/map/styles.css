@@ -1216,7 +1216,228 @@ a {
   }
 }
 
+/* The list picker: the host asks, the lists answer. */
+.picker {
+  width: min(560px, 100%);
+}
+.hello {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.host {
+  flex: none;
+  image-rendering: pixelated;
+}
+.hello .host {
+  animation: host-bob 1.4s steps(1) infinite;
+}
+@keyframes host-bob {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+.bubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  box-shadow:
+    0 -2px 0 0 var(--ink),
+    0 2px 0 0 var(--ink),
+    -2px 0 0 0 var(--ink),
+    2px 0 0 0 var(--ink);
+  margin-bottom: 26px;
+}
+.bubble::before {
+  /* The tail, pointing at the host: two stepped pixels. */
+  content: '';
+  position: absolute;
+  left: -8px;
+  bottom: 8px;
+  width: 6px;
+  height: 6px;
+  background: var(--panel-2);
+  box-shadow:
+    -2px 0 0 0 var(--ink),
+    0 2px 0 0 var(--ink),
+    0 -2px 0 0 var(--ink);
+}
+.bubble h2 {
+  margin: 0 0 4px;
+}
+.bubble p {
+  margin: 0;
+}
+.choices {
+  list-style: none;
+  margin: 0;
+  padding: 2px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.choice {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  padding: 10px 12px 9px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow:
+    0 -2px 0 0 var(--ink),
+    0 2px 0 0 var(--ink),
+    -2px 0 0 0 var(--ink),
+    2px 0 0 0 var(--ink),
+    0 4px 0 0 var(--ink);
+}
+.choice:hover {
+  background: var(--panel-2);
+}
+.choice:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 -2px 0 0 var(--ink),
+    0 2px 0 0 var(--ink),
+    -2px 0 0 0 var(--ink),
+    2px 0 0 0 var(--ink);
+}
+.choice[aria-pressed='true'] {
+  background: #e3f2e6;
+}
+.choice .nm {
+  font: 600 16px/1.1 var(--px);
+}
+.choice .by {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.choice .counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font: 600 12px/1 var(--px);
+  font-variant-numeric: tabular-nums;
+}
+.choice .stud {
+  width: 8px;
+  height: 8px;
+  background: var(--open);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.picker .meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.missing {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 2px dashed var(--line);
+  display: grid;
+  gap: 4px;
+}
+.missing label {
+  margin-top: 6px;
+  font: 600 12px/1.2 var(--px);
+  color: var(--ink-2);
+}
+.missing input {
+  font: 15px/1.2 var(--text);
+  padding: 9px 10px;
+  border: 0;
+  background: #fff;
+  color: var(--ink);
+  box-shadow:
+    0 -2px 0 0 var(--ink),
+    0 2px 0 0 var(--ink),
+    -2px 0 0 0 var(--ink),
+    2px 0 0 0 var(--ink);
+  margin: 2px;
+}
+.missing .btn {
+  justify-self: start;
+}
+.missing .btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+.missing .sent {
+  font-size: 13px;
+  user-select: text;
+}
+.nudge {
+  position: absolute;
+  left: 64px;
+  bottom: 40px;
+  z-index: 5;
+  max-width: 330px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  animation: nudge-in 0.25s steps(3);
+}
+.nudge p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.nudge p b {
+  display: block;
+  font: 600 14px/1.2 var(--px);
+}
+.nudge .btn {
+  flex: none;
+  margin: 0 0 4px;
+}
+.nudge .x {
+  flex: none;
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: 600 18px/1 var(--px);
+  color: var(--muted);
+  padding: 0 2px;
+}
+@keyframes nudge-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+@media (max-width: 900px) {
+  .nudge {
+    left: 8px;
+    right: 8px;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+  .choices {
+    gap: 8px;
+  }
+}
+@media (max-width: 420px) {
+  .choices {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .hello .host,
+  .nudge {
+    animation: none;
+  }
   .brand-mark *,
   .dates {
     animation: none !important;

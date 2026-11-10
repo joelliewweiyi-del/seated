@@ -3,6 +3,7 @@ import { ago, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, o
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { Marks, metres, michelinWords, useRemembered, walk } from './marks';
+import { Nudge, Picker, type ListChoice } from './picker';
 import { World } from './world';
 
 const CONTACT = (import.meta.env.VITE_MAP_CONTACT as string | undefined) ?? '';
@@ -122,7 +123,11 @@ export function App() {
   const toggleFav = useCallback((id: string) => setSaved((o) => ({ ids: o.ids.includes(id) ? o.ids.filter((x) => x !== id) : [...o.ids, id] })), [setSaved]);
   const [me, setMe] = useState<{ lat: number; lng: number; note?: string } | null>(null);
   const [query, setQuery] = useState('');
-  const [dialog, setDialog] = useState<'about' | 'restaurants' | null>(null);
+  const [dialog, setDialog] = useState<DialogKind | null>(null);
+  // Once per device, a few seconds in, the host points at the lists (and goes again after 20 s).
+  const [hello, setHello] = useRemembered<{ seen: boolean }>('seated.map.hello', { seen: false });
+  const [nudge, setNudge] = useState(false);
+  const narrow = useNarrow();
   const [collapsed, setCollapsed] = useState(() => matchMedia('(max-width: 900px)').matches);
   const [, tick] = useState(0);
 
@@ -319,6 +324,20 @@ export function App() {
     focus(selected);
   }, [placed, selected, focus]);
 
+  useEffect(() => {
+    if (hello.seen || !data) return;
+    const t = setTimeout(() => {
+      setNudge(true);
+      setHello({ seen: true });
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [hello.seen, data, setHello]);
+  useEffect(() => {
+    if (!nudge) return;
+    const t = setTimeout(() => setNudge(false), 20_000);
+    return () => clearTimeout(t);
+  }, [nudge]);
+
   // Keyboard.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -359,6 +378,16 @@ export function App() {
   }
 
   const sel = placed.find((p) => p.r.id === selected)?.r ?? null;
+  const freeOf = (rs: Placed[]) => rs.filter((p) => statusOfR(p.r) === 'open').length;
+  const lists: ListChoice[] = data
+    ? [
+        { id: null, name: 'Every restaurant', by: 'All of Seated', line: '', picks: placed.length, free: freeOf(placed) },
+        ...data.guides.map((g) => {
+          const mine = placed.filter((p) => p.r.g.includes(g.id));
+          return { id: g.id, name: g.short, by: g.by, line: g.line, picks: mine.length, free: freeOf(mine) };
+        }),
+      ]
+    : [];
   return (
     <div className="app">
       <canvas ref={canvasRef} className="map" aria-label="Pixel map of Amsterdam with a sign over every restaurant" role="img" />
@@ -399,6 +428,7 @@ export function App() {
                 onFilters={setFilters}
                 lens={lens}
                 onLens={setLens}
+                onLists={() => setDialog('lists')}
                 favs={favs}
                 me={filters.near ? me : null}
                 query={query}
@@ -435,7 +465,31 @@ export function App() {
           </footer>
         </>
       )}
-      {dialog && <Dialog kind={dialog} onKind={setDialog} onClose={() => setDialog(null)} />}
+      {nudge && data && !dialog && !sel && (!narrow || collapsed) && (
+        <Nudge
+          onOpen={() => {
+            setNudge(false);
+            setDialog('lists');
+          }}
+          onClose={() => setNudge(false)}
+        />
+      )}
+      {dialog === 'lists' && data && day ? (
+        <Picker
+          lists={lists}
+          current={lens}
+          dayText={dayLabel(day)}
+          contact={CONTACT}
+          onPick={(id) => {
+            setLens(id);
+            setSelected(null);
+            setDialog(null);
+          }}
+          onClose={() => setDialog(null)}
+        />
+      ) : (
+        dialog && dialog !== 'lists' && <Dialog kind={dialog} onKind={setDialog} onClose={() => setDialog(null)} />
+      )}
     </div>
   );
 }
@@ -652,6 +706,8 @@ interface ListProps {
   /** The guide the list is seen through, or null for every restaurant. */
   lens: string | null;
   onLens: (id: string | null) => void;
+  /** Opens the list picker. */
+  onLists: () => void;
   favs: Set<string>;
   /** Where distances start, when "Near me" is on. */
   me: { lat: number; lng: number; note?: string } | null;
@@ -734,14 +790,9 @@ function List(p: ListProps) {
           <input className="search" type="search" placeholder="Name, area or food  /" value={p.query} onChange={(e) => p.onQuery(e.target.value)} aria-label="Find a restaurant" />
           <div className="chips" role="group" aria-label="Show">
             {p.data.guides.length > 0 && (
-              <select className="chip lens" data-on={p.lens ? '' : undefined} value={p.lens ?? ''} onChange={(e) => p.onLens(e.target.value || null)} aria-label="Seen through a guide">
-                <option value="">Guides</option>
-                {p.data.guides.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.short} ({p.placed.filter((x) => x.r.g.includes(g.id)).length})
-                  </option>
-                ))}
-              </select>
+              <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists}>
+                {guide ? guide.short : 'Lists'}
+              </button>
             )}
             {CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
               <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>
@@ -1062,7 +1113,9 @@ function MoreBar() {
   );
 }
 
-function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKind: (k: 'about' | 'restaurants') => void; onClose: () => void }) {
+type DialogKind = 'about' | 'restaurants' | 'lists';
+
+function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKind: (k: DialogKind) => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), [kind]);
   return (
@@ -1084,8 +1137,10 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
               <>
                 <h3>Missing a place?</h3>
                 <p>
-                  Tell us at <a href={`mailto:${CONTACT}?subject=${encodeURIComponent('Seated map: a missing restaurant')}`}>{CONTACT}</a>. It
-                  helps to name its booking system, if you know it.
+                  Tell us which one, and we add it when its booking calendar is public.{' '}
+                  <button className="link" onClick={() => onKind('lists')}>
+                    Suggest a restaurant
+                  </button>
                 </p>
               </>
             )}
