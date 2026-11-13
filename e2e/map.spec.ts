@@ -20,6 +20,8 @@ test.beforeEach(({ page }) =>
   page.addInitScript(() => {
     try {
       localStorage.setItem('seated.map.hello', JSON.stringify({ seen: true }));
+      // The welcome (two questions) opens on a first visit; e2e/you.spec.ts covers it.
+      if (!localStorage.getItem('seated.map.you')) localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true }));
     } catch {
       /* no storage: the nudge test covers it */
     }
@@ -94,6 +96,7 @@ test('a closed day shows a closed room, and restaurants learn how to opt out', a
 
 test('on a phone the map, the day bar and the list sheet all fit, and the chrome stays small', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await page.addInitScript(() => localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true })));
   await page.goto('/map/');
   await expect(page.locator('.daypill')).toBeVisible();
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -269,11 +272,13 @@ test('the picker takes a missing restaurant to a mail addressed to us, and only 
   await shot(page, '09-lists-missing');
 });
 
-test('once per device the host points at the lists after a few seconds, and Show me opens them', async ({ browser }) => {
+test('once per device, a visitor who came by a link gets a nudge from the host a few seconds in, and Show me opens the two questions', async ({ browser }) => {
   const page = await browser.newPage(); // no beforeEach here: a device that has never seen the nudge
   await page.clock.install();
-  await page.goto('/map/');
+  // A link (here to a lens) skips the welcome, so the nudge offers it later.
+  await page.goto('/map/?lens=nobody');
   await expect(page.locator('.list-head h2')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.nudge')).toHaveCount(0);
   await page.clock.fastForward(6500);
   const nudge = page.locator('.nudge');
@@ -283,7 +288,7 @@ test('once per device the host points at the lists after a few seconds, and Show
   await expect(nudge).toHaveCSS('opacity', '1');
   await shot(page, '10-nudge');
   await nudge.getByRole('button', { name: 'Show me' }).click();
-  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Where shall we eat?' })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: "What's the night?" })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
   // Seen once, never again on this device.

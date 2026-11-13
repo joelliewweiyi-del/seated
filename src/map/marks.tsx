@@ -3,6 +3,19 @@
 import { useEffect, useState } from 'react';
 import type { MapRestaurant } from './data';
 
+/** What a room kind is called in words. */
+export const KIND_WORD: Record<string, string> = {
+  bistro: 'Bistro',
+  wine: 'Wine bar',
+  japanese: 'Japanese',
+  fine: 'Fine dining',
+  cafe: 'Café',
+  pizza: 'Italian',
+  greenhouse: 'Greenhouse',
+  island: 'Island',
+  brasserie: 'Brasserie',
+};
+
 /** ★ means MICHELIN stars and nothing else; "hard to get" has its own flame. No MICHELIN logos. */
 export function michelinText(r: Pick<MapRestaurant, 'michelin'>): string | null {
   if (!r.michelin) return null;

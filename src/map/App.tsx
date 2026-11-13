@@ -2,23 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { ago, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
-import { Marks, metres, michelinWords, useRemembered, walk } from './marks';
+import { KIND_WORD, Marks, metres, michelinWords, useRemembered, walk } from './marks';
 import { Nudge, Picker, type ListChoice } from './picker';
+import type { SeatedList } from './api';
+import { Avatar, cleanLook } from './avatar';
+import { profileById } from './taste';
+import { picksFor, Trouble, Welcome, YouPanel, type WelcomeStep } from './welcome';
+import { useYou, type You } from './you';
 import { World } from './world';
 
 const CONTACT = (import.meta.env.VITE_MAP_CONTACT as string | undefined) ?? '';
 const REFRESH_MS = 3 * 60_000;
-const KIND_WORD: Record<string, string> = {
-  bistro: 'Bistro',
-  wine: 'Wine bar',
-  japanese: 'Japanese',
-  fine: 'Fine dining',
-  cafe: 'Café',
-  pizza: 'Italian',
-  greenhouse: 'Greenhouse',
-  island: 'Island',
-  brasserie: 'Brasserie',
-};
 const ORDER: Status[] = ['open', 'later', 'full', 'closed', 'unknown'];
 /** Booking pages that take no date from a link: the guest picks the day there (Tebi, Guestplan, Frank). */
 const NO_DATE_LINK = new Set(['Tebi', 'Guestplan', 'Frank']);
@@ -65,13 +59,30 @@ interface Placed {
 
 function readUrl(): { date: string | null; r: string | null; lens: string | null } {
   const q = new URLSearchParams(location.search);
-  return { date: q.get('date'), r: q.get('r'), lens: q.get('lens') };
+  // A list travels as ?list=<id>; inside the page it is the lens 'l:<id>'.
+  const list = q.get('list');
+  return { date: q.get('date'), r: q.get('r'), lens: list ? `l:${list}` : q.get('lens') };
 }
 
-/** A guide's picks only, when a lens is chosen. */
-function inLens(lens: string | null, r: MapRestaurant): boolean {
-  return !lens || r.g.includes(lens);
+/** What the map is seen through: a guide's picks, your picks, or a list (yours or someone else's). */
+interface Lens {
+  /** As in the link: a guide id, 'you', or 'l:<list id>'. */
+  id: string;
+  kind: 'guide' | 'you' | 'list';
+  title: string;
+  line: string;
+  url: string | null;
+  /** The maker of someone else's list. */
+  by: SeatedList['by'];
+  ids: Set<string>;
 }
+
+/** Only the lens's restaurants, when a lens is chosen. */
+function inLens(lens: Lens | null, r: MapRestaurant): boolean {
+  return !lens || lens.ids.has(r.id);
+}
+
+const NO_RESTAURANTS: MapRestaurant[] = [];
 
 function badgeFor(r: MapRestaurant, status: Status, date: string): string {
   if (status === 'open') {
@@ -127,6 +138,12 @@ export function App() {
   // Once per device, a few seconds in, the host points at the lists (and goes again after 20 s).
   const [hello, setHello] = useRemembered<{ seen: boolean }>('seated.map.hello', { seen: false });
   const [nudge, setNudge] = useState(false);
+  const [welcomeAt, setWelcomeAt] = useState<WelcomeStep>('q0');
+  const openWelcome = (step: WelcomeStep) => {
+    setWelcomeAt(step);
+    setDialog('welcome');
+  };
+  const you = useYou(data?.restaurants ?? NO_RESTAURANTS);
   const narrow = useNarrow();
   const [collapsed, setCollapsed] = useState(() => matchMedia('(max-width: 900px)').matches);
   const [, tick] = useState(0);
@@ -180,9 +197,30 @@ export function App() {
     };
   }, [world]);
 
-  const lens = data?.guides.some((g) => g.id === lensId) ? lensId : null;
-
   const statusOfR = useCallback((r: MapRestaurant) => (day && data ? statusOf(codeOn(r, data, day)) : 'unknown'), [day, data]);
+
+  // Your picks: the restaurants that fit your taste best.
+  const picks = useMemo(() => (data && you.profile ? picksFor(you, data.restaurants, statusOfR, 12) : []), [data, you.profile, you.taste, statusOfR]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A list from a link that is not yours: fetch it once.
+  const listId = lensId?.startsWith('l:') ? lensId.slice(2) : null;
+  useEffect(() => {
+    if (listId) void you.open(listId);
+  }, [listId, you.lists.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The lens from its id. An id the map does not know (yet) shows every restaurant.
+  const lens = useMemo<Lens | null>(() => {
+    if (!data || !lensId) return null;
+    const g = data.guides.find((x) => x.id === lensId);
+    if (g) return { id: g.id, kind: 'guide', title: g.short, line: g.line, url: g.url, by: null, ids: new Set(data.restaurants.filter((r) => r.g.includes(g.id)).map((r) => r.id)) };
+    if (lensId === 'you')
+      return you.profile ? { id: 'you', kind: 'you', title: 'For you', line: `Your picks as a ${you.profile.name}.`, url: null, by: null, ids: new Set(picks.map((r) => r.id)) } : null;
+    if (listId) {
+      const own = you.lists.find((l) => l.id === listId);
+      const l = own ?? you.community?.find((x) => x.id === listId) ?? you.opened[listId];
+      if (!l) return null;
+      return { id: lensId, kind: 'list', title: l.title, line: l.note, url: null, by: own ? null : l.by, ids: new Set(l.places) };
+    }
+    return null;
+  }, [data, lensId, listId, you.profile, you.lists, you.community, you.opened, picks]);
 
   // Signs for the day.
   useEffect(() => {
@@ -279,7 +317,7 @@ export function App() {
     const q = new URLSearchParams();
     if (day !== data.start) q.set('date', day);
     if (selected) q.set('r', selected);
-    if (lens) q.set('lens', lens);
+    if (lens) q.set(lens.kind === 'list' ? 'list' : 'lens', lens.kind === 'list' ? lens.id.slice(2) : lens.id);
     const next = `${location.pathname}${q.toString() ? `?${q}` : ''}`;
     if (next === `${location.pathname}${location.search}`) return;
     try {
@@ -324,14 +362,29 @@ export function App() {
     focus(selected);
   }, [placed, selected, focus]);
 
+  // The welcome opens by itself once, on a first visit that did not come from a link to a restaurant or list.
+  // The link as it arrived: the page rewrites it (an unknown lens drops out) before the data is in.
+  const arrived = useRef(readUrl());
+  const greeted = useRef(false);
   useEffect(() => {
-    if (hello.seen || !data) return;
+    if (greeted.current || !data || !day) return;
+    greeted.current = true;
+    const u = arrived.current;
+    if (!you.welcomed && !you.key && !u.r && !u.lens) openWelcome('q0');
+  }, [data, day]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Community lists load when the picker opens.
+  useEffect(() => {
+    if (dialog === 'lists' && you.community === null) void you.loadCommunity();
+  }, [dialog]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (hello.seen || you.welcomed || !data) return;
     const t = setTimeout(() => {
       setNudge(true);
       setHello({ seen: true });
     }, 6000);
     return () => clearTimeout(t);
-  }, [hello.seen, data, setHello]);
+  }, [hello.seen, you.welcomed, data, setHello]);
   useEffect(() => {
     if (!nudge) return;
     const t = setTimeout(() => setNudge(false), 20_000);
@@ -343,6 +396,7 @@ export function App() {
     const onKey = (e: KeyboardEvent) => {
       const typing = (e.target as HTMLElement)?.tagName === 'INPUT';
       if (e.key === 'Escape') {
+        if (dialog === 'welcome') you.setWelcomed();
         if (dialog) setDialog(null);
         else setSelected(null);
         return;
@@ -388,6 +442,31 @@ export function App() {
         }),
       ]
     : [];
+  const count = (ids: Iterable<string>) => {
+    const set = new Set(ids);
+    const rs = placed.filter((p) => set.has(p.r.id));
+    return { picks: rs.length, free: freeOf(rs) };
+  };
+  const forYou: ListChoice | null = you.profile ? { id: 'you', name: 'For you', by: you.profile.name, line: you.profile.line, ...count(picks.map((r) => r.id)) } : null;
+  const mine = you.account
+    ? you.lists.map((l) => ({ id: `l:${l.id}`, name: l.title, by: l.note || 'Your list', line: l.note, badge: l.public ? 'In Community' : 'Only you', list: l, ...count(l.places) }))
+    : null;
+  const pickSet = new Set(picks.map((r) => r.id));
+  const community: ListChoice[] | null =
+    you.community === null
+      ? null
+      : you.community
+          .filter((l) => !you.lists.some((m) => m.id === l.id))
+          .map((l) => ({ l, k: l.places.filter((id) => pickSet.has(id)).length }))
+          .sort((a, b) => b.k - a.k)
+          .map(({ l }) => ({
+            id: `l:${l.id}`,
+            name: l.title,
+            by: [l.by?.name, profileById(l.by?.profile)?.name].filter(Boolean).join(' · '),
+            line: l.note,
+            look: l.by ? cleanLook(l.by.avatar) : null,
+            ...count(l.places),
+          }));
   return (
     <div className="app">
       <canvas ref={canvasRef} className="map" aria-label="Pixel map of Amsterdam with a sign over every restaurant" role="img" />
@@ -399,7 +478,14 @@ export function App() {
         </div>
       ) : (
         <>
-          <TopBar data={data} day={day} onPick={setDate} onAbout={() => setDialog('about')} />
+          <TopBar
+            data={data}
+            day={day}
+            onPick={setDate}
+            onAbout={() => setDialog('about')}
+            you={you}
+            onYou={() => (you.account || you.answered ? setDialog('you') : openWelcome('q0'))}
+          />
 
           <aside className={`side${collapsed && !sel ? ' collapsed' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
@@ -415,6 +501,8 @@ export function App() {
                 }}
                 saved={favs.has(sel.id)}
                 onSave={() => toggleFav(sel.id)}
+                you={you}
+                onCharacter={() => openWelcome('character')}
                 onClose={() => setSelected(null)}
                 onDay={setDate}
               />
@@ -469,7 +557,7 @@ export function App() {
         <Nudge
           onOpen={() => {
             setNudge(false);
-            setDialog('lists');
+            openWelcome('q0');
           }}
           onClose={() => setNudge(false)}
         />
@@ -477,9 +565,22 @@ export function App() {
       {dialog === 'lists' && data && day ? (
         <Picker
           lists={lists}
-          current={lens}
+          forYou={forYou}
+          mine={mine}
+          community={community}
+          current={lens?.id ?? null}
           dayText={dayLabel(day)}
           contact={CONTACT}
+          problem={you.problem ? <Trouble you={you} /> : null}
+          busy={you.busy}
+          onCharacter={() => openWelcome('character')}
+          onSaveList={you.saveList}
+          onDeleteList={async (id) => {
+            const ok = await you.deleteList(id);
+            if (ok && lensId === `l:${id}`) setLens(null);
+            return ok;
+          }}
+          onReport={you.report}
           onPick={(id) => {
             setLens(id);
             setSelected(null);
@@ -488,7 +589,39 @@ export function App() {
           onClose={() => setDialog(null)}
         />
       ) : (
-        dialog && dialog !== 'lists' && <Dialog kind={dialog} onKind={setDialog} onClose={() => setDialog(null)} />
+        (dialog === 'about' || dialog === 'restaurants') && <Dialog kind={dialog} onKind={setDialog} onClose={() => setDialog(null)} />
+      )}
+      {dialog === 'welcome' && data && day && (
+        <Welcome
+          key={welcomeAt}
+          you={you}
+          restaurants={data.restaurants}
+          day={day}
+          statusOf={statusOfR}
+          start={welcomeAt}
+          onLens={(id) => {
+            setLens(id);
+            setSelected(null);
+            setDialog(null);
+          }}
+          onPick={(id) => {
+            setDialog(null);
+            focus(id);
+          }}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'you' && (
+        <YouPanel
+          you={you}
+          onWelcome={openWelcome}
+          onLens={(id) => {
+            setLens(id);
+            setSelected(null);
+            setDialog(null);
+          }}
+          onClose={() => setDialog(null)}
+        />
       )}
     </div>
   );
@@ -586,7 +719,7 @@ function Quick({ data, day, onPick }: { data: MapData; day: string; onPick: (d: 
 }
 
 /** One slim bar: the brand, the day with a step either side, and How it works. All days open from the day itself. */
-function TopBar({ data, day, onPick, onAbout }: { data: MapData; day: string; onPick: (d: string) => void; onAbout: () => void }) {
+function TopBar({ data, day, onPick, onAbout, you, onYou }: { data: MapData; day: string; onPick: (d: string) => void; onAbout: () => void; you: You; onYou: () => void }) {
   const narrow = useNarrow();
   const [open, setOpen] = useState(false);
   const i = dayIndex(data, day);
@@ -622,6 +755,9 @@ function TopBar({ data, day, onPick, onAbout }: { data: MapData; day: string; on
             ?
           </span>
           <span className="sr">How it works</span>
+        </button>
+        <button className="you-btn" onClick={onYou} aria-label={you.account ? `You: ${you.account.name}` : 'You'} title={you.account ? you.account.name : 'You'}>
+          <Avatar look={you.account ? cleanLook(you.account.avatar) : null} size={28} />
         </button>
       </div>
       {open && (
@@ -703,8 +839,8 @@ interface ListProps {
   statusOf: (r: MapRestaurant) => Status;
   filters: Filters;
   onFilters: (f: Filters) => void;
-  /** The guide the list is seen through, or null for every restaurant. */
-  lens: string | null;
+  /** The lens the list is seen through, or null for every restaurant. */
+  lens: Lens | null;
   onLens: (id: string | null) => void;
   /** Opens the list picker. */
   onLists: () => void;
@@ -745,13 +881,13 @@ function List(p: ListProps) {
           (b.r.hot ?? 0) - (a.r.hot ?? 0) ||
           a.r.name.localeCompare(b.r.name),
     );
-  const guide = p.data.guides.find((g) => g.id === p.lens) ?? null;
+  const guide = p.lens;
   const seen = p.placed.filter((x) => inLens(p.lens, x.r));
   const openCount = seen.filter((x) => p.statusOf(x.r) === 'open').length;
   const hotOpen = seen.filter((x) => x.r.hot && p.statusOf(x.r) === 'open').length;
   const anyKind = f.stars || f.bib || f.hot || f.fav;
   const active = CHIPS.filter(([k]) => f[k]).map(([, label]) => label);
-  const [scroller, more, check] = useMore<HTMLUListElement>(`${rows.length}${q}${active}${p.lens}`);
+  const [scroller, more, check] = useMore<HTMLUListElement>(`${rows.length}${q}${active}${p.lens?.id}`);
   let last: Status | null = null;
   return (
     <section className="px list">
@@ -760,7 +896,7 @@ function List(p: ListProps) {
           <span className="stud" style={{ background: STATUS_COLOUR.open }} aria-hidden="true" />
           <h2>{openCount} with a table</h2>
           <p className="sum">
-            for two, of {guide ? `${seen.length} ${guide.short} picks` : `${p.placed.length} restaurants`}
+            for two, of {guide ? (guide.kind === 'guide' ? `${seen.length} ${guide.title} picks` : `${seen.length} in “${guide.title}”`) : `${p.placed.length} restaurants`}
             {hotOpen ? `; ${hotOpen} hard to get` : ''}
           </p>
           <span className="sheet-toggle" aria-hidden="true">
@@ -769,10 +905,17 @@ function List(p: ListProps) {
         </button>
         {guide && (
           <p className="lens-line">
-            <span>{guide.line}</span>{' '}
-            <a href={guide.url} target="_blank" rel="noopener noreferrer">
-              Their list ↗
-            </a>
+            {guide.by && (
+              <span className="maker">
+                <Avatar look={cleanLook(guide.by.avatar)} size={18} /> {guide.by.name}
+              </span>
+            )}
+            {guide.line && <span>{guide.line}</span>}{' '}
+            {guide.url && (
+              <a href={guide.url} target="_blank" rel="noopener noreferrer">
+                Their list ↗
+              </a>
+            )}
             <button className="link" onClick={() => p.onLens(null)}>
               Every restaurant
             </button>
@@ -791,7 +934,7 @@ function List(p: ListProps) {
           <div className="chips" role="group" aria-label="Show">
             {p.data.guides.length > 0 && (
               <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists}>
-                {guide ? guide.short : 'Lists'}
+                {guide ? guide.title : 'Lists'}
               </button>
             )}
             {CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
@@ -897,6 +1040,9 @@ interface CardProps {
   onDay: (d: string) => void;
   /** Show the map through one of the guides that pick this restaurant. */
   onLens: (id: string) => void;
+  you: You;
+  /** Open the welcome at "make a character" (lists belong to a character). */
+  onCharacter: () => void;
 }
 
 /** True while a scrolling box has more below its fold (then a MoreBar shows under it). */
@@ -935,7 +1081,60 @@ async function share(r: MapRestaurant, day: string): Promise<string> {
   }
 }
 
-function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onLens }: CardProps) {
+/** "+ List": put this restaurant in one of your lists, or start one with it. */
+function AddToList({ r, you, onCharacter }: { r: MapRestaurant; you: You; onCharacter: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  return (
+    <div className="addlist">
+      <button className="btn small" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        + List
+      </button>
+      {open && (
+        <div className="px pop" role="group" aria-label="Add to a list">
+          <h4>Add to a list</h4>
+          {!you.account ? (
+            <p>
+              Lists belong to a character.{' '}
+              <button className="link" onClick={onCharacter}>
+                Make my character
+              </button>
+            </p>
+          ) : (
+            <>
+              {you.lists.map((l) => (
+                <label className="check" key={l.id}>
+                  <input
+                    type="checkbox"
+                    checked={l.places.includes(r.id)}
+                    disabled={you.busy}
+                    onChange={(e) => void you.saveList({ ...l, places: e.target.checked ? [...l.places, r.id] : l.places.filter((x) => x !== r.id) })}
+                  />{' '}
+                  {l.title}
+                </label>
+              ))}
+              <form
+                className="newlist"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (await you.saveList({ title, places: [r.id], public: false })) setTitle('');
+                }}
+              >
+                <input aria-label="New list name" placeholder="New list" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={60} />
+                <button className="btn small" type="submit" disabled={!title.trim() || you.busy}>
+                  Add
+                </button>
+              </form>
+              <Trouble you={you} />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onLens, you, onCharacter }: CardProps) {
   const times = freeTimes(r, day);
   const lunch = times.filter((t) => t < '16:00');
   const dinner = times.filter((t) => t >= '16:00');
@@ -965,9 +1164,12 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
         <div className="card-body">
           <div className="title-row">
             <h2>{r.name}</h2>
-            <button className={`btn small save${saved ? ' on' : ''}`} aria-pressed={saved} onClick={onSave} title={saved ? 'Saved on this device' : 'Save on this device'}>
-              {saved ? '♥ Saved' : '♡ Save'}
-            </button>
+            <div className="title-actions">
+              <button className={`btn small save${saved ? ' on' : ''}`} aria-pressed={saved} onClick={onSave} title={saved ? 'Saved on this device' : 'Save on this device'}>
+                {saved ? '♥ Saved' : '♡ Save'}
+              </button>
+              <AddToList r={r} you={you} onCharacter={onCharacter} />
+            </div>
           </div>
           <p className="where">
             {KIND_WORD[r.kind] ?? 'Restaurant'} · {r.area}
@@ -1113,7 +1315,7 @@ function MoreBar() {
   );
 }
 
-type DialogKind = 'about' | 'restaurants' | 'lists';
+type DialogKind = 'about' | 'restaurants' | 'lists' | 'welcome' | 'you';
 
 function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKind: (k: DialogKind) => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -1156,7 +1358,13 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
               when the window is clear we guess the day it opens.
             </p>
             <h3>Booking</h3>
-            <p>You always book on the restaurant's own page. We never hold, sell or book tables. This page sets no cookies and asks nothing about you; it counts visits without them (Vercel Web Analytics).</p>
+            <p>You always book on the restaurant's own page. We never hold, sell or book tables. This page sets no cookies; it counts visits without them (Vercel Web Analytics).</p>
+            <h3>Your character</h3>
+            <p>
+              Answers to the two questions stay on this device. If you make a character, we keep its name, its look, your two answers and
+              your lists, tied to a key only you hold: no email, no password, no tracking. Lists you share in Community show your character's
+              name. Delete your character any time under You (top right); its lists go with it.
+            </p>
             <button className="btn" onClick={() => onKind('restaurants')}>
               For restaurants
             </button>

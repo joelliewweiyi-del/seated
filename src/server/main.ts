@@ -146,6 +146,23 @@ async function uploadMap(): Promise<void> {
     console.error(`[census] upload failed: ${err instanceof Error ? err.message : err}`);
   }
 }
+/**
+ * The map's characters and lists live in a free Supabase project, which pauses after a week without a request.
+ * The radar uploads the map anyway, so it also reads the public Community list once a day. A failed read is logged
+ * and changes nothing: the map itself does not need Supabase.
+ */
+let apiPingedAt = 0;
+async function pingMapApi(): Promise<void> {
+  if (!config.mapBlobToken || demo || Date.now() - apiPingedAt < 24 * 3600_000) return;
+  apiPingedAt = Date.now();
+  try {
+    const { url, key } = JSON.parse(readFileSync(new URL('../../deploy/map/api.json', import.meta.url), 'utf8')) as { url: string; key: string };
+    const res = await fetch(`${url}/community_lists`, { method: 'POST', headers: { apikey: key, 'Content-Type': 'application/json' }, body: '{"p_limit":1}' });
+    if (!res.ok) console.error(`[census] map API answered ${res.status}: characters and lists may be down; check the Supabase project "seated".`);
+  } catch (err) {
+    console.error(`[census] map API not reached (${err instanceof Error ? err.message : err}); nothing to do unless it repeats.`);
+  }
+}
 let censusRunning = false;
 async function census(): Promise<void> {
   if (censusRunning) return;
@@ -155,6 +172,7 @@ async function census(): Promise<void> {
     mapCache = null;
     exportMap();
     await uploadMap();
+    await pingMapApi();
   } catch (err) {
     console.error('[census] crashed:', err);
   } finally {
@@ -196,6 +214,18 @@ app.route(
     localOnly: !config.password,
   }),
 );
+
+// The map's characters and lists. Production: Supabase (supabase/schema.sql). Demo: the same SQL in PGlite, here,
+// so tests never write to the real project. Never in real mode: there the map talks to Supabase itself.
+if (config.demo) {
+  const { createSeatedApi } = await import('./seatedApiDev.js');
+  const seatedApi = await createSeatedApi();
+  app.post('/map-api/rpc/:fn', async (c) => {
+    const args = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+    const r = await seatedApi.rpc(c.req.param('fn'), args, c.req.header('x-forwarded-for') ?? '127.0.0.1');
+    return c.json(r.body, r.status as 200);
+  });
+}
 
 // The public map (dist/map, built by `npm run build`): a static page plus its data, read-only.
 app.get('/map/data.json', (c) => c.body(mapJson(), 200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }));

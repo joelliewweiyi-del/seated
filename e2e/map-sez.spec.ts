@@ -3,6 +3,17 @@ import { readFileSync } from 'node:fs';
 import { World, type SezManifest } from '../src/map/world';
 import type { MapData, MapRestaurant } from '../src/map/data';
 
+// The welcome (two questions) opens on a first visit and would cover the map; e2e/you.spec.ts covers it.
+test.beforeEach(({ page }) =>
+  page.addInitScript(() => {
+    try {
+      localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true }));
+    } catch {
+      /* no storage */
+    }
+  }),
+);
+
 const manifest = JSON.parse(
   readFileSync('src/map/public/sez/manifest.json', 'utf8'),
 ) as SezManifest;
