@@ -1648,6 +1648,16 @@ a {
 .you-btn .avatar {
   box-shadow: 0 0 0 2px var(--ink);
 }
+/* Phone tap targets of at least 44 px without moving the layout: the hit area grows, the drawing does not. */
+.you-btn {
+  padding: 8px;
+  margin: -8px;
+}
+.welcome-links .link,
+.welcome-foot .link {
+  padding: 16px 8px;
+  margin: -16px -8px;
+}
 .choice .by {
   display: inline-flex;
   align-items: center;

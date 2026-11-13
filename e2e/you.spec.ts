@@ -204,12 +204,16 @@ test('on a phone the welcome and the character builder fit the screen', async ({
   await expect(welcome(page).getByRole('heading', { name: "What's the night?" })).toBeVisible();
   const wide = () => page.evaluate(() => document.documentElement.scrollWidth);
   expect(await wide()).toBeLessThanOrEqual(390);
+  // Every control on the welcome is at least 40 px tall to a thumb, the text links and the You button too.
+  const tall = () => page.evaluate(() => [...document.querySelectorAll('[role=dialog] button, .you-btn')].map((b) => [b.textContent?.trim() || b.getAttribute('aria-label'), Math.round(b.getBoundingClientRect().height)] as const).filter(([, h]) => h > 0 && h < 40));
+  expect(await tall()).toEqual([]);
   await shot(page, '17-phone-welcome');
   await answer(page, 'Easy and good', 'A local spot');
   await expect(welcome(page).getByRole('heading', { name: 'Neighbourhood Regular' })).toBeVisible();
   await welcome(page).getByRole('button', { name: 'Make my character' }).click();
   await expect(welcome(page).getByRole('button', { name: 'Save my character' })).toBeVisible();
   expect(await wide()).toBeLessThanOrEqual(390);
+  expect(await tall()).toEqual([]);
   await shot(page, '18-phone-character');
   await page.context().close();
 });
