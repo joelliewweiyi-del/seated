@@ -1,0 +1,234 @@
+[
+{
+"localTime": "06:00",
+"isOpen": false,
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"availablePartySizes": [],
+"unavailablePartySizes": []
+},
+{
+"localTime": "12:00",
+"isOpen": false,
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"availablePartySizes": [],
+"unavailablePartySizes": []
+},
+{
+"localTime": "17:00",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "19:00"
+},
+{
+"localTime": "17:15",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "19:15"
+},
+{
+"localTime": "17:30",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "19:30"
+},
+{
+"localTime": "17:45",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "19:45"
+},
+{
+"localTime": "18:00",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "20:00"
+},
+{
+"localTime": "18:15",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "19:45"
+},
+{
+"localTime": "18:30",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "20:00"
+},
+{
+"localTime": "18:45",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "20:15"
+},
+{
+"localTime": "19:00",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "20:30"
+},
+{
+"localTime": "19:15",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "20:45"
+},
+{
+"localTime": "20:00",
+"isOpen": true,
+"isAvailable": false,
+"isAvailableWithWaitlist": true,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [],
+"unavailablePartySizes": [
+2
+]
+},
+{
+"localTime": "20:15",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": []
+},
+{
+"localTime": "20:30",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": []
+},
+{
+"localTime": "20:45",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": []
+},
+{
+"localTime": "21:00",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": []
+},
+{
+"localTime": "21:15",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "23:15"
+},
+{
+"localTime": "21:30",
+"isOpen": true,
+"isAvailable": true,
+"isAvailableWithWaitlist": false,
+"minPartySize": 2,
+"maxPartySize": 2,
+"availablePartySizes": [
+2
+],
+"unavailablePartySizes": [],
+"fixedLocalEndTime": "23:30"
+}
+]

@@ -132,15 +132,13 @@ describe('Guestplan calendar', () => {
   it('a day not open online is closed; open online with a table is open; open online without one is full', async () => {
     const { impl } = fakeFetch([
       [
-        /getAvailability/,
+        /etender-connect/,
         () =>
-          json({
-            drs: [
-              { d: '20261231' }, // Choux and Blauw on 31 Dec 2026
-              { d: '20261219', do: true, a: true },
-              { d: '20261220', do: true },
-            ],
-          }),
+          json([
+            { localDate: '2026-12-31', isOpen: false, isAvailable: false }, // Choux and Blauw on 31 Dec 2026
+            { localDate: '2026-12-19', isOpen: true, isAvailable: true },
+            { localDate: '2026-12-20', isOpen: true, isAvailable: false, isAvailableWithWaitlist: true },
+          ]),
       ],
     ]);
     const days = await guestplan({ fetchImpl: impl, gapMs: 0 }).calendar!(

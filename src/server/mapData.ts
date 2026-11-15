@@ -147,6 +147,12 @@ export function dayCodes(states: Map<string, DayState>, dates: string[]): { code
   return { codes, lastBookable: dates[last]! };
 }
 
+/**
+ * A calendar whose last good read is older than this shows unknown: a read that keeps failing (Guestplan answered 403
+ * from 10 to 15 Nov 2026) must not leave days-old free tables on the map. The radar's own open tables still count.
+ */
+export const STALE_MS = 6 * 3600_000;
+
 const readDay = (at: string | null | undefined) => (at ? localDate(new Date(at)) : null);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 
@@ -188,7 +194,9 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
     if (r.city !== city || !place || optOut.has(r.id) || /^esra/i.test(r.name)) continue;
     const platform = platforms[r.platform];
     const readable = Boolean(platform?.calendar && r.platformUid);
-    const known = byRestaurant.get(r.id) ?? new Map();
+    const lastGood = reads.get(r.id)?.readAt;
+    const stale = !lastGood || now.getTime() - Date.parse(lastGood) > STALE_MS;
+    const known = stale ? new Map() : (byRestaurant.get(r.id) ?? new Map());
     const states = new Map<string, DayState>([...known].map(([d, v]) => [d, v.state]));
     const times: Record<string, string[]> = {};
     for (const [d, v] of known) if (v.times?.length) times[d] = v.times;

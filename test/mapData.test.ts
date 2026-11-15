@@ -147,6 +147,18 @@ describe('census and map data', () => {
     expect(s.store.censusReads().get('bistro-a')).toMatchObject({ error: 'Fake 503' });
   });
 
+  it('shows unknown once the last good read is over six hours old: failing reads never leave days-old tables (Guestplan, Nov 2026)', async () => {
+    const s = setup({ 'bistro-a': { [TODAY]: 'open', [addDays(TODAY, 1)]: 'open' } });
+    await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });
+    const at = (now: Date) => buildMapData({ store: s.store, platforms: s.platforms, places: s.places, optOut: new Set(), now }).restaurants.find((r) => r.id === 'bistro-a')!;
+    expect(at(new Date(NOW.getTime() + 2 * 3600_000)).d[0]).toBe('o'); // a blip of a few hours: still the last answer
+    const failing = fakePlatform({}, { fail: new Set(['bistro-a']) });
+    const later = new Date(NOW.getTime() + 7 * 3600_000); // tomorrow 04:00 in Amsterdam: d[0] is tomorrow
+    await runCensus({ store: s.store, platforms: { fake: failing.platform }, optOut: new Set(), now: () => later });
+    expect(at(later).d[0]).toBe('?');
+    expect(at(later).readAt).toBe(NOW.toISOString()); // the card can still say when it was last read
+  });
+
   it('forgets days a successful read no longer answers for: they are unknown, not their old answer', async () => {
     const s = setup({ 'bistro-a': { [TODAY]: 'none', [addDays(TODAY, 1)]: 'none' } });
     await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });

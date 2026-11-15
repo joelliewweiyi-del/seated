@@ -1,0 +1,380 @@
+[
+{
+"localDate": "2026-11-15",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-11-16",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-11-17",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-18",
+"isAvailable": false,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-19",
+"isAvailable": false,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-20",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-21",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-11-22",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-11-23",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-11-24",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-25",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-26",
+"isAvailable": false,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-27",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-11-28",
+"isAvailable": false,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-11-29",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-11-30",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-01",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-02",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-03",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-04",
+"isAvailable": false,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-05",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-06",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-07",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-08",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-09",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-10",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-11",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-12",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-13",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-14",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-15",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-16",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-17",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-18",
+"isAvailable": false,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-19",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-20",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-21",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-22",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-23",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-24",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-25",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-26",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2026-12-27",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-28",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-29",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-30",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2026-12-31",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2027-01-01",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2027-01-02",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-03",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-04",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2027-01-05",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-06",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-07",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-08",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-09",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-10",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2027-01-11",
+"isAvailable": false,
+"isAvailableWithWaitlist": false,
+"isOpen": false
+},
+{
+"localDate": "2027-01-12",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-13",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-14",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-15",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+},
+{
+"localDate": "2027-01-16",
+"isAvailable": true,
+"isAvailableWithWaitlist": true,
+"isOpen": true
+}
+]

@@ -761,8 +761,8 @@
   {
     "id": "de-mark",
     "name": "De Mark",
-    "platform": "formitable",
-    "platformUid": "7a76db4a",
+    "platform": "guestplan",
+    "platformUid": "441fff689b52aa790a2f0ca71949520c04eafdf1:61417",
     "website": "https://www.restaurantdemark.com",
     "city": "Amsterdam",
     "address": "Durgerdammerdijk 73, 1026 CB Amsterdam"
@@ -1170,7 +1170,7 @@
     "id": "hatsune",
     "name": "Hatsune",
     "platform": "zenchef",
-    "platformUid": null,
+    "platformUid": "368179",
     "website": "https://hatsune-ams.nl/",
     "city": "Amsterdam",
     "address": null,
@@ -2056,8 +2056,8 @@
   {
     "id": "restaurant-kyo",
     "name": "Restaurant Kyo",
-    "platform": "formitable",
-    "platformUid": "131177d5",
+    "platform": "other",
+    "platformUid": null,
     "website": "https://www.restaurantkyo.nl",
     "city": "Amsterdam",
     "address": null
@@ -2355,7 +2355,7 @@
     "id": "tacite",
     "name": "Tacite",
     "platform": "guestplan",
-    "platformUid": null,
+    "platformUid": "769f1dd122c94b041f047411a5502d0765c853c9:54830",
     "website": "https://tacite.nl/",
     "city": "Amsterdam",
     "address": null,
@@ -2625,8 +2625,8 @@
   {
     "id": "vuurtoreneiland",
     "name": "Vuurtoreneiland",
-    "platform": "formitable",
-    "platformUid": "9d79d108",
+    "platform": "frank",
+    "platformUid": "a328eebc-bc50-45cf-893c-613bef40de56",
     "website": "https://www.vuurtoreneiland.nl",
     "city": "Amsterdam",
     "address": null,

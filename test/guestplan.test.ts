@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { findGuestplanKey, guestplan, parseGuestplanUid, toSlots } from '../src/server/platforms/guestplan';
 import type { Restaurant } from '../src/server/platforms/types';
 
-// Recorded 7 Oct 2026: Blauw Amsterdam, Sat 10 Oct, party 2 (day); Choux, October, party 4 (month).
-const DAY = JSON.parse(readFileSync(new URL('./fixtures/guestplan-day.json', import.meta.url), 'utf8'));
-const MONTH = JSON.parse(readFileSync(new URL('./fixtures/guestplan-month.json', import.meta.url), 'utf8'));
+// Recorded 15 Nov 2026 from etender-connect.com (Guestplan's widget API): Blauw, Sat 21 Nov, party 2 (open hours
+// only); Choux, 63 days from Sun 15 Nov, party 2.
+const DAY = JSON.parse(readFileSync(new URL('./fixtures/guestplan-times.json', import.meta.url), 'utf8'));
+const RANGE = JSON.parse(readFileSync(new URL('./fixtures/guestplan-range.json', import.meta.url), 'utf8'));
 
 const KEY = 'd68cd1acdde24b607eb39d33c205eec8f8d4f8b6';
 const blauw: Restaurant = {
@@ -30,37 +31,46 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
 
 describe('Guestplan slots', () => {
   it('counts a time as a table only when it is open and bookable: a waitlist time is not a table', () => {
-    const slots = toSlots('2026-10-10', DAY.trs);
+    const slots = toSlots('2026-11-21', DAY, 2);
     expect(slots.filter((s) => s.open).map((s) => s.time)).toEqual([
-      '17:00', '17:15', '17:30', '18:00', '20:15', '20:30', '20:45', '21:00', '21:15', '21:30',
+      '17:00', '17:15', '17:30', '17:45', '18:00', '18:15', '18:30', '18:45', '19:00', '19:15', '20:15', '20:30', '20:45', '21:00', '21:15', '21:30',
     ]);
     expect(slots.find((s) => s.time === '20:00')).toMatchObject({ open: false }); // waitlist only
     expect(slots.find((s) => s.time === '06:00')).toBeUndefined(); // outside opening hours: not a slot
+    // A time free only for other party sizes is not a table for this one.
+    expect(toSlots('2026-11-21', DAY, 7).some((s) => s.open)).toBe(false);
     expect(slots.every((s) => !s.autoBookable)).toBe(true);
   });
 });
 
 describe('Guestplan reads', () => {
-  it('sends the public key and the account, and reads the day in the restaurant-local format', async () => {
+  it("reads what the widget reads: the account's day on etender-connect.com, with the public key, a plain GET", async () => {
     const { impl, calls } = fakeFetch(() => json(DAY));
-    await guestplan({ fetchImpl: impl, gapMs: 0 }).getSlots(blauw, '2026-10-10', 2);
-    const headers = calls[0]!.init!.headers as Record<string, string>;
-    expect(headers.Authorization).toBe(`AccessKey ${KEY}`);
-    expect(JSON.parse(String(calls[0]!.init!.body))).toEqual({ accountId: 54656, date: '20261010', partySize: 2 });
+    await guestplan({ fetchImpl: impl, gapMs: 0 }).getSlots(blauw, '2026-11-21', 2);
+    expect(calls[0]!.url).toBe('https://etender-connect.com/v1/restaurants/54656/availability/2026/11/21?partySize=2');
+    expect(calls[0]!.init!.method ?? 'GET').toBe('GET');
+    expect((calls[0]!.init!.headers as Record<string, string>).Authorization).toBe(`AccessKey ${KEY}`);
   });
 
   it('asks which days have tables in one request, and skips waitlist-only and closed days', async () => {
-    const { impl, calls } = fakeFetch(() => json(MONTH));
+    const { impl, calls } = fakeFetch(() => json(RANGE));
     const choux = { ...blauw, platformUid: `${KEY}:60771` };
-    // In the recording: 13 Oct open, 10 Oct waitlist only, 11 Oct closed.
-    const worth = await guestplan({ fetchImpl: impl, gapMs: 0 }).openDates!(choux, ['2026-10-10', '2026-10-11', '2026-10-13'], 4);
-    expect([...worth]).toEqual(['2026-10-13']);
+    // In the recording: 17 Nov open, 18 Nov waitlist only, 15 Nov closed.
+    const worth = await guestplan({ fetchImpl: impl, gapMs: 0 }).openDates!(choux, ['2026-11-18', '2026-11-15', '2026-11-17'], 2);
+    expect([...worth]).toEqual(['2026-11-17']);
     expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toContain('availability?date=2026-11-15&partySize=2'); // from the first wanted day
+  });
+
+  it('a calendar: closed, full (waitlist only) and open days from one answer', async () => {
+    const { impl } = fakeFetch(() => json(RANGE));
+    const days = await guestplan({ fetchImpl: impl, gapMs: 0 }).calendar!({ ...blauw, platformUid: `${KEY}:60771` }, ['2026-11-15', '2026-11-17', '2026-11-18'], 2);
+    expect(Object.fromEntries(days)).toEqual({ '2026-11-15': 'closed', '2026-11-17': 'open', '2026-11-18': 'full' });
   });
 
   it('throws on an HTTP error, so the radar treats the day as unknown', async () => {
-    const { impl } = fakeFetch(() => json({}, 401));
-    await expect(guestplan({ fetchImpl: impl, gapMs: 0 }).getSlots(blauw, '2026-10-10', 2)).rejects.toThrow(/401/);
+    const { impl } = fakeFetch(() => json({}, 403));
+    await expect(guestplan({ fetchImpl: impl, gapMs: 0 }).getSlots(blauw, '2026-11-21', 2)).rejects.toThrow(/403/);
   });
 
   it('links to the plain widget: it never fakes a Reserve with Google token to pre-fill the form', () => {
