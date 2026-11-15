@@ -365,3 +365,28 @@ test('Noord is drawn at far, mid and near zooms and across the IJ seam, with fog
   }
   expect(failed).toEqual([]);
 });
+
+test('MICHELIN stars and Bibs are red marks of their own: on the signs, on the pins zoomed out, and in the list', async ({ page }) => {
+  await page.goto('/map/');
+  await expect(page.locator('.list-head h2')).toBeVisible();
+  // MICHELIN red (#b8322a) is used for nothing else on the canvas.
+  const red = () =>
+    page.locator('canvas').evaluate((c: HTMLCanvasElement) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let n = 0;
+      for (let i = 0; i < data.length; i += 4) if (data[i] === 0xb8 && data[i + 1] === 0x32 && data[i + 2] === 0x2a) n++;
+      return n;
+    });
+  await expect.poll(red, { timeout: 5000 }).toBeGreaterThan(200);
+  await page.screenshot({ path: 'test-results/screens/map-24-michelin-signs.png' });
+  // Zoomed far out, signs shrink to pins and the red tag stays.
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Zoom out' }).click();
+  await expect.poll(red, { timeout: 5000 }).toBeGreaterThan(20);
+  await page.screenshot({ path: 'test-results/screens/map-25-michelin-pins.png' });
+  // In the list: stars white on red, a Bib red on cream.
+  const star = page.locator('.rows .mk-michelin:not(.bib)').first();
+  await expect(star).toHaveCSS('background-color', 'rgb(184, 50, 42)');
+  await expect(star).toHaveCSS('color', 'rgb(255, 255, 255)');
+  const bib = page.locator('.rows .mk-michelin.bib').first();
+  await expect(bib).toHaveCSS('color', 'rgb(184, 50, 42)');
+});

@@ -14,8 +14,13 @@ export interface Marker {
   badge: string;
   /** Higher draws first and keeps its label when signs crowd. */
   rank: number;
+  /** MICHELIN: '1' to '3' stars, or 'bib'. Drawn as its own red mark, on the sign and on the pin. */
+  michelin?: string | null;
   dim: boolean;
 }
+
+const MICHELIN_RED = '#b8322a';
+const michelinMark = (m: Pick<Marker, 'michelin'>) => (!m.michelin ? null : m.michelin === 'bib' ? 'BIB' : '★'.repeat(Number(m.michelin)));
 
 /** Crisp zooms: at each one the chosen image level is shown at a whole multiple of its pixels. */
 export const ZOOMS = [0.125, 0.25, 0.5, 1, 2, 3, 4];
@@ -542,7 +547,7 @@ export class MapView {
       const showName = z >= 0.25 || m.id === this.selected || m.id === this.hovered || (z >= 0.125 && m.rank >= 300);
       const full = showName;
       ctx.font = '600 13px "Pixelify Sans", ui-monospace, monospace';
-      const label = full ? `${m.name}  ${m.badge}` : m.badge;
+      const label = full ? `${m.name} ${michelinMark(m) ?? ''}  ${m.badge}` : m.badge;
       const tw = Math.ceil(ctx.measureText(label).width);
       const bw = full ? tw + 26 : Math.max(22, tw + 18);
       const rect = { x: x - bw / 2, y: y - 30, w: bw, h: 22 };
@@ -562,6 +567,22 @@ export class MapView {
     for (const d of drawn.reverse()) this.drawSign(ctx, d.m, d.x, d.y, d.full, now);
   }
 
+  private michelinWidth(ctx: CanvasRenderingContext2D, m: Marker, small = false): number {
+    ctx.font = small ? '700 11px "Pixelify Sans", ui-monospace, monospace' : '700 12px "Pixelify Sans", ui-monospace, monospace';
+    return Math.ceil(ctx.measureText(michelinMark(m)!).width) + (small ? 6 : 10);
+  }
+
+  /** Stars: white on MICHELIN red. Bib: red on cream with a red edge, so the two never look alike. */
+  private drawMichelin(ctx: CanvasRenderingContext2D, m: Marker, x: number, y: number, small: boolean): void {
+    const w = this.michelinWidth(ctx, m, small);
+    const h = small ? 13 : 14;
+    const bib = m.michelin === 'bib';
+    pxBox(ctx, x, y, w, h, MICHELIN_RED, bib ? '#fffaf0' : MICHELIN_RED);
+    ctx.fillStyle = bib ? MICHELIN_RED : '#ffffff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(michelinMark(m)!, x + (small ? 3 : 5), y + h / 2 + 1);
+  }
+
   private drawSign(ctx: CanvasRenderingContext2D, m: Marker, x: number, y: number, full: boolean, now: number): void {
     const sel = m.id === this.selected;
     const hov = m.id === this.hovered;
@@ -575,6 +596,8 @@ export class MapView {
       pxCircle(ctx, x, y - 10, r, m.dim ? '#d9d5df' : m.colour);
       ctx.fillStyle = '#ffffff88';
       ctx.fillRect(x - 2, y - 13, 2, 2);
+      // MICHELIN stays visible zoomed out: a small red tag beside the stud.
+      if (m.michelin && !m.dim) this.drawMichelin(ctx, m, x + r + 1, y - 21, true);
       this.hits.push({ id: m.id, x: x - 9, y: y - 20, w: 18, h: 22 });
       return;
     }
@@ -583,7 +606,8 @@ export class MapView {
     const nw = Math.ceil(ctx.measureText(name).width);
     ctx.font = '500 12px "Pixelify Sans", ui-monospace, monospace';
     const bw = Math.ceil(ctx.measureText(m.badge).width) + 10;
-    const w = nw + bw + 20;
+    const mw = m.michelin ? this.michelinWidth(ctx, m) + 4 : 0;
+    const w = nw + mw + bw + 20;
     const h = 22;
     const bob = sel && !this.reducedMotion ? Math.round(Math.sin(now / 260) * 1.5) : 0;
     const left = Math.round(x - w / 2);
@@ -601,10 +625,11 @@ export class MapView {
     ctx.font = '600 13px "Pixelify Sans", ui-monospace, monospace';
     ctx.textBaseline = 'middle';
     ctx.fillText(name, left + 18, top + h / 2 + 1);
-    pxBox(ctx, left + 18 + nw + 4, top + 4, bw, h - 8, m.dim ? '#c9c5cf' : m.colour, m.dim ? '#c9c5cf' : m.colour);
+    if (m.michelin) this.drawMichelin(ctx, m, left + 18 + nw + 4, top + 4, false);
+    pxBox(ctx, left + 18 + nw + mw + 4, top + 4, bw, h - 8, m.dim ? '#c9c5cf' : m.colour, m.dim ? '#c9c5cf' : m.colour);
     ctx.fillStyle = '#ffffff';
     ctx.font = '500 12px "Pixelify Sans", ui-monospace, monospace';
-    ctx.fillText(m.badge, left + 18 + nw + 9, top + h / 2 + 1);
+    ctx.fillText(m.badge, left + 18 + nw + mw + 9, top + h / 2 + 1);
     if (sel || hov) {
       ctx.strokeStyle = sel ? '#ffcf4a' : '#2b273380';
       ctx.lineWidth = 2;

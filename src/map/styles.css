@@ -527,14 +527,18 @@ a {
   vertical-align: 1px;
 }
 .mk-michelin {
-  font: 600 11px/1 var(--px);
-  color: #b8322a;
-  letter-spacing: 0.02em;
-}
-.mk-michelin.bib {
+  /* Stars: white on MICHELIN red, as on the map's signs. */
+  font: 700 11px/1 var(--px);
   color: #fff;
   background: #b8322a;
   padding: 2px 4px 1px;
+  letter-spacing: 0.02em;
+}
+.mk-michelin.bib {
+  /* Bib: red on cream with a red edge, so it never reads as a star. */
+  color: #b8322a;
+  background: #fffaf0;
+  box-shadow: inset 0 0 0 1.5px #b8322a;
   font-size: 10px;
   text-transform: uppercase;
 }

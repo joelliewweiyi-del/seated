@@ -247,10 +247,10 @@ export function App() {
       const s = statusOfR(p.r);
       if (!inKinds(filters, p.r, favs)) continue;
       const match = !q || matches(p.r, q);
-      const mark = p.r.michelin ? (p.r.michelin === 'bib' ? 'Bib' : '★'.repeat(Number(p.r.michelin))) : '';
       markers.push({
         id: p.r.id,
-        name: mark ? `${p.r.name} ${mark}` : p.r.name,
+        name: p.r.name,
+        michelin: p.r.michelin,
         ax: p.ax,
         ay: p.ay,
         colour: STATUS_COLOUR[s],
