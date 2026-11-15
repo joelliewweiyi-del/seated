@@ -90,6 +90,8 @@ const PLACES_URL = new URL('../../data/map-places.json', import.meta.url);
 const OPTOUT_URL = new URL('../../data/map-optout.json', import.meta.url);
 const MICHELIN_URL = new URL('../../data/map-michelin.json', import.meta.url);
 const GUIDES_URL = new URL('../../data/map-guides.json', import.meta.url);
+/** The guide in data/map-guides.json whose picks are every restaurant in data/map-michelin.json. */
+export const MICHELIN_LENS = 'michelin';
 
 interface GuidesFile {
   guides: Guide[];
@@ -106,7 +108,11 @@ export function loadGuides(): Guide[] {
 export function loadPlaces(): Record<string, Place> {
   const places = JSON.parse(readFileSync(PLACES_URL, 'utf8')) as Record<string, Place>;
   const guide = JSON.parse(readFileSync(MICHELIN_URL, 'utf8')) as { restaurants: Record<string, { michelin: Michelin }> };
-  for (const [id, { michelin }] of Object.entries(guide.restaurants)) if (places[id]) places[id].michelin = michelin;
+  for (const [id, { michelin }] of Object.entries(guide.restaurants)) {
+    if (!places[id]) continue;
+    places[id].michelin = michelin;
+    (places[id].guides ??= []).push(MICHELIN_LENS); // the "MICHELIN" lens (Joel, 15 Nov 2026): its picks are this file
+  }
   const { picks } = JSON.parse(readFileSync(GUIDES_URL, 'utf8')) as GuidesFile;
   for (const [guideId, ids] of Object.entries(picks)) {
     for (const id of ids) if (places[id]) (places[id].guides ??= []).push(guideId);

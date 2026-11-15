@@ -12,6 +12,15 @@
       "line": "Where we would send a friend: places Amsterdam's food people go, no tourist traps."
     },
     {
+      "id": "michelin",
+      "name": "MICHELIN Guide Netherlands 2026",
+      "short": "MICHELIN",
+      "by": "MICHELIN Guide",
+      "url": "https://guide.michelin.com/nl/en",
+      "date": "2026-10-05",
+      "line": "Every Amsterdam star and Bib Gourmand in this year's guide, checked against the press."
+    },
+    {
       "id": "timeout-best-2026",
       "name": "The best restaurants in Amsterdam for 2026",
       "short": "Time Out",

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/server/db';
 import { CENSUS_DAYS, runCensus } from '../src/server/census';
-import { buildMapData, dayCodes, loadPlaces, MIN_GUIDE_PICKS, type Place } from '../src/server/mapData';
+import { buildMapData, dayCodes, loadPlaces, MICHELIN_LENS, MIN_GUIDE_PICKS, type Place } from '../src/server/mapData';
 import type { DayState, Platform, Restaurant } from '../src/server/platforms/types';
 import { addDays } from '../src/server/time';
 import { statusOf, STATUS_WORD } from '../src/map/data';
@@ -295,6 +295,17 @@ describe('guides', () => {
       }
     }
     expect(Object.values(file.picks).flat()).not.toContain('esra');
+  });
+
+  it('the MICHELIN lens picks exactly the restaurants in data/map-michelin.json, and has a guide entry', () => {
+    const file = JSON.parse(readFileSync('data/map-guides.json', 'utf8')) as { guides: Array<{ id: string }> };
+    const michelin = JSON.parse(readFileSync('data/map-michelin.json', 'utf8')) as { restaurants: Record<string, unknown> };
+    const places = loadPlaces();
+    expect(file.guides.some((g) => g.id === MICHELIN_LENS)).toBe(true);
+    const picked = Object.keys(places).filter((id) => places[id]!.guides?.includes(MICHELIN_LENS)).sort();
+    expect(picked).toEqual(Object.keys(michelin.restaurants).filter((id) => places[id]).sort());
+    expect(picked.length).toBeGreaterThanOrEqual(MIN_GUIDE_PICKS);
+    for (const id of picked) expect(places[id]!.michelin, id).toBeTruthy();
   });
 
   it('each guide has a short name for the picker and one line of our own, never its own title', () => {
