@@ -36,6 +36,8 @@ export interface Guide {
   date: string;
   /** One line in our own words about the list (never copied from the guide). */
   line: string;
+  /** A critic's own verdict per pick, shown on the card with a link to the review: score and year only, never her words. */
+  notes?: Record<string, { score: string; year: string; url: string }>;
 }
 
 /** A guide is a lens only when it picks at least this many restaurants on the map. */
@@ -245,7 +247,10 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
   // Only guides with enough picks on the map are listed; a restaurant names only listed guides.
   const count = new Map<string, number>();
   for (const r of restaurants) for (const g of r.g) count.set(g, (count.get(g) ?? 0) + 1);
-  const listed = guides.filter((g) => (count.get(g.id) ?? 0) >= MIN_GUIDE_PICKS);
+  const onMap = new Set(restaurants.map((r) => r.id));
+  const listed = guides
+    .filter((g) => (count.get(g.id) ?? 0) >= MIN_GUIDE_PICKS)
+    .map((g) => (g.notes ? { ...g, notes: Object.fromEntries(Object.entries(g.notes).filter(([id]) => onMap.has(id))) } : g));
   const ids = new Set(listed.map((g) => g.id));
   for (const r of restaurants) r.g = r.g.filter((g) => ids.has(g));
   return {

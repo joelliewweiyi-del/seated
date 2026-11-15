@@ -21,6 +21,107 @@
       "line": "Every Amsterdam star and Bib Gourmand in this year's guide, checked against the press."
     },
     {
+      "id": "mara-grimm",
+      "name": "Mara Grimm in Het Parool, 8,5 and up",
+      "short": "Mara Grimm 8,5+",
+      "by": "Mara Grimm, Het Parool",
+      "url": "https://linktr.ee/MaraGrimm",
+      "date": "2026-11-15",
+      "line": "The places Het Parool's restaurant critic scored 8,5 or higher.",
+      "notes": {
+        "barracuda": {
+          "score": "9",
+          "year": "2023",
+          "url": "https://www.parool.nl/ps/het-pretentieloze-barracuda-is-zonder-twijfel-de-beste-nieuwkomer-van-2023-9~b3d3888b/"
+        },
+        "bistro-de-la-mer": {
+          "score": "9-",
+          "year": "2022",
+          "url": "https://www.parool.nl/ps/bistro-de-la-mer-meesterlijk-bereide-vis-klassieke-smaken-9~babc6079/"
+        },
+        "cafe-beurre": {
+          "score": "8,5",
+          "year": "2022",
+          "url": "https://www.parool.nl/ps/bij-cafe-beurre-wordt-gekookt-met-een-zeldzaam-goed-gevoel-voor-smaak-8~bee1253f/"
+        },
+        "cafe-wu": {
+          "score": "9-",
+          "year": "2024",
+          "url": "https://www.parool.nl/ps/weinig-restaurants-in-amsterdam-zijn-op-dit-moment-interessanter-dan-cafe-wu-dat-een-compleet-eigen-stijl-ontwikkelt-9~b0a23ffe/"
+        },
+        "choux": {
+          "score": "10",
+          "year": "2025",
+          "url": "https://www.parool.nl/ps/choux-heeft-zich-ontwikkeld-tot-het-origineelste-meest-pretentieloze-restaurant-van-amsterdam-10~b53fd29e"
+        },
+        "cornerstore": {
+          "score": "9",
+          "year": "2022",
+          "url": "https://www.parool.nl/ps/geen-restaurant-in-amsterdam-dat-zo-n-groots-eerbetoon-aan-groente-brengt-als-cornerstore-9~bd98e945/"
+        },
+        "de-kas": {
+          "score": "9+",
+          "year": "2024",
+          "url": "https://www.parool.nl/ps/de-kas-is-beter-en-dynamischer-dan-ooit-zowel-de-bediening-als-keuken-bruisen-weer-van-de-energie-9~bbb13b92/"
+        },
+        "gebr-hartering": {
+          "score": "8,5",
+          "year": "2026",
+          "url": "https://www.parool.nl/ps/gebr-hartering-is-z-n-wilde-haren-kwijt-maar-het-ribstuk-en-de-wijnen-blijven-ongeevenaard-8-5~b1804188"
+        },
+        "kaagman-kortekaas": {
+          "score": "9,5",
+          "year": "2026",
+          "url": "https://www.parool.nl/ps/bij-kaagman-kortekaas-houden-ze-van-gewaagde-smaakcombinaties-en-schieten-ze-bijna-altijd-raak-9-5~b2a866a1/"
+        },
+        "kamer-bar": {
+          "score": "8,5",
+          "year": "2026",
+          "url": "https://www.parool.nl/ps/ja-kamer-is-de-zoveelste-natuurwijnbar-waar-je-gerechten-moet-delen-maar-wel-een-heel-goede-8~b15d631d"
+        },
+        "nikotin": {
+          "score": "8,5",
+          "year": "2026",
+          "url": "https://www.parool.nl/ps/alles-bij-nikotin-is-uitgesproken-soms-bijna-overweldigend-maar-tegelijkertijd-snak-je-naar-meer-8-5~bfe69209"
+        },
+        "showw": {
+          "score": "8,5",
+          "year": "2024",
+          "url": "https://www.parool.nl/ps/showw-is-de-natte-droom-van-de-ouderwetse-michelininspecteur-het-eten-is-perfect-de-omgeving-alleen-maar-beige-8-5~b80760dd/"
+        },
+        "tannay": {
+          "score": "8,5",
+          "year": "2024",
+          "url": "https://www.parool.nl/ps/vooral-de-vega-gerechten-verrassen-bij-tannay-dat-zie-je-niet-vaak-bij-klassiek-geschoolde-franse-chefs-8-5~b68d6620/"
+        },
+        "thai-thai-poppetje": {
+          "score": "9",
+          "year": "2022",
+          "url": "https://www.parool.nl/ps/dichter-bij-bangkok-dan-in-thai-thai-poppetje-kun-je-in-amsterdam-niet-komen-9~b46bbb11/"
+        },
+        "troef": {
+          "score": "8,5",
+          "year": "2023",
+          "url": "https://www.parool.nl/ps/bij-troef-eet-je-ongecompliceerd-lekker-maar-dan-wel-op-niveau-8-5~b5007352/"
+        },
+        "vrr": {
+          "score": "8,5",
+          "year": "2022",
+          "url": "https://www.parool.nl/ps/vrr-de-ideale-mix-van-stoer-en-elegant-van-boers-en-verfijnd-en-van-uitgaan-en-uit-eten-gaan-8-5~b6ef65c2/"
+        },
+        "vuurtoreneiland": {
+          "score": "9-",
+          "year": "2026",
+          "url": "https://www.parool.nl/proefwerk/bij-vuurtoreneiland-draait-elk-gerecht-om-een-uitdagend-spel-van-groenten-kruiden-en-fermentatie-9~b4e54e17"
+        },
+        "weinlokal-stern": {
+          "score": "9",
+          "year": "2026",
+          "url": "https://www.parool.nl/ps/de-wijnen-het-eten-de-sfeer-het-personeel-weinlokal-stern-is-een-van-de-beste-nieuwkomers-van-2026-9~b6b7b7ce"
+        }
+      }
+    },
+    {
       "id": "timeout-best-2026",
       "name": "The best restaurants in Amsterdam for 2026",
       "short": "Time Out",
@@ -279,6 +380,26 @@
     ],
     "eater-best-2025": [
       "kenneh"
+    ],
+    "mara-grimm": [
+      "barracuda",
+      "bistro-de-la-mer",
+      "cafe-beurre",
+      "cafe-wu",
+      "choux",
+      "cornerstore",
+      "de-kas",
+      "gebr-hartering",
+      "kaagman-kortekaas",
+      "kamer-bar",
+      "nikotin",
+      "showw",
+      "tannay",
+      "thai-thai-poppetje",
+      "troef",
+      "vrr",
+      "vuurtoreneiland",
+      "weinlokal-stern"
     ]
   }
 }
