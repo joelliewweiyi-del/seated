@@ -5,6 +5,7 @@ import { CENSUS_DAYS, runCensus } from '../src/server/census';
 import { buildMapData, dayCodes, loadPlaces, MIN_GUIDE_PICKS, type Place } from '../src/server/mapData';
 import type { DayState, Platform, Restaurant } from '../src/server/platforms/types';
 import { addDays } from '../src/server/time';
+import { statusOf, STATUS_WORD } from '../src/map/data';
 import { censusMinutes } from '../src/server/config';
 
 const NOW = new Date('2026-11-04T20:00:00Z'); // 21:00 in Amsterdam
@@ -64,9 +65,46 @@ describe('day codes', () => {
   });
 
   it('guesses no opening when nothing in the window is bookable (a closed season, or a dead calendar)', () => {
-    const { codes, lastBookable } = dayCodes(new Map<string, DayState>(dates.map((d) => [d, 'none'])), dates);
-    expect(codes.join('')).toBe('nnnnn');
+    const days = Array.from({ length: 63 }, (_, i) => addDays('2026-11-15', i));
+    const { codes, lastBookable } = dayCodes(new Map<string, DayState>(days.map((d) => [d, 'none'])), days);
+    expect(codes.join('')).toBe('?'.repeat(63));
     expect(lastBookable).toBeNull();
+  });
+
+  it("infers Graham's Sunday and Monday days off over nine weeks", () => {
+    const days = Array.from({ length: 63 }, (_, i) => addDays('2026-11-15', i));
+    const states = new Map<string, DayState>(days.map((d, i) => [d, i % 7 < 2 ? 'none' : 'open']));
+    expect(dayCodes(states, days).codes.join('')).toBe('ccooooo'.repeat(9));
+  });
+
+  it('keeps a weekday with three none days and one full day as mixed availability', () => {
+    const days = Array.from({ length: 28 }, (_, i) => addDays('2026-11-15', i));
+    const states = new Map<string, DayState>(days.map((d, i) => [d, i % 7 === 0 ? (i === 21 ? 'full' : 'none') : 'open']));
+    const { codes } = dayCodes(states, days);
+    expect(codes.join('')).toBe('noooooo'.repeat(3) + 'foooooo');
+    expect([0, 7, 14, 21].map((i) => statusOf(codes[i]))).toEqual(['none', 'none', 'none', 'full']);
+  });
+
+  it('keeps a weekday seen only twice as none, even with unanswered weeks', () => {
+    const days = Array.from({ length: 28 }, (_, i) => addDays('2026-11-15', i));
+    const states = new Map<string, DayState>(days.flatMap((d, i): [string, DayState][] =>
+      i % 7 === 0 ? (i < 14 ? [[d, 'none']] : []) : [[d, 'open']]));
+    const { codes } = dayCodes(states, days);
+    expect(codes.join('')).toBe('noooooo'.repeat(2) + '?oooooo'.repeat(2));
+    expect([0, 7, 14, 21].map((i) => statusOf(codes[i]))).toEqual(['none', 'none', 'unknown', 'unknown']);
+  });
+
+  it('marks days after the last bookable day later after inferring days off', () => {
+    const days = Array.from({ length: 35 }, (_, i) => addDays('2026-11-15', i));
+    const states = new Map<string, DayState>(days.map((d, i) => [d, i >= 21 || i % 7 < 2 ? 'none' : 'open']));
+    const { codes, lastBookable } = dayCodes(states, days);
+    expect(codes.join('')).toBe('ccooooo'.repeat(3) + 'l'.repeat(14));
+    expect(lastBookable).toBe(days[20]);
+  });
+
+  it('labels none as No tables online instead of Fully booked', () => {
+    expect(statusOf('n')).toBe('none');
+    expect(STATUS_WORD[statusOf('n')]).toBe('No tables online');
   });
 });
 

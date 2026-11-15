@@ -3,27 +3,32 @@ import type { DayCode, MapData, MapRestaurant } from '../server/mapData';
 
 export type { DayCode, MapData, MapRestaurant };
 
-export type Status = 'open' | 'full' | 'closed' | 'later' | 'unknown';
+export type Status = 'open' | 'full' | 'none' | 'closed' | 'later' | 'unknown';
 
 export function statusOf(code: DayCode | undefined): Status {
   switch (code) {
     case 'o':
       return 'open';
     case 'f':
-    case 'n':
       return 'full';
+    case 'n':
+      return 'none';
     case 'c':
       return 'closed';
     case 'l':
       return 'later';
-    default:
+    case '?':
+    case undefined:
       return 'unknown';
   }
+  const exhaustive: never = code;
+  return exhaustive;
 }
 
 export const STATUS_WORD: Record<Status, string> = {
   open: 'Tables free',
   full: 'Fully booked',
+  none: 'No tables online',
   closed: 'Closed',
   later: 'Not bookable yet',
   unknown: 'Unknown',
@@ -33,6 +38,7 @@ export const STATUS_WORD: Record<Status, string> = {
 export const STATUS_COLOUR: Record<Status, string> = {
   open: '#3fae5f',
   full: '#e0604c',
+  none: '#e0604c',
   closed: '#8f8a99',
   later: '#8c7bd8',
   unknown: '#b9b4c2',

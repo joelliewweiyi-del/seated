@@ -132,7 +132,17 @@ export function dayCodes(states: Map<string, DayState>, dates: string[]): { code
     if (c === 'o' || c === 'f') last = i;
   });
   // Nothing bookable at all in nine weeks: a closed season or a dead calendar. Do not guess an opening.
-  if (last === -1) return { codes, lastBookable: null };
+  if (last === -1) return { codes: codes.map((c) => c === 'n' ? '?' : c), lastBookable: null };
+  // Only answered days within the booking window are evidence of a regular day off.
+  const weekdays: number[][] = Array.from({ length: 7 }, () => []);
+  for (let i = 0; i <= last; i++) {
+    if (codes[i] !== '?') weekdays[new Date(`${dates[i]}T12:00:00Z`).getUTCDay()]!.push(i);
+  }
+  for (const days of weekdays) {
+    if (days.length >= 3 && !days.some((i) => codes[i] === 'o' || codes[i] === 'f')) {
+      for (const i of days) if (codes[i] === 'n') codes[i] = 'c';
+    }
+  }
   for (let i = last + 1; i < codes.length; i++) if (codes[i] === 'n' || codes[i] === 'c') codes[i] = 'l';
   return { codes, lastBookable: dates[last]! };
 }

@@ -13,13 +13,15 @@ import { World } from './world';
 
 const CONTACT = (import.meta.env.VITE_MAP_CONTACT as string | undefined) ?? '';
 const REFRESH_MS = 3 * 60_000;
-const ORDER: Status[] = ['open', 'later', 'full', 'closed', 'unknown'];
+const STATUS_RANK: Record<Status, number> = { open: 300, later: 200, full: 100, none: 100, closed: 50, unknown: 0 };
+const ORDER: Status[] = ['open', 'later', 'full', 'none', 'closed', 'unknown'];
 /** Booking pages that take no date from a link: the guest picks the day there (Tebi, Guestplan, Frank). */
 const NO_DATE_LINK = new Set(['Tebi', 'Guestplan', 'Frank']);
 const GROUP_WORD: Record<Status, string> = {
   open: 'Tables free',
   later: 'Not bookable yet',
   full: 'Fully booked',
+  none: 'No tables online',
   closed: 'Closed',
   unknown: 'Book on their site',
 };
@@ -85,17 +87,26 @@ function inLens(lens: Lens | null, r: MapRestaurant): boolean {
 const NO_RESTAURANTS: MapRestaurant[] = [];
 
 function badgeFor(r: MapRestaurant, status: Status, date: string): string {
-  if (status === 'open') {
-    const n = freeTimes(r, date).length;
-    return n ? `${n} time${n === 1 ? '' : 's'}` : 'free';
+  switch (status) {
+    case 'open': {
+      const n = freeTimes(r, date).length;
+      return n ? `${n} time${n === 1 ? '' : 's'}` : 'free';
+    }
+    case 'later': {
+      const o = opensOn(r, date);
+      return o ? `opens ${dayLabel(o).slice(4)}` : 'soon';
+    }
+    case 'full':
+      return 'full';
+    case 'none':
+      return 'no tables';
+    case 'closed':
+      return 'closed';
+    case 'unknown':
+      return r.readable ? 'unknown' : 'their site';
   }
-  if (status === 'later') {
-    const o = opensOn(r, date);
-    return o ? `opens ${dayLabel(o).slice(4)}` : 'soon';
-  }
-  if (status === 'full') return 'full';
-  if (status === 'closed') return 'closed';
-  return r.readable ? 'unknown' : 'their site';
+  const exhaustive: never = status;
+  return exhaustive;
 }
 
 function stateLine(r: MapRestaurant, status: Status, date: string): string {
@@ -105,6 +116,8 @@ function stateLine(r: MapRestaurant, status: Status, date: string): string {
       return times?.length ? `Free for two at ${times.join(', ')}.` : 'There is a table for two. The booking page shows the times.';
     case 'full':
       return 'No table for two left that day.';
+    case 'none':
+      return 'No tables for two are shown online for that day.';
     case 'closed':
       return 'Closed that day, or not taking bookings online.';
     case 'later': {
@@ -113,9 +126,11 @@ function stateLine(r: MapRestaurant, status: Status, date: string): string {
         ? `The calendar does not reach this far yet. It opens about ${r.win} days ahead, so around ${dayLabel(o, { long: true })}.`
         : 'The calendar does not reach this far yet.';
     }
-    default:
+    case 'unknown':
       return r.readable ? 'We could not read this calendar for that day.' : `Books through ${r.platform === 'other' ? 'its own site' : r.platform}, which we cannot read. Their site has the answer.`;
   }
+  const exhaustive: never = status;
+  return exhaustive;
 }
 
 export function App() {
@@ -240,7 +255,7 @@ export function App() {
         ay: p.ay,
         colour: STATUS_COLOUR[s],
         badge: badgeFor(p.r, s, day),
-        rank: { open: 300, later: 200, full: 100, closed: 50, unknown: 0 }[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0) + (lens && inLens(lens, p.r) ? 400 : 0),
+        rank: STATUS_RANK[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0) + (lens && inLens(lens, p.r) ? 400 : 0),
         dim: (filters.open && s !== 'open') || !match || !inLens(lens, p.r),
       });
     }
@@ -876,7 +891,7 @@ function List(p: ListProps) {
     .sort((a, b) =>
       p.me
         ? a.m - b.m
-        : ORDER.indexOf(a.s) - ORDER.indexOf(b.s) ||
+        : STATUS_RANK[b.s] - STATUS_RANK[a.s] ||
           Number(b.r.michelin === '3') - Number(a.r.michelin === '3') ||
           (b.r.hot ?? 0) - (a.r.hot ?? 0) ||
           a.r.name.localeCompare(b.r.name),

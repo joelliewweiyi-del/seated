@@ -73,7 +73,7 @@ describe('map dates', () => {
     expect(codeOn(r, data, '2026-11-04')).toBe('o');
     expect(codeOn(r, data, '2026-11-05')).toBe('f');
     expect(codeOn(r, data, '2027-03-01')).toBe('?');
-    expect(statusOf('n')).toBe('full');
+    expect(statusOf('n')).toBe('none');
     expect(statusOf('l')).toBe('later');
   });
 
