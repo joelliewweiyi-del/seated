@@ -16,6 +16,7 @@ import { loadCuratedRestaurants } from './restaurants.js';
 import { addDays, localDate } from './time.js';
 import { runCensus } from './census.js';
 import { buildMapData, loadGuides, loadOptOut, loadPlaces } from './mapData.js';
+import { fetchMyPlaces, syncListWatches } from './myLists.js';
 
 const store = new Store(config.dbPath);
 store.seedRestaurants(loadCuratedRestaurants());
@@ -188,6 +189,20 @@ function scheduleCensus(firstMs: number): void {
 }
 if (config.mapExportDir) setInterval(exportMap, 5 * 60_000);
 
+// ── your lists on seated.food ──────────────────────────────────────────────
+// Each restaurant on your character's lists gets a prime-time watch (myLists.ts). A failed read changes nothing.
+async function syncMyLists(): Promise<void> {
+  try {
+    const api = JSON.parse(readFileSync(new URL('../../deploy/map/api.json', import.meta.url), 'utf8')) as { url: string; key: string };
+    const places = await fetchMyPlaces(api, config.myListsKey);
+    const r = syncListWatches(store, places, (x) => Boolean(platforms[x.platform] && x.platformUid), new Date().toISOString());
+    if (r.added.length || r.removed.length) console.log(`[lists] watches added: ${r.added.join(', ') || '-'}; removed: ${r.removed.join(', ') || '-'}`);
+    if (r.skipped.length) console.log(`[lists] no watch for ${r.skipped.join(', ')}: not readable by the radar, or over the limit of 30. Nothing to do.`);
+  } catch (err) {
+    console.error(`[lists] your lists were not read (${err instanceof Error ? err.message : err}); watches unchanged. If it says the key is wrong, fix SEATED_ME_KEY (1Password bara-dev/seated-me-key).`);
+  }
+}
+
 // ── http ───────────────────────────────────────────────────────────────────
 const app = new Hono();
 
@@ -262,4 +277,8 @@ if (config.demo) {
   noteDowntime();
   scheduleNext(3000);
   scheduleCensus(90_000);
+  if (config.myListsKey) {
+    setTimeout(syncMyLists, 60_000);
+    setInterval(syncMyLists, 15 * 60_000);
+  }
 }

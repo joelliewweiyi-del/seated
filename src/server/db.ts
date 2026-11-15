@@ -297,6 +297,8 @@ export class Store {
     // Days of this watch that have been read without error, so a new table there is news. Null = none yet.
     this.addColumnIfMissing('watches', 'checked_dates', 'TEXT');
     this.addColumnIfMissing('bookings', 'source', "TEXT NOT NULL DEFAULT 'seated'");
+    // Who made the watch: null = the user, 'list' = a list on seated.food (myLists.ts), which may also remove it.
+    this.addColumnIfMissing('watches', 'source', 'TEXT');
   }
 
   // ── restaurants ──────────────────────────────────────────────────────────
@@ -404,11 +406,11 @@ export class Store {
     return row ? toWatch(row) : undefined;
   }
 
-  createWatch(input: WatchInput, now: string): Watch {
+  createWatch(input: WatchInput, now: string, source: string | null = null): Watch {
     const result = this.db
       .prepare(
-        `INSERT INTO watches (restaurant_id, party_size, date_from, date_to, weekdays, time_from, time_to, auto_book, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'watching', ?)`,
+        `INSERT INTO watches (restaurant_id, party_size, date_from, date_to, weekdays, time_from, time_to, auto_book, status, created_at, source)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'watching', ?, ?)`,
       )
       .run(
         input.restaurantId,
@@ -420,8 +422,13 @@ export class Store {
         input.timeTo,
         input.autoBook ? 1 : 0,
         now,
+        source,
       );
     return this.getWatch(Number(result.lastInsertRowid))!;
+  }
+
+  watchesFrom(source: string): Watch[] {
+    return this.db.prepare('SELECT * FROM watches WHERE source = ? ORDER BY id').all(source).map(toWatch);
   }
 
   updateWatch(id: number, patch: Partial<WatchInput & { status: WatchStatus }>): Watch | undefined {

@@ -48,6 +48,8 @@ export const config = {
   mapBlobToken: process.env.BLOB_READ_WRITE_TOKEN || '',
   /** Optional: a folder that gets the map's data.json after every census and every 5 minutes, for a static host. */
   mapExportDir: process.env.MAP_EXPORT_DIR || '',
+  /** Optional: the key of your character on seated.food. Every restaurant on its lists gets a prime-time watch (myLists.ts). */
+  myListsKey: process.env.SEATED_ME_KEY || '',
 };
 
 export type Config = typeof config;
