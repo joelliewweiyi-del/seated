@@ -103,10 +103,18 @@ describe('Seated Noord', () => {
     }
     for (const m of ours.measurements) expect(rendered.has(m.ours), m.kind).toBe(true);
   });
-  it('has intact deterministic files and fits within ten megabytes', () => {
+  it('stands every restaurant that is not opted out on drawn city, never on fog (15 Nov 2026: Toet, Showw and eight more were on fog)', () => {
+    const optOut = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8')) as Array<{ id: string }>).map(x => x.id));
+    const onFog = Object.entries(places as Record<string, { lat: number; lng: number }>)
+      .filter(([id]) => !optOut.has(id))
+      .filter(([, p]) => !world.covers(p.lat, p.lng))
+      .map(([id]) => id);
+    expect(onFog).toEqual([]);
+  });
+  it('has intact deterministic files and fits within sixteen megabytes', () => {
     const names = readdirSync('src/map/public/ours');
     expect(names.sort()).toEqual([...ours.files.map(f => f.name), 'manifest.json'].sort());
-    expect(names.reduce((n, f) => n + statSync(`src/map/public/ours/${f}`).size, 0)).toBeLessThanOrEqual(13_000_000);
+    expect(names.reduce((n, f) => n + statSync(`src/map/public/ours/${f}`).size, 0)).toBeLessThanOrEqual(16_000_000);
     for (const f of ours.files) {
       const bytes = readFileSync(`src/map/public/ours/${f.name}`);
       expect(bytes.length).toBe(f.bytes);

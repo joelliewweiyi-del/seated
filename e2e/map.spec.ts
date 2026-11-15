@@ -366,6 +366,36 @@ test('Noord is drawn at far, mid and near zooms and across the IJ seam, with fog
   expect(failed).toEqual([]);
 });
 
+test('restaurants that stood on fog (15 Nov 2026) stand on drawn city, at mid and near zoom', async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const failed: string[] = [];
+  page.on('response', r => { if (/\/(ours|sez)\/.*\.png/.test(r.url()) && !r.ok()) failed.push(r.url()); });
+  for (const [id, lat, lng] of [['toet', 52.342644, 4.89258], ['showw', 52.337398, 4.892941], ['vuurtoreneiland', 52.3806, 5.0189]] as const) {
+    await page.goto(`/map/?r=${id}`);
+    await settled(page);
+    await expect(page.locator('.card')).not.toContainText('Outside the drawn city');
+    await page.keyboard.press('Escape');
+    for (const [name, z] of [['mid', 0.5], ['near', 1]] as const) {
+      await page.evaluate(({ lat, lng, z }) => {
+        const view = (window as unknown as { seatedMap: {
+          world: { covers(lat: number, lng: number): boolean; project(lat: number, lng: number): { x: number; y: number } };
+          setHome(x: number, y: number, z: number): void;
+        } }).seatedMap;
+        if (!view.world.covers(lat, lng)) throw new Error('restaurant stands outside the drawn city');
+        const p = view.world.project(lat, lng);
+        view.setHome(p.x, p.y, z);
+      }, { lat, lng, z });
+      await page.waitForTimeout(100); // let the requested frame discover its visible tiles
+      await settled(page);
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      await page.screenshot({ path: `test-results/screens/fog-${id}-${name}.png` });
+    }
+  }
+  expect(failed).toEqual([]);
+});
+
 test('MICHELIN stars and Bibs are red marks of their own: on the signs, on the pins zoomed out, and in the list', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.locator('.list-head h2')).toBeVisible();

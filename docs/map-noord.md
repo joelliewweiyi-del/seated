@@ -16,7 +16,7 @@ du -sh src/map/public/ours
 
 The existing `src/map/public/sez/manifest.json` and its local images must be present. “Cold cache” refers to our open-data cache, not to downloading his art. No new npm dependencies were added. Building uses Node built-ins and the Mac’s `sips` to decode the PDOK JPEGs to BMP; viewing the committed PNGs does not require `sips`.
 
-Downloads are sequential, carry `User-Agent: Seated-map/0.3 (one-off Noord open-data build; seated.food)`, and pause between requests. They go under `.cache/noord/<RD-box-hash>/`, which is gitignored. This box’s hash is `a9dd1f10a848`. A warm build reads only local files. To intentionally refresh upstream data, move that cache directory aside before rebuilding. The script never contacts restaurant or booking services.
+Downloads are sequential, carry `User-Agent: Seated-map/0.3 (one-off Noord open-data build; seated.food)`, and pause between requests. They go under `.cache/noord/<RD-box-hash>/`, which is gitignored. The box hash is now `00747c90e304` (the box grew on 15 Nov 2026; `a9dd1f10a848` is the old one). A warm build reads only local files. The 15 Nov build fetched everything again: OpenStreetMap and 3DBAG for the bigger box, and about 40 PDOK tiles. To intentionally refresh upstream data, move that cache directory aside before rebuilding. The script never contacts restaurant or booking services.
 
 Sources:
 
@@ -28,7 +28,7 @@ The verified cold data path made 23 requests: one OSM terrain query, six 3DBAG p
 
 ## Grid and painting
 
-The RD box is **x 118000–127500, y 487600–492500**. Before building, the script checks the ten required restaurants and the places marked as Noord in `data/map-places.json`, and enlarges the box with a 100 m margin if needed. None required enlargement in this build.
+The RD box is **x 117029–130893, y 479894–492500** (15 Nov 2026; before that x 118000–127500, y 484200–492500). Before building, the script checks the ten required restaurants and the places marked as Noord in `data/map-places.json`, and enlarges the box with a 100 m margin if needed. It then grows the box for the neighbourhoods on fog (see below). The west and south edges move by whole cells, so every old cell keeps its place.
 
 Grid x runs east and grid y south. The old diamond painter is preserved, refined from 8×4 to **4×2 level-0 pixels** to remove conspicuous stepped roof edges. At reference scale 3:
 
@@ -55,6 +55,19 @@ Light comes from the upper left. Boundary walls use the nearest actual 3DBAG pol
 
 His drawing has gaps inside the city (Oost, the Indische Buurt, Watergraafsmeer), and fades out at its edges in a dither about 128 world pixels deep. The box now runs south to RD y 484200. `gapMask` (in `src/map/noord-grid.ts`) keeps our pixels only where his overview is transparent, plus 16 overview pixels (128 world pixels) over his edge. `render.ts` draws our layer **after** his art. Because ours is cut to that strip, it covers only his gaps and his fading edge, never the rest of his drawing. The fog band is drawn last, over the edge of both drawings, in a ragged line (as on 6 Nov). The alignment test moved to Westerdok, where the strip meets the IJ. Building-edge correlation in Oost gives 1 to 3 level-0 pixels, the same as at the IJ. The style change between the two drawings is still visible at the join.
 
+### Neighbourhoods on fog (15 Nov 2026)
+
+Joel: the restaurants that stood on fog (Toet and Showw in the Scheldebuurt, Zuid, around Europaplein, and eight more) should stand on drawn city, made the way Noord is made. A restaurant is on fog when his art does not cover it (`City` in `src/map/world.ts`, sezlab's mask only) and it is outside the Noord box. For each one the builder paints a **disc of 450 m** round it (`DISTRICT_M`), with the same painter, palette and gap cut as Noord. Fog gaps narrower than 700 m between a disc and his art, the Noord box, or another disc are painted too (a closing with `CLOSE_M` = 350 m: a disc and a straight edge of art leave a crescent of fog 550 to 600 m wide, which 300 m left open), but only within 600 m of a restaurant (`REACH_M`). Showw and Het Bosch join the Noord box this way. Cells outside the old box and the discs are not painted at all, so the output stays small.
+
+Eleven restaurants lie outside his art and the Noord box (the list is in the build log and in `ours/manifest.json` under `neighbourhoods`): De Mark, Hatsune, Het Bosch Waterfront Kitchen, Remouillage, Showw, The Jollof Club, Toet, Vuurtoreneiland, Wils and Wils Bakery Café (the same address as Wils) stood on fog. Bolenius also lies there, but it already stood on drawn pixels from the old layer, so it gets its disc as a rule, not as a fix. Every restaurant that is not opted out now stands on drawn city: `test/mapNoord.test.ts` checks it.
+
+Limits:
+
+- A disc is a neighbourhood, not a full city map. Only the fog within 700 m of a gap that closes is filled, so the rest of the open fog stays. At Showw, open fog over land still shows beyond the disc at mid zoom (a visual review on 15 Nov 2026 counted about a third of the frame); the dark navy block beside the sign is a 2023 building in 3DBAG, 33 to 40 m high, drawn as data. Vuurtoreneiland is a small island in the IJmeer: its disc is open water and the drawn land is the island itself; the open IJ around it stays fog, as it does everywhere outside the art.
+- A building just outside a disc is not painted, so a tall building at a disc's edge can lose its top where it overhangs the disc.
+- The districts use the Noord painter and the same OpenStreetMap and 3DBAG data as Noord: no detail beyond those sources.
+- The 15 Nov build downloaded fresh OpenStreetMap and 3DBAG data (the cache was from 6 Nov). Old Noord tiles changed in 3,575 of 162.5 million pixels (74 of 141 tiles; no alpha change). Not measured separately: the likely causes are the new source data and the city-wide roof tint, which now averages the new buildings too. The alignment measure moved from (0, -1) to (1, -1) px; the registration constant is unchanged and the test allows two.
+
 ## Colour measurements
 
 `src/map/noord-palette.ts` counts all opaque pixels in all reference level-0 chunks for version **2611020030**. These are representative semantic swatches identified in the reference and verified against that histogram, not automatically segmented class averages. The counts below are occurrences of the swatch, not the area of its semantic class. Tests also require every listed “ours” swatch to occur in the generated tiles.
@@ -77,7 +90,7 @@ The level-0 output palette has 61 entries, including transparent index zero. It 
 
 ## Tiles, coverage and fog
 
-`src/map/public/ours/` contains **142 files, 12,545,640 bytes** (limit 13,000,000 bytes, checked by the build and by `test/mapNoord.test.ts`; 10 MB at first, 12 MB on 6 Nov 2026 for the Oostelijke Eilanden, 13 MB on 8 Nov 2026 when the RD box went south to y 484200 to fill his gaps in Oost; only his gaps and a strip over his edge are kept, see below). The chunk counts in this list are from 6 Nov:
+`src/map/public/ours/` contains **159 files, 14,005,486 bytes** (limit 16,000,000 bytes since 15 Nov 2026, checked by the build and by `test/mapNoord.test.ts`; 12,545,640 bytes in 142 files before the neighbourhoods; 10 MB at first, 12 MB on 6 Nov 2026 for the Oostelijke Eilanden, 13 MB on 8 Nov 2026 when the RD box went south to y 484200 to fill his gaps in Oost; only his gaps and a strip over his edge are kept, see below). The chunk counts in this list are from 6 Nov:
 
 - 84 level-0 PNG chunks, each 1024×1024, at one image pixel per two world pixels (`k=0.5`). Negative and out-of-reference-range chunk indices are supported.
 - 26 level-1 chunks, also 1024×1024, at `k=0.25`.

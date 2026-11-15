@@ -11,6 +11,7 @@ import { readPNG, writePNG } from '../src/map/noord-png';
 import { imageReader, measureAlignment } from '../src/map/noord-alignment';
 import { measurePalette, quantizer, MATERIAL_COLOURS, FAR_PALETTE } from '../src/map/noord-palette';
 import { rdToWgs, wgsToRd } from '../src/shared/rd';
+import { World as City } from '../src/map/world';
 
 // One cell projects to exactly 4 x 2 level-0 pixels; half the old grid spacing for finer silhouettes. Grid x=east, y=south.
 const sez = JSON.parse(readFileSync('src/map/public/sez/manifest.json', 'utf8'));
@@ -29,6 +30,38 @@ for (const [id, p] of Object.entries(places) as Array<[string, { lat: number; ln
   RD_BOX.x0 = Math.min(RD_BOX.x0, Math.floor(rd.x - 100)); RD_BOX.x1 = Math.max(RD_BOX.x1, Math.ceil(rd.x + 100));
   RD_BOX.y0 = Math.min(RD_BOX.y0, Math.floor(rd.y - 100)); RD_BOX.y1 = Math.max(RD_BOX.y1, Math.ceil(rd.y + 100));
 }
+// Neighbourhoods on fog (Joel, 15 Nov 2026). A restaurant outside his art gets a disc of DISTRICT_M drawn round it, as
+// Noord is drawn. Fog gaps narrower than 2 x CLOSE_M between a disc and the art, the Noord box or another disc are drawn too, and only
+// within REACH_M of a restaurant. The box grows to hold the discs; its west and south edges move by whole cells, so every
+// old cell keeps its place (the painter's origin then moves by whole pixels, so Noord's geometry is unchanged).
+const DISTRICT_M = 450;
+// 350 m: a disc and a straight edge of art leave a crescent of fog about 550 to 600 m wide (Het Bosch to the Noord box);
+// 300 m left its shoulders open.
+const CLOSE_M = 350;
+const REACH_M = 600;
+const OLD_BOX = { ...RD_BOX };
+const optOut = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8')) as Array<{ id: string }>).map((x) => x.id));
+const onArt = new City(sez);
+// Fog = outside his art and outside the Noord box (inside the box every gap is drawn already, so those restaurants stand on drawn city).
+const fogPlaces = (Object.entries(places) as Array<[string, { lat: number; lng: number }]>)
+  .filter(([id, p]) => !optOut.has(id) && !onArt.covers(p.lat, p.lng))
+  .map(([id, p]) => ({ id, rd: wgsToRd(p.lat, p.lng) }))
+  .filter(({ rd }) => !(rd.x >= OLD_BOX.x0 && rd.x <= OLD_BOX.x1 && rd.y >= OLD_BOX.y0 && rd.y <= OLD_BOX.y1));
+if (fogPlaces.length) {
+  // 970 m: a disc (450 m), the closing (300 m) and spare. Fixed, so the box and its cache stay the same when REACH_M changes.
+  const grow = 970;
+  const xs = fogPlaces.map((p) => p.rd.x), ys = fogPlaces.map((p) => p.rd.y);
+  if (Math.min(...xs) - grow < RD_BOX.x0) RD_BOX.x0 -= Math.ceil((RD_BOX.x0 - (Math.min(...xs) - grow)) / CELL_M) * CELL_M;
+  RD_BOX.x1 = Math.max(RD_BOX.x1, Math.ceil(Math.max(...xs) + grow));
+  RD_BOX.y0 = Math.min(RD_BOX.y0, Math.floor(Math.min(...ys) - grow));
+  if (Math.max(...ys) + grow > RD_BOX.y1) throw new Error('a neighbourhood reaches north of the box: move RD_BOX.y1 by whole cells');
+}
+console.log(`[noord] ${fogPlaces.length} restaurants on fog get a neighbourhood: ${fogPlaces.map((p) => p.id).join(', ')}`);
+/** RD metres -> level-0 pixels of his projection (world pixels; the overview is 4 of them per pixel). */
+const projectRD = (x: number, y: number) => ({
+  x: ((x - sez.X0 + y - sez.Y0) * Math.SQRT1_2 - sez.x) * SCALE,
+  y: ((x - sez.X0 - (y - sez.Y0)) * Math.SQRT1_2 / 2 - sez.y) * SCALE,
+});
 const corners = [rdToWgs(RD_BOX.x0, RD_BOX.y0), rdToWgs(RD_BOX.x0, RD_BOX.y1), rdToWgs(RD_BOX.x1, RD_BOX.y0), rdToWgs(RD_BOX.x1, RD_BOX.y1)];
 const BBOX = { south: Math.min(...corners.map(p => p.lat)), north: Math.max(...corners.map(p => p.lat)), west: Math.min(...corners.map(p => p.lng)), east: Math.max(...corners.map(p => p.lng)) };
 const COLS = Math.ceil((RD_BOX.x1 - RD_BOX.x0) / CELL_M);
@@ -152,14 +185,22 @@ async function overpass(file: string, query: string): Promise<El[]> {
   const path = join(CACHE, file);
   if (!existsSync(path)) {
     console.log(`[world] asking Overpass for ${file} (one request)...`);
-    const res = await download('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ data: query }),
-      signal: AbortSignal.timeout(360_000),
-    });
-    if (!res.ok) throw new Error(`Overpass ${res.status}: ${(await res.text()).slice(0, 200)}`);
-    writeFileSync(path, await res.text());
+    // Overpass answers 502 or 504 when its queue is full: wait longer each time, up to four tries.
+    let res: Response | undefined;
+    for (let attempt = 0; ; attempt++) {
+      res = await download('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ data: query }),
+        signal: AbortSignal.timeout(360_000),
+      });
+      if (res.ok || ![429, 502, 503, 504].includes(res.status) || attempt === 3) break;
+      const wait = 60_000 * 2 ** attempt;
+      console.log(`[world] Overpass ${res.status}; waiting ${wait / 1000} s, then try ${attempt + 2}`);
+      await new Promise((r) => setTimeout(r, wait));
+    }
+    if (!res!.ok) throw new Error(`Overpass ${res!.status}: ${(await res!.text()).slice(0, 200)}`);
+    writeFileSync(path, await res!.text());
   }
   return (JSON.parse(readFileSync(path, 'utf8')) as { elements: El[] }).elements;
 }
@@ -292,6 +333,72 @@ const setT = (code: number, unless: number[] = []) => (i: number) => {
   if (!unless.includes(T_(i))) terrain[i] = (terrain[i]! & 0xf0) | code;
 };
 const flag = (i: number, f: number) => (terrain[i]! |= f << 4);
+
+/** Distance to the nearest cell of `set`, in half cells (a step across a cell: 2, a diagonal step: 3). Two-pass chamfer. */
+function halfCells(set: Uint8Array): Uint16Array {
+  const INF = 60000;
+  const d = Uint16Array.from(set, (v) => (v ? 0 : INF));
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    const i = idx(x, y);
+    let v = d[i]!;
+    if (x > 0) v = Math.min(v, d[i - 1]! + 2);
+    if (y > 0) {
+      v = Math.min(v, d[i - COLS]! + 2);
+      if (x > 0) v = Math.min(v, d[i - COLS - 1]! + 3);
+      if (x < COLS - 1) v = Math.min(v, d[i - COLS + 1]! + 3);
+    }
+    d[i] = v;
+  }
+  for (let y = ROWS - 1; y >= 0; y--) for (let x = COLS - 1; x >= 0; x--) {
+    const i = idx(x, y);
+    let v = d[i]!;
+    if (x < COLS - 1) v = Math.min(v, d[i + 1]! + 2);
+    if (y < ROWS - 1) {
+      v = Math.min(v, d[i + COLS]! + 2);
+      if (x < COLS - 1) v = Math.min(v, d[i + COLS + 1]! + 3);
+      if (x > 0) v = Math.min(v, d[i + COLS - 1]! + 3);
+    }
+    d[i] = v;
+  }
+  return d;
+}
+
+// Cells to paint: the old box (unchanged), and each fog restaurant's disc, joined to the art, the box or another disc across
+// gaps narrower than 2 x CLOSE_M (a closing), and kept within REACH_M of a disc. Nothing else is painted.
+const K = new Uint8Array(N);
+{
+  const artHi = readPNG(readFileSync(`src/map/public/sez/${sez.version}/2.png`));
+  const disc = new Uint8Array(N), art = new Uint8Array(N), old = new Uint8Array(N);
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    const i = idx(x, y);
+    const rd = { x: RD_BOX.x0 + (x + 0.5) * CELL_M, y: RD_BOX.y1 - (y + 0.5) * CELL_M };
+    const p = projectRD(rd.x, rd.y);
+    const ox = Math.floor(p.x / 4), oy = Math.floor(p.y / 4);
+    art[i] = ox >= 0 && oy >= 0 && ox < artHi.w && oy < artHi.h && artHi.alpha[oy * artHi.w + ox]! > 0 ? 1 : 0;
+    old[i] = rd.x >= OLD_BOX.x0 && rd.x <= OLD_BOX.x1 && rd.y >= OLD_BOX.y0 && rd.y <= OLD_BOX.y1 ? 1 : 0;
+  }
+  const r = DISTRICT_M / CELL_M;
+  for (const p of fogPlaces) {
+    const [px, py] = rdToXY(p.rd.x, p.rd.y);
+    for (let y = Math.floor(py - r); y <= Math.ceil(py + r); y++) for (let x = Math.floor(px - r); x <= Math.ceil(px + r); x++) {
+      if (inside(x, y) && Math.hypot(x + 0.5 - px, y + 0.5 - py) <= r) disc[idx(x, y)] = 1;
+    }
+  }
+  // Closing: grow the discs and the art by CLOSE_M, then shrink what is left by CLOSE_M. Only near a disc.
+  const c2 = (2 * CLOSE_M) / CELL_M, reach2 = (2 * REACH_M) / CELL_M;
+  const near = halfCells(Uint8Array.from(disc, (v, i) => v | art[i]! | old[i]!));
+  const dGap = halfCells(Uint8Array.from(near, (d) => +(d > c2)));
+  const dDisc = halfCells(disc);
+  let closed = 0;
+  for (let i = 0; i < N; i++) {
+    const joined = dGap[i]! > c2 && dDisc[i]! <= reach2;
+    K[i] = old[i] || disc[i] || joined ? 1 : 0;
+    if (joined && !disc[i] && !old[i]) closed++;
+  }
+  let oldCount = 0, discCount = 0;
+  for (let i = 0; i < N; i++) { oldCount += old[i]!; discCount += disc[i]!; }
+  console.log(`[noord] painting ${K.reduce((n, v) => n + v, 0)} cells: ${oldCount} old box, ${discCount} neighbourhood discs, ${closed} joined cells (fog and art)`);
+}
 
 const elements = await overpass('osm.json', OSM_QUERY);
 console.log(`[world] ${elements.length} OSM elements, grid ${COLS} x ${ROWS} cells of ${CELL_M} m`);
@@ -447,7 +554,7 @@ const photoLuma = new Uint8Array(N);
 {
   const byTile = new Map<number, number[]>();
   for (let i = 0; i < N; i++) {
-    if (partOf[i]! < 0) continue;
+    if (partOf[i]! < 0 || !K[i]) continue; // only tiles that paint (a neighbourhood's tiles are fetched only if it needs them)
     const x = i % COLS;
     const y = (i - x) / COLS;
     const rd = { x: RD_BOX.x0 + (x + 0.5) * CELL_M, y: RD_BOX.y1 - (y + 0.5) * CELL_M };
@@ -660,10 +767,6 @@ for (let q = 0; q < shoreTail; q++) {
   }
 }
 const world = new Grid({ cols: COLS, rows: ROWS, cellMeters: CELL_M, roofPalette: ROOF_PALETTE, attribution: '' }, planes, 0, 0, COLS, ROWS, { shore, building, industrial, facade });
-const projectRD = (x: number, y: number) => ({
-  x: ((x - sez.X0 + y - sez.Y0) * Math.SQRT1_2 - sez.x) * SCALE,
-  y: ((x - sez.X0 - (y - sez.Y0)) * Math.SQRT1_2 / 2 - sez.y) * SCALE,
-});
 const origin = projectRD(RD_BOX.x0, RD_BOX.y1);
 // Registration of the old ground/quay painter to the reference water boundary.
 // Measured before correction at Westerdok (-1,-3), Centraal (-2,-2), and the IJ east (-1,-3).
@@ -678,12 +781,14 @@ console.log(`[noord] painting ${COLS} x ${ROWS} RD cells into ${width} x ${imgHe
 const canvas = new Pix(width, imgHeight);
 // Paint the whole ground first: foreground ground must not erase a taller building behind it.
 for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+  if (!K[idx(x, y)]) continue;
   paintGround(canvas, world, x, y, ox + (x - y) * (TW / 2) - x0, oy + (x + y) * (TH / 2) - y0, x0, y0);
 }
 finishQuays(canvas);
 finishBridges(canvas);
 for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1); y <= Math.min(ROWS - 1, d); y++) {
   const x = d - y, sx = ox + (x - y) * (TW / 2) - x0, sy = oy + (x + y) * (TH / 2) - y0;
+  if (!K[idx(x, y)]) continue;
   paintBuilding(canvas, world, x, y, sx, sy);
   paintProps(canvas, world, x, y, sx, sy);
 }
@@ -772,10 +877,11 @@ const manifest = {
   credit: 'Noord drawn by Seated; © OpenStreetMap contributors (ODbL); 3DBAG TU Delft/3DGI (CC BY 4.0); PDOK aerial photo Beeldmateriaal Nederland (CC BY 4.0)',
   alignment: { dx: alignment.dx, dy: alignment.dy, correlation: alignment.correlation, samples: alignment.samples },
   palette: OUTPUT_PALETTE, measurements: measured.table, levels, coverage: { x: px0, y: py0, w, h, runs }, files: outputs,
+  neighbourhoods: { districtM: DISTRICT_M, closeM: CLOSE_M, reachM: REACH_M, oldBox: OLD_BOX, places: fogPlaces.map((p) => p.id) },
 };
 save('manifest.json', Buffer.from(JSON.stringify(manifest) + '\n'));
 const total = outputs.reduce((n, f) => n + f.bytes, 0);
-if (total > 13_000_000) throw new Error(`ours exceeds 13 MB: ${total}`);
+if (total > 16_000_000) throw new Error(`ours exceeds 16 MB: ${total}. Fix: shrink DISTRICT_M or REACH_M, or raise this limit and the one in test/mapNoord.test.ts on purpose.`);
 mkdirSync(outputDir, { recursive: true });
 const names = new Set(outputs.map(f => f.name));
 for (const f of readdirSync(outputDir)) if (/^(?:[01]_-?[\d.]+_-?[\d.]+|2)\.png$/.test(f) && !names.has(f)) unlinkSync(`${outputDir}/${f}`);
