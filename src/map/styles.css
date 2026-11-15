@@ -636,7 +636,7 @@ a {
   margin-top: 10px;
 }
 .list-head .lens-line {
-  margin: 8px 0 0;
+  margin: 8px 0 10px;
   font-size: 13px;
   line-height: 1.4;
   color: var(--ink-2);
