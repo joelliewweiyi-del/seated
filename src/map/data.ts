@@ -44,6 +44,14 @@ export const STATUS_COLOUR: Record<Status, string> = {
   unknown: '#b9b4c2',
 };
 
+/**
+ * The look of a status badge or calendar day. Text on badges is dark violet (Joel, 15 Nov 2026: white on green was
+ * 2.8:1). "No tables online" is hollow, a cream badge with a rose edge, so it never reads as Fully booked.
+ */
+export function badgeStyle(s: Status): { background: string; boxShadow?: string } {
+  return s === 'none' ? { background: '#fffaf0', boxShadow: `inset 0 0 0 2px ${STATUS_COLOUR.none}` } : { background: STATUS_COLOUR[s] };
+}
+
 export function dayIndex(data: MapData, date: string): number {
   return Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${data.start}T12:00:00Z`)) / 86_400_000);
 }

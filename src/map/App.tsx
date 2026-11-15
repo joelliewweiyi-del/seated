@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { ago, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
+import { ago, badgeStyle, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, walk } from './marks';
@@ -255,6 +255,7 @@ export function App() {
         ay: p.ay,
         colour: STATUS_COLOUR[s],
         badge: badgeFor(p.r, s, day),
+        hollow: s === 'none',
         rank: STATUS_RANK[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0) + (lens && inLens(lens, p.r) ? 400 : 0),
         dim: (filters.open && s !== 'open') || !match || !inLens(lens, p.r),
       });
@@ -1022,7 +1023,7 @@ function List(p: ListProps) {
                     {next ? ` · free ${dayLabel(next).slice(0, 10)}` : ''}
                   </span>
                 </span>
-                <span className="badge" style={{ background: STATUS_COLOUR[s] }}>
+                <span className="badge" style={badgeStyle(s)}>
                   {badgeFor(r, s, p.day)}
                 </span>
               </button>
@@ -1036,7 +1037,7 @@ function List(p: ListProps) {
         <span className="key">
           {ORDER.map((st) => (
             <span key={st}>
-              <i className="swatch" style={{ background: STATUS_COLOUR[st] }} /> {STATUS_WORD[st].toLowerCase()}
+              <i className="swatch" style={badgeStyle(st)} /> {STATUS_WORD[st].toLowerCase()}
             </span>
           ))}
           {hasMichelin && (
@@ -1317,7 +1318,7 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
                   return (
                     <button
                       key={d}
-                      style={{ background: STATUS_COLOUR[s] }}
+                      style={badgeStyle(s)}
                       aria-pressed={d === day}
                       aria-label={`${dayLabel(d, { long: true })}: ${STATUS_WORD[s]}`}
                       title={`${dayLabel(d)}: ${STATUS_WORD[s]}`}

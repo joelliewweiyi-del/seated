@@ -306,6 +306,15 @@ export function Picker(p: PickerProps) {
           )}
         </section>
 
+        {/* Google's own lists (Trending, Top, Gems) live only in Google Maps, and its terms forbid copying them:
+            a link out (Joel, 15 Nov 2026). */}
+        <p className="elsewhere">
+          Also worth a look:{' '}
+          <a href="https://www.google.com/maps/search/restaurants/@52.3676,4.8936,14z" target="_blank" rel="noopener noreferrer">
+            what's trending on Google Maps ↗
+          </a>
+        </p>
+
         {contact && (
           <form className="missing" onSubmit={(e) => e.preventDefault()}>
             <h3>Missing a place?</h3>

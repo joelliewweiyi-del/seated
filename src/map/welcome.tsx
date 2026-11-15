@@ -2,7 +2,7 @@
 // Also "You" (your character, its key, sign out, delete). Every screen can be left: the map is always one tap away.
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, cleanLook, EXTRAS, HAIR_COLOURS, HAIRS, PARTS, randomLook, SKINS, TOPS, type Look } from './avatar';
-import { dayLabel, STATUS_COLOUR, STATUS_WORD, type MapRestaurant, type Status } from './data';
+import { badgeStyle, dayLabel, STATUS_COLOUR, STATUS_WORD, type MapRestaurant, type Status } from './data';
 import { KIND_WORD } from './marks';
 import { Host } from './picker';
 import { QUESTIONS, suggest, type Answers } from './taste';
@@ -160,7 +160,7 @@ function Result({ you, restaurants, day, statusOf, onLens, onPick, onCharacter }
                 <span className="by">
                   {KIND_WORD[r.kind] ?? 'Restaurant'} · {r.area}
                 </span>
-                <span className="badge" style={{ background: STATUS_COLOUR[s] }}>
+                <span className="badge" style={badgeStyle(s)}>
                   {STATUS_WORD[s]}
                 </span>
               </button>

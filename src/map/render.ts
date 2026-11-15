@@ -14,6 +14,8 @@ export interface Marker {
   badge: string;
   /** Higher draws first and keeps its label when signs crowd. */
   rank: number;
+  /** A hollow badge: cream with an edge in the colour ("No tables online", never to be read as Full). */
+  hollow?: boolean;
   /** MICHELIN: '1' to '3' stars, or 'bib'. Drawn as its own red mark, on the sign and on the pin. */
   michelin?: string | null;
   dim: boolean;
@@ -626,8 +628,9 @@ export class MapView {
     ctx.textBaseline = 'middle';
     ctx.fillText(name, left + 18, top + h / 2 + 1);
     if (m.michelin) this.drawMichelin(ctx, m, left + 18 + nw + 4, top + 4, false);
-    pxBox(ctx, left + 18 + nw + mw + 4, top + 4, bw, h - 8, m.dim ? '#c9c5cf' : m.colour, m.dim ? '#c9c5cf' : m.colour);
-    ctx.fillStyle = '#ffffff';
+    const edge = m.dim ? '#c9c5cf' : m.colour;
+    pxBox(ctx, left + 18 + nw + mw + 4, top + 4, bw, h - 8, edge, m.hollow ? '#fffaf0' : edge);
+    ctx.fillStyle = ink; // dark violet on every badge: white on green was 2.8:1
     ctx.font = '500 12px "Pixelify Sans", ui-monospace, monospace';
     ctx.fillText(m.badge, left + 18 + nw + mw + 9, top + h / 2 + 1);
     if (sel || hov) {

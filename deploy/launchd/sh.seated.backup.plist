@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Nightly backup of the map's Supabase project (scripts/api-backup.ts). Install:
+     cp deploy/launchd/sh.seated.backup.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/sh.seated.backup.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>sh.seated.backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-c</string>
+    <string>export PATH="/opt/homebrew/opt/node@22/bin:/opt/homebrew/bin:$PATH"; if [ -f "$HOME/.op-service-account.env" ]; then source "$HOME/.op-service-account.env"; fi; export SUPABASE_ACCESS_TOKEN="$(op item get 'Supabase CLI:supabase' --vault bara-dev --fields password --reveal 2>/dev/null || true)"; exec npx tsx --disable-warning=ExperimentalWarning scripts/api-backup.ts</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/joel/waitlist-app</string>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>17</integer></dict>
+  <key>StandardOutPath</key><string>/Users/joel/waitlist-app/data/backup.log</string>
+  <key>StandardErrorPath</key><string>/Users/joel/waitlist-app/data/backup.log</string>
+</dict>
+</plist>

@@ -507,7 +507,7 @@ a {
 .badge {
   font: 600 11px/1 var(--px);
   padding: 4px 6px 3px;
-  color: #fff;
+  color: var(--ink);
   white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -904,7 +904,7 @@ a {
   padding: 0;
   cursor: pointer;
   font: 600 10px/1 var(--px);
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
 }
 .cal-grid button[aria-pressed='true'] {
   outline: 2px solid var(--ink);
@@ -1781,4 +1781,10 @@ a {
     scroll-behavior: auto !important;
     transition: none !important;
   }
+}
+
+.elsewhere {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
 }

@@ -390,3 +390,16 @@ test('MICHELIN stars and Bibs are red marks of their own: on the signs, on the p
   const bib = page.locator('.rows .mk-michelin.bib').first();
   await expect(bib).toHaveCSS('color', 'rgb(184, 50, 42)');
 });
+
+test('badges are readable and "no tables online" never looks like fully booked', async ({ page }) => {
+  await page.goto('/map/');
+  await expect(page.locator('.list-head h2')).toBeVisible();
+  // Dark violet text on every badge (white on green was 2.8:1).
+  const badge = page.locator('.rows .badge').first();
+  await expect(badge).toHaveCSS('color', 'rgb(43, 39, 51)');
+  // The legend: "no tables online" is hollow (cream, rose edge); "fully booked" is solid red.
+  const none = page.locator('.key span', { hasText: 'no tables online' }).locator('.swatch');
+  const full = page.locator('.key span', { hasText: 'fully booked' }).locator('.swatch');
+  await expect(none).toHaveCSS('background-color', 'rgb(255, 250, 240)');
+  await expect(full).toHaveCSS('background-color', 'rgb(224, 96, 76)');
+});
