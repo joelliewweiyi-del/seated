@@ -650,10 +650,12 @@ a {
 .card .guides .link {
   font: 600 13px/1.4 var(--px);
 }
+.card .guides .pair {
+  white-space: nowrap; /* a guide and its critic's score wrap as one */
+}
 .card .guides .note {
   color: var(--primary);
   font-weight: 600;
-  white-space: nowrap;
 }
 .list-head .active {
   margin: 8px 0 0;

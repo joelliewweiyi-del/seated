@@ -403,6 +403,8 @@ test("a critic's list: the card shows the score and year and links to the review
   const note = guides.locator('a.note');
   await expect(note).toHaveText('10 (2025) ↗');
   await expect(note).toHaveAttribute('href', /^https:\/\/www\.parool\.nl\//);
+  const [n, card] = await Promise.all([note.boundingBox(), page.locator('.card').boundingBox()]);
+  expect(n!.x + n!.width).toBeLessThanOrEqual(card!.x + card!.width); // the score never runs out of the card
   await page.screenshot({ path: 'test-results/screens/map-critic-card.png' });
   await guides.getByRole('button', { name: 'Mara Grimm 8,5+' }).click();
   await expect(page).toHaveURL(/lens=mara-grimm/);
