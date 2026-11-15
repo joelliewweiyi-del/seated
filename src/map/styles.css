@@ -650,6 +650,11 @@ a {
 .card .guides .link {
   font: 600 13px/1.4 var(--px);
 }
+.card .guides .note {
+  color: var(--primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
 .list-head .active {
   margin: 8px 0 0;
   font-size: 13px;

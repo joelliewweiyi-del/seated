@@ -256,6 +256,18 @@ describe('census and map data', () => {
     expect(data.restaurants.find((r) => r.id === 'phone-e')!.g).toEqual(['wide']);
     expect(data.restaurants.find((r) => r.id === 'quiet-c')!.g).toEqual([]);
   });
+
+  it("a critic's notes reach data.json only for restaurants on the map, and never for Esra", () => {
+    const s = setup({});
+    const ids = Object.keys(s.places);
+    const places = Object.fromEntries(ids.map((id) => [id, { ...s.places[id]!, guides: ['critic'] }]));
+    const note = { score: '9', year: '2026', url: 'https://example.com/review' };
+    const notes = Object.fromEntries([...ids, 'esra', 'not-on-map'].map((id) => [id, note]));
+    const critic = { id: 'critic', name: 'A critic', short: 'Critic', by: 'A paper', url: 'https://example.com', date: '2026-11-15', line: 'One line of our own words.', notes };
+    const data = buildMapData({ store: s.store, platforms: s.platforms, places, optOut: new Set(['esra']), guides: [critic], now: NOW });
+    expect(Object.keys(data.guides[0]!.notes!).sort()).toEqual(data.restaurants.map((r) => r.id).sort());
+    expect(data.guides[0]!.notes).not.toHaveProperty('esra');
+  });
 });
 
 describe('census interval', () => {

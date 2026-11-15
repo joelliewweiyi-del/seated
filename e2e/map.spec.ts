@@ -396,6 +396,18 @@ test('restaurants that stood on fog (15 Nov 2026) stand on drawn city, at mid an
   expect(failed).toEqual([]);
 });
 
+test("a critic's list: the card shows the score and year and links to the review", async ({ page }) => {
+  await page.goto('/map/?r=choux');
+  const guides = page.locator('.card .guides');
+  await expect(guides).toContainText('Mara Grimm 8,5+');
+  const note = guides.locator('a.note');
+  await expect(note).toHaveText('10 (2025) ↗');
+  await expect(note).toHaveAttribute('href', /^https:\/\/www\.parool\.nl\//);
+  await page.screenshot({ path: 'test-results/screens/map-critic-card.png' });
+  await guides.getByRole('button', { name: 'Mara Grimm 8,5+' }).click();
+  await expect(page).toHaveURL(/lens=mara-grimm/);
+});
+
 test('MICHELIN stars and Bibs are red marks of their own: on the signs, on the pins zoomed out, and in the list', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.locator('.list-head h2')).toBeVisible();

@@ -1234,6 +1234,14 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
                     <button className="link" onClick={() => onLens(g.id)} title={g.line}>
                       {g.short}
                     </button>
+                    {g.notes?.[r.id] && (
+                      <>
+                        {' '}
+                        <a className="note" href={g.notes[r.id]!.url} target="_blank" rel="noopener noreferrer" title={`The review in ${g.by}, ${g.notes[r.id]!.year}`}>
+                          {g.notes[r.id]!.score} ({g.notes[r.id]!.year}) ↗
+                        </a>
+                      </>
+                    )}
                   </span>
                 ))}
             </p>
