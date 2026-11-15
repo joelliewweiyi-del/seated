@@ -8,6 +8,7 @@ test.beforeEach(({ page }) =>
   page.addInitScript(() => {
     try {
       localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true }));
+      localStorage.setItem('seated.map.where', JSON.stringify({ asked: true }));
     } catch {
       /* no storage */
     }

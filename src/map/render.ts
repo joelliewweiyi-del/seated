@@ -1,6 +1,7 @@
 // Draws the map on a canvas: the city (sezlab's images, the level that fits the zoom, loaded as the view needs them)
 // and a sign over every restaurant.
 import { World } from './world';
+import { pixels, type Look } from './avatar';
 
 export interface Marker {
   id: string;
@@ -199,8 +200,8 @@ export class MapView {
   /** Images the current view shows but has not got yet. Tests wait for 0. */
   private waiting = 0;
   private markers: Marker[] = [];
-  /** Where you are, in world pixels, when "Near me" knows it. */
-  private you: { x: number; y: number } | null = null;
+  /** Where you are, in world pixels, and your character's cells (a silhouette when you have none). */
+  private you: { x: number; y: number; cells: Array<[number, number, string]> } | null = null;
   private hits: Array<{ id: string; x: number; y: number; w: number; h: number }> = [];
   private raf = 0;
   private dirty = true;
@@ -261,8 +262,8 @@ export class MapView {
     this.dirty = true;
   }
 
-  setYou(p: { x: number; y: number } | null): void {
-    this.you = p;
+  setYou(p: { x: number; y: number } | null, look: Look | null = null): void {
+    this.you = p && { ...p, cells: pixels(look) };
     this.dirty = true;
   }
 
@@ -496,16 +497,27 @@ export class MapView {
     if (this.world.ours && z >= 0.25) oursWaiting = this.drawLevel(z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
     this.waiting = waiting + oursWaiting;
     this.drawFogEdge(toX, toY);
-    if (this.you) this.drawYou(ctx, Math.round(toX(this.you.x)), Math.round(toY(this.you.y)), now);
     this.drawMarkers(ctx, toX, toY, W, H, now);
+    // You go over the signs: a sign never hides where you are.
+    if (this.you) this.drawYou(ctx, Math.round(toX(this.you.x)), Math.round(toY(this.you.y)), now);
   }
 
-  /** You are here: a blue dot with a ring that breathes (still when motion is reduced). */
+  /** You are here: your character floats over a small ring on the ground, bobbing (still when motion is reduced). */
   private drawYou(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
-    const r = this.reducedMotion ? 9 : 8 + Math.round((Math.sin(now / 400) + 1) * 2);
-    pxCircle(ctx, x, y, r, '#2d6fb544');
-    pxCircle(ctx, x, y, 6, '#ffffff');
-    pxCircle(ctx, x, y, 4, '#2d6fb5');
+    const you = this.you!;
+    const ring = this.reducedMotion ? 9 : 8 + Math.round((Math.sin(now / 400) + 1) * 2);
+    pxCircle(ctx, x, y, ring, '#2b273344');
+    pxCircle(ctx, x, y, 4, '#2b2733');
+    const k = 2; // 16 cells, 2 screen pixels each
+    const lift = this.reducedMotion ? 0 : Math.round((Math.sin(now / 300) + 1) * 2);
+    const left = x - 8 * k;
+    const top = y - 16 * k - 12 - lift;
+    // A cream plate like the panels, so a grey silhouette still stands out on the art.
+    pxBox(ctx, left - 3, top - 3, 16 * k + 6, 16 * k + 6, '#2b2733', '#fffaf0');
+    for (const [cx, cy, fill] of you.cells) {
+      ctx.fillStyle = fill;
+      ctx.fillRect(left + cx * k, top + cy * k, k, k);
+    }
   }
 
   // ── signs ────────────────────────────────────────────────────────────────

@@ -352,3 +352,21 @@ export function Nudge({ onOpen, onClose }: { onOpen: () => void; onClose: () => 
     </div>
   );
 }
+
+/** On a first visit: may the map use where you are? The browser's own question comes only after "Show me". */
+export function WhereCard({ onYes, onNo }: { onYes: () => void; onNo: () => void }) {
+  return (
+    <div className="px nudge where" role="status">
+      <Host size={34} />
+      <p>
+        <b>Tables near you?</b> I'll put you on the map and list what's close, nearest first. Your location stays on this page.
+      </p>
+      <button className="btn small primary" onClick={onYes}>
+        Show me
+      </button>
+      <button className="x" onClick={onNo} aria-label="Not now">
+        ×
+      </button>
+    </div>
+  );
+}

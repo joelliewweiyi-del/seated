@@ -3,7 +3,7 @@ import { ago, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, o
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, walk } from './marks';
-import { Nudge, Picker, type ListChoice } from './picker';
+import { Nudge, Picker, WhereCard, type ListChoice } from './picker';
 import type { SeatedList } from './api';
 import { Avatar, cleanLook } from './avatar';
 import { profileById } from './taste';
@@ -261,33 +261,56 @@ export function App() {
     }
     view.setMarkers(markers);
     view.keepClear(placed.map((p) => ({ x: p.ax, y: p.ay })));
-    view.setYou(me && !me.note && world.covers(me.lat, me.lng) ? world.project(me.lat, me.lng) : null);
-  }, [placed, day, data, world, filters, favs, query, statusOfR, me, lens]);
+    view.setYou(me && !me.note ? world.project(me.lat, me.lng) : null, you.account ? cleanLook(you.account.avatar) : null);
+  }, [placed, day, data, world, filters, favs, query, statusOfR, me, lens, you.account]);
 
-  // Near me: ask once, when the filter is turned on. Outside Amsterdam (or refused), distances start at the Dam.
-  useEffect(() => {
-    if (!filters.near || me) return;
-    if (!('geolocation' in navigator)) {
-      setMe({ ...DAM, note: 'Your browser does not share a location: distances are from the Dam.' });
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        if (metres(here, DAM) > 15_000) setMe({ ...DAM, note: 'You seem to be outside Amsterdam: distances are from the Dam.' });
-        else {
+  // Where you are. Asked on the first visit by a card (the browser asks only after a tap there), silently later when
+  // the browser already allows it, and when "Near me" is turned on. Outside Amsterdam (or refused), distances start
+  // at the Dam. The location stays in this page: it is never sent anywhere.
+  const [where, setWhere] = useRemembered<{ asked: boolean }>('seated.map.where', { asked: false });
+  const locate = useCallback(
+    (show: boolean) => {
+      setWhere({ asked: true });
+      if (!('geolocation' in navigator)) {
+        setMe({ ...DAM, note: 'Your browser does not share a location: distances are from the Dam.' });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          if (metres(here, DAM) > 15_000) {
+            setMe({ ...DAM, note: 'You seem to be outside Amsterdam: distances are from the Dam.' });
+            return;
+          }
           setMe(here);
           const view = viewRef.current;
-          if (view && world?.covers(here.lat, here.lng)) {
+          if (view && world) {
             const a = world.project(here.lat, here.lng);
             view.flyTo(a.x, a.y, Math.max(view.cam.z, 1));
           }
-        }
-      },
-      () => setMe({ ...DAM, note: 'Location is off: distances are from the Dam.' }),
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
-    );
-  }, [filters.near, me, world]);
+          if (show) {
+            setFilters((f) => ({ ...f, near: true }));
+            setCollapsed(false);
+          }
+        },
+        () => setMe({ ...DAM, note: 'Location is off: distances are from the Dam.' }),
+        { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
+      );
+    },
+    [world, setWhere, setFilters],
+  );
+  useEffect(() => {
+    if (filters.near && !me) locate(false);
+  }, [filters.near, me, locate]);
+  // Already allowed in this browser: find you without asking again.
+  useEffect(() => {
+    if (!world || me || !navigator.permissions) return;
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((p) => p.state === 'granted' && locate(false))
+      .catch(() => {});
+  }, [world]); // eslint-disable-line react-hooks/exhaustive-deps
+  const askWhere = !!data && !!world && !where.asked && !me && 'geolocation' in navigator;
 
   // Tell the map which screen areas the panels cover, so no sign hides under them.
   useEffect(() => {
@@ -568,7 +591,8 @@ export function App() {
           </footer>
         </>
       )}
-      {nudge && data && !dialog && !sel && (!narrow || collapsed) && (
+      {askWhere && !dialog && !sel && (!narrow || collapsed) && <WhereCard onYes={() => locate(true)} onNo={() => setWhere({ asked: true })} />}
+      {nudge && !askWhere && data && !dialog && !sel && (!narrow || collapsed) && (
         <Nudge
           onOpen={() => {
             setNudge(false);
@@ -913,6 +937,7 @@ function List(p: ListProps) {
           <p className="sum">
             for two, of {guide ? (guide.kind === 'guide' ? `${seen.length} ${guide.title} picks` : `${seen.length} in “${guide.title}”`) : `${p.placed.length} restaurants`}
             {hotOpen ? `; ${hotOpen} hard to get` : ''}
+            {p.me && !p.me.note ? ', nearest first' : ''}
           </p>
           <span className="sheet-toggle" aria-hidden="true">
             {p.collapsed ? 'List ▴' : 'Map ▾'}

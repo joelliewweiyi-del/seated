@@ -38,7 +38,7 @@ export const STATUS_WORD: Record<Status, string> = {
 export const STATUS_COLOUR: Record<Status, string> = {
   open: '#3fae5f',
   full: '#e0604c',
-  none: '#e0604c',
+  none: '#c27a72',
   closed: '#8f8a99',
   later: '#8c7bd8',
   unknown: '#b9b4c2',

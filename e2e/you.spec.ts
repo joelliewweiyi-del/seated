@@ -12,6 +12,8 @@ async function visitor(browser: Browser, opts: { phone?: boolean } = {}): Promis
     extraHTTPHeaders: { 'x-forwarded-for': `10.0.${run.length}.${ip++}` },
     ...(opts.phone ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
   });
+  // The location card (e2e/near.spec.ts) would sit over the map.
+  await ctx.addInitScript(() => localStorage.setItem('seated.map.where', JSON.stringify({ asked: true })));
   return ctx.newPage();
 }
 

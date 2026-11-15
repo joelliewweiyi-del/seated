@@ -2491,8 +2491,8 @@
   {
     "id": "toet",
     "name": "Toet",
-    "platform": "formitable",
-    "platformUid": "28c84997",
+    "platform": "sevenrooms",
+    "platformUid": "toet",
     "website": "https://www.toetamsterdam.nl",
     "city": "Amsterdam",
     "address": "Europaplein 67, 1078 GW Amsterdam"

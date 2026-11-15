@@ -130,20 +130,12 @@ export function randomLook(rand: () => number = Math.random): Look {
   return { skin: pick(SKINS.length), hair: pick(HAIRS.length - 1), hairColour: pick(HAIR_COLOURS.length), top: pick(TOPS.length), extra: 0 };
 }
 
-export function Avatar({ look, size = 40, title }: { look: Look | null; size?: number; title?: string }) {
+/** The coloured cells of a character, or of the grey silhouette when there is none yet. Shared by the badge and the map. */
+export function pixels(look: Look | null): Array<[number, number, string]> {
+  const out: Array<[number, number, string]> = [];
   if (!look) {
-    // No character yet: a grey silhouette of the same bust.
-    const rects: ReactElement[] = [];
-    BASE.forEach((r, y) =>
-      [...r].forEach((ch, x) => {
-        if (ch !== '.') rects.push(<rect key={`${x}.${y}`} x={x} y={y} width="1" height="1" fill={ch === 'o' ? '#6e6878' : '#b8b1a3'} />);
-      }),
-    );
-    return (
-      <svg className="avatar no-character" viewBox="0 0 16 16" width={size} height={size} shapeRendering="crispEdges" role="img" aria-label={title ?? 'No character yet'}>
-        {rects}
-      </svg>
-    );
+    BASE.forEach((r, y) => [...r].forEach((ch, x) => ch !== '.' && out.push([x, y, ch === 'o' ? '#6e6878' : '#b8b1a3'])));
+    return out;
   }
   const l = cleanLook(look);
   const colour: Record<string, string> = {
@@ -161,15 +153,19 @@ export function Avatar({ look, size = 40, title }: { look: Look | null; size?: n
     f: '#f2a0a0',
     y: '#ffcf4a',
   };
-  const rects: ReactElement[] = [];
-  cells(l).forEach((r, y) =>
-    r.forEach((ch, x) => {
-      const fill = colour[ch];
-      if (fill) rects.push(<rect key={`${x}.${y}`} x={x} y={y} width="1" height="1" fill={fill} />);
-    }),
-  );
-  return (
+  cells(l).forEach((r, y) => r.forEach((ch, x) => colour[ch] && out.push([x, y, colour[ch]!])));
+  return out;
+}
+
+export function Avatar({ look, size = 40, title }: { look: Look | null; size?: number; title?: string }) {
+  const rects: ReactElement[] = pixels(look).map(([x, y, fill]) => <rect key={`${x}.${y}`} x={x} y={y} width="1" height="1" fill={fill} />);
+  return look ? (
     <svg className="avatar" viewBox="0 0 16 16" width={size} height={size} shapeRendering="crispEdges" role="img" aria-label={title ?? 'Character'}>
+      {rects}
+    </svg>
+  ) : (
+    // No character yet: a grey silhouette of the same bust.
+    <svg className="avatar no-character" viewBox="0 0 16 16" width={size} height={size} shapeRendering="crispEdges" role="img" aria-label={title ?? 'No character yet'}>
       {rects}
     </svg>
   );

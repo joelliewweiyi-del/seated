@@ -1,1 +1,5 @@
-[{ "id": "esra", "since": "2026-11-04", "why": "Two-person shop; kept off the map from the start (CLAUDE.md hard rule 2)." }]
+[
+  {"id": "esra", "since": "2026-11-04", "why": "Two-person shop; kept off the map from the start (CLAUDE.md hard rule 2)."},
+  {"id": "maris-piper", "since": "2026-11-15", "why": "Closed for good: its site is a parked domain; Amsterdam Foodie, Foodle and Wanderlog say permanently closed (checked 15 Nov 2026)."},
+  {"id": "bistro-feline", "since": "2026-11-15", "why": "Gone: Daalder moved back into Lindengracht 90 in June 2026 (AmsterdamNow); Feline's site no longer answers (checked 15 Nov 2026)."}
+]
