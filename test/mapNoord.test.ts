@@ -111,10 +111,10 @@ describe('Seated Noord', () => {
       .map(([id]) => id);
     expect(onFog).toEqual([]);
   });
-  it('has intact deterministic files and fits within sixteen megabytes', () => {
+  it('has intact deterministic files and fits within seventeen megabytes', () => {
     const names = readdirSync('src/map/public/ours');
     expect(names.sort()).toEqual([...ours.files.map(f => f.name), 'manifest.json'].sort());
-    expect(names.reduce((n, f) => n + statSync(`src/map/public/ours/${f}`).size, 0)).toBeLessThanOrEqual(16_000_000);
+    expect(names.reduce((n, f) => n + statSync(`src/map/public/ours/${f}`).size, 0)).toBeLessThanOrEqual(17_000_000);
     for (const f of ours.files) {
       const bytes = readFileSync(`src/map/public/ours/${f.name}`);
       expect(bytes.length).toBe(f.bytes);

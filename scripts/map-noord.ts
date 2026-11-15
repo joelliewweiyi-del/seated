@@ -34,7 +34,9 @@ for (const [id, p] of Object.entries(places) as Array<[string, { lat: number; ln
 // Noord is drawn. Fog gaps narrower than 2 x CLOSE_M between a disc and the art, the Noord box or another disc are drawn too, and only
 // within REACH_M of a restaurant. The box grows to hold the discs; its west and south edges move by whole cells, so every
 // old cell keeps its place (the painter's origin then moves by whole pixels, so Noord's geometry is unchanged).
-const DISTRICT_M = 450;
+// 800 m since 15 Nov 2026 (Joel: "widen"): at 450 m a card's view of Showw, Het Bosch or the Jollof Club was a third to
+// three quarters fog within 900 m.
+const DISTRICT_M = 800;
 // 350 m: a disc and a straight edge of art leave a crescent of fog about 550 to 600 m wide (Het Bosch to the Noord box);
 // 300 m left its shoulders open.
 const CLOSE_M = 350;
@@ -48,8 +50,8 @@ const fogPlaces = (Object.entries(places) as Array<[string, { lat: number; lng: 
   .map(([id, p]) => ({ id, rd: wgsToRd(p.lat, p.lng) }))
   .filter(({ rd }) => !(rd.x >= OLD_BOX.x0 && rd.x <= OLD_BOX.x1 && rd.y >= OLD_BOX.y0 && rd.y <= OLD_BOX.y1));
 if (fogPlaces.length) {
-  // 970 m: a disc (450 m), the closing (300 m) and spare. Fixed, so the box and its cache stay the same when REACH_M changes.
-  const grow = 970;
+  // A disc, the closing and spare. Fixed by DISTRICT_M, so the box and its cache stay the same when REACH_M changes.
+  const grow = DISTRICT_M + 520;
   const xs = fogPlaces.map((p) => p.rd.x), ys = fogPlaces.map((p) => p.rd.y);
   if (Math.min(...xs) - grow < RD_BOX.x0) RD_BOX.x0 -= Math.ceil((RD_BOX.x0 - (Math.min(...xs) - grow)) / CELL_M) * CELL_M;
   RD_BOX.x1 = Math.max(RD_BOX.x1, Math.ceil(Math.max(...xs) + grow));
@@ -881,7 +883,7 @@ const manifest = {
 };
 save('manifest.json', Buffer.from(JSON.stringify(manifest) + '\n'));
 const total = outputs.reduce((n, f) => n + f.bytes, 0);
-if (total > 16_000_000) throw new Error(`ours exceeds 16 MB: ${total}. Fix: shrink DISTRICT_M or REACH_M, or raise this limit and the one in test/mapNoord.test.ts on purpose.`);
+if (total > 17_000_000) throw new Error(`ours exceeds 17 MB: ${total}. Fix: shrink DISTRICT_M or REACH_M, or raise this limit and the one in test/mapNoord.test.ts on purpose.`);
 mkdirSync(outputDir, { recursive: true });
 const names = new Set(outputs.map(f => f.name));
 for (const f of readdirSync(outputDir)) if (/^(?:[01]_-?[\d.]+_-?[\d.]+|2)\.png$/.test(f) && !names.has(f)) unlinkSync(`${outputDir}/${f}`);
