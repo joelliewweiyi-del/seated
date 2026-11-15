@@ -95,7 +95,7 @@ interface PickerProps {
 }
 
 function Choice({ l, current, onPick, extra }: { l: ListChoice; current: string | null; onPick: (id: string | null) => void; extra?: ReactNode }) {
-  const unit = l.id === null ? (l.picks === 1 ? 'place' : 'places') : l.picks === 1 ? 'pick' : 'picks';
+  const unit = l.id === 'all' ? (l.picks === 1 ? 'place' : 'places') : l.picks === 1 ? 'pick' : 'picks';
   return (
     <li>
       <button className="choice" aria-pressed={l.id === current} onClick={() => onPick(l.id)} title={l.line || undefined}>

@@ -211,7 +211,7 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   await expect(page).toHaveURL(/[?&]lens=one(&|$)/);
   await page.locator('.lens-line').getByRole('button', { name: 'Every restaurant' }).click();
   await expect(page.locator('.rows .nm')).toHaveCount(names.length);
-  await expect(page).not.toHaveURL(/lens=/);
+  await expect(page).toHaveURL(/lens=all/); // every restaurant, kept in the link (no lens = the curated list)
   await page.goto('/map/?lens=nobody');
   await expect(page.locator('.rows .nm')).toHaveCount(names.length);
 });
@@ -249,7 +249,7 @@ test('a card offers a mail link to report something wrong, named after the resta
 
 test('the picker takes a missing restaurant to a mail addressed to us, and only when a contact is set', async ({ page }) => {
   await page.goto('/map/');
-  await page.getByRole('button', { name: 'Lists' }).click();
+  await page.locator('.chip.lens').click();
   const form = page.locator('.missing');
   // The e2e build may have no VITE_MAP_CONTACT: then there is no form at all, never an empty mailto.
   const contact = process.env.VITE_MAP_CONTACT;
@@ -402,4 +402,18 @@ test('badges are readable and "no tables online" never looks like fully booked',
   const full = page.locator('.key span', { hasText: 'fully booked' }).locator('.swatch');
   await expect(none).toHaveCSS('background-color', 'rgb(255, 250, 240)');
   await expect(full).toHaveCSS('background-color', 'rgb(224, 96, 76)');
+});
+
+test('the map opens on the Seated curated list; Every restaurant shows all and the link keeps it', async ({ page }) => {
+  await page.goto('/map/');
+  const curated = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.filter((r: { g: string[] }) => r.g.includes('seated')).length);
+  expect(curated).toBeGreaterThan(50);
+  await expect(page.locator('.list-head .sum')).toContainText(`of ${curated} Seated curated picks`);
+  await expect(page.locator('.chip.lens')).toHaveText('Seated curated');
+  expect(new URL(page.url()).search).toBe(''); // the default needs no link
+  await page.locator('.lens-line').getByRole('button', { name: 'Every restaurant' }).click();
+  await expect(page.locator('.list-head .sum')).not.toContainText('Seated curated');
+  await expect(page).toHaveURL(/lens=all/);
+  await page.reload();
+  await expect(page.locator('.chip.lens')).toHaveText('Lists');
 });

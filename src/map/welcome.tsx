@@ -2,7 +2,7 @@
 // Also "You" (your character, its key, sign out, delete). Every screen can be left: the map is always one tap away.
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, cleanLook, EXTRAS, HAIR_COLOURS, HAIRS, PARTS, randomLook, SKINS, TOPS, type Look } from './avatar';
-import { badgeStyle, dayLabel, STATUS_COLOUR, STATUS_WORD, type MapRestaurant, type Status } from './data';
+import { badgeStyle, CURATED, dayLabel, STATUS_COLOUR, STATUS_WORD, type MapRestaurant, type Status } from './data';
 import { KIND_WORD } from './marks';
 import { Host } from './picker';
 import { QUESTIONS, suggest, type Answers } from './taste';
@@ -24,8 +24,10 @@ interface WelcomeProps {
 }
 
 /** Your top tables: the restaurants that fit your taste best, a free table today breaking ties. */
+/** Picks come from the curated list only (Joel, 15 Nov 2026: no tourist traps among the suggestions). */
 export function picksFor(you: You, restaurants: MapRestaurant[], statusOf: (r: MapRestaurant) => Status, n = 12) {
-  return suggest(you.taste, restaurants, (r) => statusOf(r) === 'open', n);
+  const curated = restaurants.filter((r) => r.g.includes(CURATED));
+  return suggest(you.taste, curated.length ? curated : restaurants, (r) => statusOf(r) === 'open', n);
 }
 
 function useFocus<T extends HTMLElement>(dep: unknown) {

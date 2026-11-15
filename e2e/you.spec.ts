@@ -133,6 +133,7 @@ test('lists: add places from their cards, see the list as a lens, share it in Co
   await answer(maker, 'Date night', 'Natural wine');
   await makeCharacter(maker, `Bo ${run}`);
   await welcome(maker).getByRole('button', { name: 'Done' }).click();
+  await maker.goto('/map/?lens=all'); // every restaurant: the first three in the data need not be curated
   const names = await maker.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.slice(0, 3).map((r: { name: string }) => r.name));
   const title = `Dates ${run}`;
   for (const [i, n] of names.entries()) {

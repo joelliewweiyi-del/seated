@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { ago, badgeStyle, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
+import { ago, badgeStyle, CURATED, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, walk } from './marks';
@@ -142,7 +142,8 @@ export function App() {
   const [date, setDate] = useState<string | null>(readUrl().date);
   const [selected, setSelected] = useState<string | null>(readUrl().r);
   // The guide the map is seen through: from the link, so a lens can be shared. Unknown ids are ignored.
-  const [lensId, setLens] = useState<string | null>(readUrl().lens);
+  // No lens in the link: the curated list. 'all' is every restaurant.
+  const [lensId, setLens] = useState<string | null>(readUrl().lens ?? CURATED);
   const [filters, setFilters] = useRemembered<Filters>('seated.map.filters', NO_FILTERS);
   const [saved, setSaved] = useRemembered<{ ids: string[] }>('seated.map.saved', { ids: [] });
   const favs = useMemo(() => new Set(saved.ids), [saved]);
@@ -223,7 +224,7 @@ export function App() {
   }, [listId, you.lists.length]); // eslint-disable-line react-hooks/exhaustive-deps
   // The lens from its id. An id the map does not know (yet) shows every restaurant.
   const lens = useMemo<Lens | null>(() => {
-    if (!data || !lensId) return null;
+    if (!data || !lensId || lensId === 'all') return null;
     const g = data.guides.find((x) => x.id === lensId);
     if (g) return { id: g.id, kind: 'guide', title: g.short, line: g.line, url: g.url, by: null, ids: new Set(data.restaurants.filter((r) => r.g.includes(g.id)).map((r) => r.id)) };
     if (lensId === 'you')
@@ -356,7 +357,8 @@ export function App() {
     const q = new URLSearchParams();
     if (day !== data.start) q.set('date', day);
     if (selected) q.set('r', selected);
-    if (lens) q.set(lens.kind === 'list' ? 'list' : 'lens', lens.kind === 'list' ? lens.id.slice(2) : lens.id);
+    if (lensId === 'all') q.set('lens', 'all');
+    else if (lens && lens.id !== CURATED) q.set(lens.kind === 'list' ? 'list' : 'lens', lens.kind === 'list' ? lens.id.slice(2) : lens.id);
     const next = `${location.pathname}${q.toString() ? `?${q}` : ''}`;
     if (next === `${location.pathname}${location.search}`) return;
     try {
@@ -364,7 +366,7 @@ export function App() {
     } catch {
       // A sandboxed frame (an embed, a preview) may refuse a URL change. The map works without it.
     }
-  }, [day, selected, data, lens]);
+  }, [day, selected, data, lens, lensId]);
 
   const focus = useCallback(
     (id: string) => {
@@ -474,7 +476,7 @@ export function App() {
   const freeOf = (rs: Placed[]) => rs.filter((p) => statusOfR(p.r) === 'open').length;
   const lists: ListChoice[] = data
     ? [
-        { id: null, name: 'Every restaurant', by: 'All of Seated', line: '', picks: placed.length, free: freeOf(placed) },
+        { id: 'all', name: 'Every restaurant', by: 'All of Seated', line: '', picks: placed.length, free: freeOf(placed) },
         ...data.guides.map((g) => {
           const mine = placed.filter((p) => p.r.g.includes(g.id));
           return { id: g.id, name: g.short, by: g.by, line: g.line, picks: mine.length, free: freeOf(mine) };
@@ -608,7 +610,7 @@ export function App() {
           forYou={forYou}
           mine={mine}
           community={community}
-          current={lens?.id ?? null}
+          current={lens?.id ?? 'all'}
           dayText={dayLabel(day)}
           contact={CONTACT}
           problem={you.problem ? <Trouble you={you} /> : null}
@@ -617,7 +619,7 @@ export function App() {
           onSaveList={you.saveList}
           onDeleteList={async (id) => {
             const ok = await you.deleteList(id);
-            if (ok && lensId === `l:${id}`) setLens(null);
+            if (ok && lensId === `l:${id}`) setLens(CURATED);
             return ok;
           }}
           onReport={you.report}
@@ -957,7 +959,7 @@ function List(p: ListProps) {
                 Their list ↗
               </a>
             )}
-            <button className="link" onClick={() => p.onLens(null)}>
+            <button className="link" onClick={() => p.onLens('all')}>
               Every restaurant
             </button>
           </p>

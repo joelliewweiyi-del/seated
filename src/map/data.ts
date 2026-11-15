@@ -3,6 +3,9 @@ import type { DayCode, MapData, MapRestaurant } from '../server/mapData';
 
 export type { DayCode, MapData, MapRestaurant };
 
+/** The default lens: Joel's curated list (data/map-guides.json, Joel 15 Nov 2026). '?lens=all' shows every restaurant. */
+export const CURATED = 'seated';
+
 export type Status = 'open' | 'full' | 'none' | 'closed' | 'later' | 'unknown';
 
 export function statusOf(code: DayCode | undefined): Status {
