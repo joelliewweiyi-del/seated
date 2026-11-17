@@ -287,7 +287,7 @@ export class MapView {
     this.clear = points;
     this.fogMask = null;
     const m = 600;
-    const ext = this.world.ours?.levels[2];
+    const ext = this.world.ours?.levels.at(-1);
     const extBounds = ext ? { x0: ext.x / ext.k, y0: ext.y / ext.k, x1: (ext.x + ext.w) / ext.k, y1: (ext.y + ext.h) / ext.k } : { x0: 0, y0: 0, x1: 0, y1: 0 };
     this.bounds = {
       x0: Math.min(0, extBounds.x0, ...points.map((p) => p.x - m)),
@@ -470,7 +470,7 @@ export class MapView {
   private drawFogEdge(toX: (x: number) => number, toY: (y: number) => number): void {
     if (!this.fog || !this.overview.ok || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
     if (!this.fogMask) {
-      const ext = this.oursOverview?.ok ? this.world.ours?.levels[2] : undefined;
+      const ext = this.oursOverview?.ok ? this.world.ours?.levels.at(-1) : undefined;
       // An overview with art missing gives no edge of its own: the manifest's coverage outline stands in (coarser).
       const ow = Math.round(this.world.width / 8), oh = Math.round(this.world.height / 8);
       const alpha = this.overview.alpha ?? maskAlpha(this.world.meta.mask, ow, oh, this.world.meta.mask.cell / 8);
@@ -578,9 +578,9 @@ export class MapView {
     // Our layer on top: it is cut to his gaps plus a strip over his edge (scripts/map-noord.ts, gapMask), so it covers
     // only where his art is missing or fades out in a dither, and never the rest of his drawing.
     let oursWaiting = 0;
-    const ext = this.world.ours?.levels[2];
+    const ext = this.world.ours?.levels.at(-1);
     if (this.oursOverview?.ok && ext) ctx.drawImage(this.oursOverview.img, Math.round(toX(ext.x / ext.k)), Math.round(toY(ext.y / ext.k)), Math.round(ext.w / ext.k * z), Math.round(ext.h / ext.k * z));
-    if (this.world.ours && z >= 0.25) oursWaiting = this.drawLevel(z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
+    if (this.world.ours && z >= 0.25) oursWaiting = this.drawLevel(z >= 1 ? 'hi' : z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
     this.waiting = waiting + oursWaiting;
     this.drawFogEdge(toX, toY);
     this.drawMarkers(ctx, toX, toY, W, H, now);

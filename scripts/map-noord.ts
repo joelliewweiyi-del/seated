@@ -4,10 +4,11 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFile
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { Pix, rgb } from '../src/map/pix';
-import { World as Grid, TW, TH, T, gapMask } from '../src/map/noord-grid';
+import { World as Grid, TW, TH, T, gapMask, useFine } from '../src/map/noord-grid';
 import { cleanSlivers, parkOrStoneTerrain } from '../src/map/noord-tags';
 import { paintGround, paintBuilding, paintProps, finishBridges, finishQuays, useStyle } from '../src/map/noord-paint';
-import { CANAL_FAR, CANAL_GLASS, CANAL_PAL, CANAL_PLINTH, CANAL_ROOFS, CANAL_WALLS, canalPalette, canalRoof } from '../src/map/canal-style';
+import { TEXEL, TUNE, adaptivePNG, buildFacades, designColour, designWall, listPanos, loadAerial, loadDsm, type Design, type Facade, type Wall } from './canal-skin';
+import { ROOF_FLAT, ROOF_PITCHED, nearestMaterial, CANAL_FAR, CANAL_GLASS, CANAL_PAL, CANAL_PLINTH, CANAL_WALLS, ROOF_COLOURS, canalPalette, medianCut, photoColour } from '../src/map/canal-style';
 import { readPNG, writePNG } from '../src/map/noord-png';
 import { imageReader, measureAlignment } from '../src/map/noord-alignment';
 import { measurePalette, quantizer, MATERIAL_COLOURS, FAR_PALETTE } from '../src/map/noord-palette';
@@ -16,7 +17,10 @@ import { World as City } from '../src/map/world';
 
 // One cell projects to exactly 4 x 2 level-0 pixels; half the old grid spacing for finer silhouettes. Grid x=east, y=south.
 const sez = JSON.parse(readFileSync('src/map/public/sez/manifest.json', 'utf8'));
-const SCALE = sez.hi.w / sez.w / 2;
+// The canal sample is drawn at his sharpest level (FINE 2: 0.94 m cells); Noord at his 1/2 level.
+const FINE = process.env.SEATED_ART === 'canal' ? 2 : 1;
+useFine(FINE);
+const SCALE = (sez.hi.w / sez.w / 2) * FINE;
 const CELL_M = (TW / 2) / (Math.SQRT1_2 * SCALE);
 // y0 484200 (was 486800, before that 487600): his art leaves gaps in Oost, the Indische Buurt and Watergraafsmeer
 // that ours must fill (Joel, 8 Nov 2026). Only those gaps are kept (gapMask), so the box can be large.
@@ -88,8 +92,8 @@ async function download(url: string, init: RequestInit = {}): Promise<Response> 
   return response;
 }
 const measured = CANAL ? undefined : measurePalette(sez);
-const OUTPUT_PALETTE = measured ? measured.palette.filter(c => MATERIAL_COLOURS.has(c)) : canalPalette();
-const snap = quantizer(OUTPUT_PALETTE);
+// Canal: filled once the roofs are read from the aerial photo (step 4).
+const OUTPUT_PALETTE = measured ? measured.palette.filter(c => MATERIAL_COLOURS.has(c)) : [];
 // Terrain codes come from the painter's grid model.
 const F = { bridge: 1, tram: 2, ferry: 4, railLine: 8 } as const;
 
@@ -97,7 +101,8 @@ const F = { bridge: 1, tram: 2, ferry: 4, railLine: 8 } as const;
  * Roof colours: the aerial photo's colour of each roof, made a little bolder, then snapped to this palette so the
  * map stays pixel art. Tile reds, browns, slate, zinc, flat greys, sedum greens, white and glass.
  */
-const ROOF_PALETTE = CANAL ? CANAL_ROOFS : [
+const ROOF_WEIGHT = (cells: number) => (process.env.W === 'one' ? 1 : process.env.W === 'sqrt' ? Math.sqrt(cells) : cells);
+const ROOF_PALETTE: string[] = CANAL ? [] : [
   '#7a3524', '#8f3b26', '#a04a2e', '#b8603a', '#c9744a', '#d08860',
   '#5a4032', '#6b4a3a', '#84604a', '#9c7a5e', '#b39b6e', '#8a6f4c',
   '#2f3640', '#3e4854', '#4b5663', '#56616d', '#66717d', '#36405a', '#3f4d66', '#4b5872', '#56637a', '#78818e', '#3d4450', '#4a5260', '#576070', '#66707d',
@@ -479,6 +484,7 @@ const ridgeH = new Float32Array(parts.length);
 const slanted = new Uint8Array(parts.length);
 const age = new Uint8Array(parts.length);
 const seed = new Uint8Array(parts.length);
+const groundH = new Float32Array(parts.length); // NAP metres
 /** The building (BAG pand) of each part: a building gets one roof colour, however many parts it has. */
 const pandOf = new Int32Array(parts.length);
 {
@@ -497,6 +503,7 @@ const hashStr = (s: string) => {
 parts.forEach((p, k) => {
   const q = p.properties;
   const ground = q.b3_h_maaiveld ?? 0;
+  groundH[k] = ground;
   const floors = q.b3_bouwlagen ?? 3;
   const h70 = q.b3_h_70p != null ? q.b3_h_70p - ground : floors * 3.2;
   const top = (q.b3_h_nok ?? q.b3_h_max) != null ? (q.b3_h_nok ?? q.b3_h_max)! - ground : h70;
@@ -556,14 +563,93 @@ for (let i = 0; i < N; i++) {
   height[i] = Math.max(1, Math.min(255, Math.round(h * 2)));
   meta[i] = age[k]! | (slanted[k]! << 3) | (seed[k]! << 4);
 }
+// Canal: the real roof shape from the AHN surface model. Per cell the 75th percentile of its 0.5 m heights (keeps
+// ridges and gable tops, drops a stray low pixel), above the building's own ground, at most 2 m over its 3DBAG top
+// (an elm over a roof edge).
+if (CANAL) {
+  const dsm = await loadDsm(CACHE, RD_BOX, download);
+  let set = 0;
+  for (let i = 0; i < N; i++) {
+    const k = partOf[i]!;
+    if (k < 0) continue;
+    const x = i % COLS, y = (i - x) / COLS, hs: number[] = [];
+    for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) {
+      const v = dsm(RD_BOX.x0 + (x + (a + 0.5) / 4) * CELL_M, RD_BOX.y1 - (y + (b + 0.5) / 4) * CELL_M);
+      if (Number.isFinite(v)) hs.push(v - groundH[k]!);
+    }
+    if (hs.length < 4) continue;
+    hs.sort((p, q) => p - q);
+    const h = Math.max(2, Math.min(ridgeH[k]! + 2, hs[Math.floor(hs.length * 0.75)]!));
+    height[i] = Math.max(1, Math.min(255, Math.round(h * 2)));
+    set++;
+  }
+  // Roof models (judged climb, 17 Nov 2026: raw laser cells read as crumpled paper, and a least-squares gable through
+  // the centre rarely fits a canal house with its low back extension). Per 3DBAG part, from 3DBAG's own laser-derived
+  // heights: a pitched part gets its ridge (b3_h_nok) along its long axis and its eaves along the long sides, so both
+  // short ends stand as gable walls, the canal-house front; a flat part gets the median of its laser heights.
+  const cellsOf = new Map<number, number[]>();
+  for (let i = 0; i < N; i++) { const k = partOf[i]!; if (k >= 0) { let l = cellsOf.get(k); if (!l) cellsOf.set(k, (l = [])); l.push(i); } }
+  const modelled = new Uint8Array(parts.length);
+  let gables = 0, flats = 0;
+  for (const [k, cells] of cellsOf) {
+    if (cells.length < 4) continue;
+    const n = cells.length;
+    // A gable only on a house-sized part: a big complex modelled as one pitched slab reads as a melted mesh.
+    if (slanted[k] && n * CELL_M * CELL_M < (TUNE.gableMaxM2 ?? 600)) {
+      let mx = 0, my = 0;
+      for (const i of cells) { mx += i % COLS; my += Math.floor(i / COLS); }
+      mx /= n; my /= n;
+      let sxx = 0, syy = 0, sxy = 0;
+      for (const i of cells) { const dx = (i % COLS) - mx, dy = Math.floor(i / COLS) - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+      const axis = 0.5 * Math.atan2(2 * sxy, sxx - syy), ux = Math.cos(axis), uy = Math.sin(axis);
+      const dp = cells.map((i) => (-((i % COLS) - mx) * uy + (Math.floor(i / COLS) - my) * ux) * CELL_M);
+      // The ridge sits midway between the long sides, which need not pass through the centre of mass.
+      const lo = Math.min(...dp), hi = Math.max(...dp), mid = (lo + hi) / 2, half = (hi - lo) / 2 + CELL_M / 2;
+      const ridge = ridgeH[k]!, eave = Math.max(3, Math.min(ridge - 1, 2 * flatH[k]! - ridge));
+      cells.forEach((i, j) => {
+        const h = eave + (half - Math.abs(dp[j]! - mid)) * ((ridge - eave) / half);
+        height[i] = Math.max(1, Math.min(255, Math.round(Math.min(ridge, h) * 2)));
+        meta[i] = meta[i]! | 8;
+      });
+      gables++;
+    } else {
+      const med = cells.map((i) => height[i]!).sort((p, q) => p - q)[n >> 1]!;
+      for (const i of cells) { height[i] = med; meta[i] = meta[i]! & ~8; }
+      flats++;
+    }
+    modelled[k] = 1;
+  }
+  console.log(`[canal] roof models: ${gables} pitched (gable fronts), ${flats} flat, ${cellsOf.size - gables - flats} tiny parts keep laser heights`);
+  // 5 x 5 median (4.7 m) within the same part, for parts no model fits: a laser height per 0.94 m cell is noisy.
+  const raw = height.slice();
+  for (let i = 0; i < N; i++) {
+    const k = partOf[i]!;
+    if (k < 0 || modelled[k]) continue;
+    const x = i % COLS, y = (i - x) / COLS, hs: number[] = [];
+    const R = TUNE.roofMedian ?? 2;
+    for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) if (inside(x + dx, y + dy) && partOf[idx(x + dx, y + dy)] === k) hs.push(raw[idx(x + dx, y + dy)]!);
+    height[i] = hs.sort((p, q) => p - q)[hs.length >> 1]!;
+  }
+  console.log(`[canal] ${set} building cells shaped from AHN`);
+}
 
 // 4. Roof colours from the aerial photo: the mean of each part's roof pixels (shadows and glare left out), made a
 // little bolder and snapped to the palette.
 const sums = new Float64Array(parts.length * 4);
 const photoLuma = new Uint8Array(N);
+/** Canal: every usable roof pixel per building, packed RGB, for its median colour. */
+const roofPixels = new Map<number, number[]>();
+/** Canal: every painted cell by aerial tile, for the roofs check image. */
+const byTileForCheck = new Map<number, number[]>();
 {
   const byTile = new Map<number, number[]>();
   for (let i = 0; i < N; i++) {
+    if (CANAL && K[i]) {
+      const rx = RD_BOX.x0 + ((i % COLS) + 0.5) * CELL_M, ry = RD_BOX.y1 - (Math.floor(i / COLS) + 0.5) * CELL_M;
+      const key = Math.floor((ry - RD_BOX.y0) / TILE) * AX + Math.floor((rx - RD_BOX.x0) / TILE);
+      if (!byTileForCheck.has(key)) byTileForCheck.set(key, []);
+      byTileForCheck.get(key)!.push(i);
+    }
     if (partOf[i]! < 0 || !K[i]) continue; // only tiles that paint (a neighbourhood's tiles are fetched only if it needs them)
     const x = i % COLS;
     const y = (i - x) / COLS;
@@ -598,6 +684,7 @@ const photoLuma = new Uint8Array(N);
         sums[k * 4 + 1] += g;
         sums[k * 4 + 2] += b;
         sums[k * 4 + 3] += 1;
+        if (CANAL) { let list = roofPixels.get(k); if (!list) roofPixels.set(k, (list = [])); list.push(r | (g << 8) | (b << 16)); }
       }
     }
     process.stdout.write('.');
@@ -649,13 +736,53 @@ const cast = [0, 0, 0];
 const pandCells = new Int32Array(parts.length);
 for (let i = 0; i < N; i++) if (partOf[i]! >= 0) pandCells[pandOf[partOf[i]!]!]!++;
 const partRoof = new Uint8Array(parts.length);
-for (let k = 0; k < parts.length; k++) {
+/** Canal: each building's own roof colour from the photo (median, tint off, haze lifted), by BAG pand. */
+const own = new Map<number, [number, number, number]>();
+if (CANAL) {
+  // Each building's own roof colour: the median of its photo pixels (robust to an overhanging elm or a shadow strip).
+  for (const [pand, list] of roofPixels) {
+    if (list.length < 3) continue;
+    const med = (s: number) => list.map((v) => (v >>> s) & 255).sort((a, b) => a - b)[list.length >> 1]!;
+    own.set(pand, photoColour(med(0) - cast[0]!, med(8) - cast[1]!, med(16) - cast[2]!, TUNE.roofSat));
+  }
+  const fallback: [number, number, number] = [112, 112, 112];
+  const cut = medianCut([...own].map(([pand, rgb]) => ({ rgb, weight: ROOF_WEIGHT(pandCells[pand]!) })), ROOF_COLOURS);
+  ROOF_PALETTE.push(...cut.palette);
+  for (let k = 0; k < parts.length; k++) partRoof[k] = cut.nearest(own.get(pandOf[k]!) ?? fallback);
+  // How far each building's palette colour is from its own photo colour (RGB distance), so a palette change is measured.
+  const errors = [...own.values()].map((c) => { const h = cut.palette[cut.nearest(c)]!; return Math.hypot(...c.map((v, j) => v - parseInt(h.slice(1 + j * 2, 3 + j * 2), 16))); }).sort((a, b) => a - b);
+  console.log(`[canal] roof colour error per building: median ${errors[errors.length >> 1]!.toFixed(1)}, 95th percentile ${errors[Math.floor(errors.length * 0.95)]!.toFixed(1)}, max ${errors.at(-1)!.toFixed(1)}`);
+  OUTPUT_PALETTE.push(...canalPalette(ROOF_PALETTE));
+  // Check image (top down, one pixel per cell): the aerial photo left, each building in its assigned roof colour right.
+  {
+    const img = Buffer.alloc(COLS * 2 * ROWS * 3);
+    for (const [key, list] of byTileForCheck) {
+      const ax = key % AX, ay = (key - ax) / AX, photo = await aerialTile(ax, ay);
+      for (const i of list) {
+        const x = i % COLS, y = (i - x) / COLS;
+        const rx = Math.floor(RD_BOX.x0 + (x + 0.5) * CELL_M - RD_BOX.x0 - ax * TILE), ry = Math.floor(RD_BOX.y0 + (ay + 1) * TILE - (RD_BOX.y1 - (y + 0.5) * CELL_M));
+        if (rx < 0 || ry < 0 || rx >= TILE || ry >= TILE) continue;
+        const o = (ry * TILE + rx) * 3, left = (y * COLS * 2 + x) * 3, right = left + COLS * 3;
+        for (let c = 0; c < 3; c++) img[left + c] = photo[o + c]!;
+        const k = partOf[i]!;
+        const hex = k >= 0 ? ROOF_PALETTE[partRoof[k]!]! : null;
+        for (let c = 0; c < 3; c++) img[right + c] = hex ? parseInt(hex.slice(1 + c * 2, 3 + c * 2), 16) : Math.round(photo[o + c]! * 0.35 + 166);
+      }
+    }
+    const ppm = join(CACHE, 'roofs-check.ppm');
+    writeFileSync(ppm, Buffer.concat([Buffer.from(`P6 ${COLS * 2} ${ROWS} 255\n`), img]));
+    execFileSync('sips', ['-s', 'format', 'png', ppm, '--out', join(CACHE, 'roofs-check.png')], { stdio: 'ignore' });
+    unlinkSync(ppm);
+  }
+  console.log(`[canal] ${own.size} buildings coloured from the aerial photo, ${ROOF_PALETTE.length} roof colours, ${OUTPUT_PALETTE.length} in the palette`);
+}
+for (let k = 0; k < parts.length && !CANAL; k++) {
   const b4 = pandOf[k]! * 4;
   const n = sums[b4 + 3]!;
   // No usable pixels: a grey flat roof.
   const raw = n ? [sums[b4]! / n, sums[b4 + 1]! / n, sums[b4 + 2]! / n] : [140, 140, 140];
   const light = (Math.max(...raw) + Math.min(...raw)) / 2 / 255;
-  const hex = (CANAL ? canalRoof : roofColour)(raw[0]! - cast[0]!, raw[1]! - cast[1]!, raw[2]! - cast[2]!, light, slanted[k] === 1, pandCells[pandOf[k]!]! * CELL_M * CELL_M > 2400, (hashStr(parts[k]!.properties.identificatie) % 3) - 1);
+  const hex = roofColour(raw[0]! - cast[0]!, raw[1]! - cast[1]!, raw[2]! - cast[2]!, light, slanted[k] === 1, pandCells[pandOf[k]!]! * CELL_M * CELL_M > 2400, (hashStr(parts[k]!.properties.identificatie) % 3) - 1);
   const best = ROOF_PALETTE.indexOf(hex);
   if (best < 0) throw new Error(`roof colour ${hex} is not in the palette`);
   partRoof[k] = best;
@@ -776,15 +903,150 @@ for (let q = 0; q < shoreTail; q++) {
     shore[j] = d + 1; shoreQueue[shoreTail++] = j;
   }
 }
-const world = new Grid({ cols: COLS, rows: ROWS, cellMeters: CELL_M, roofPalette: ROOF_PALETTE, attribution: '' }, planes, 0, 0, COLS, ROWS, { shore, building, industrial, facade });
+const skin = CANAL ? await canalSkin() : undefined;
+const world = new Grid({ cols: COLS, rows: ROWS, cellMeters: CELL_M, roofPalette: ROOF_PALETTE, attribution: '' }, planes, 0, 0, COLS, ROWS, { shore, building, industrial, facade, skin });
+
+/** Canal: roofs from the 0.5 m aerial photo, street façades from the city's panoramas (scripts/canal-skin.ts). */
+async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
+  const aerial = await loadAerial(CACHE, RD_BOX, download);
+  const cellAt = (rx: number, ry: number) => {
+    const x = Math.floor((rx - RD_BOX.x0) / CELL_M), y = Math.floor((RD_BOX.y1 - ry) / CELL_M);
+    return inside(x, y) ? idx(x, y) : -1;
+  };
+  // Façades only round the comparison camera (Herengracht near the Huidenstraat): the whole belt needs about 6,600
+  // panoramas (1.5 GB); Joel agreed to about 1,500 for this sample (17 Nov 2026). Elsewhere walls use procedural bays.
+  const ROOF_DETAIL = TUNE.roofDetail ?? 1000; // RGB distance from the building's colour that makes a roof cell keep its own
+  const FACADE_WINDOW = { x: 121037, y: 487152, dx: Number(process.env.FACADE_DX ?? 420), dy: Number(process.env.FACADE_DY ?? 320) };
+  // Every outer-ring edge of a 3DBAG part that faces the viewer (south or east; north-west is up). A free wall (no
+  // building right in front) near the comparison camera is looked up in the panoramas; an edge with a building in front
+  // is a party wall, drawn blank where it shows above its neighbour.
+  type Edge = Wall & { free: boolean; photo: boolean };
+  const edges: Edge[] = [];
+  parts.forEach((part, k) => {
+    const polys = (part.geometry.type === 'Polygon' ? [part.geometry.coordinates] : part.geometry.coordinates) as number[][][][];
+    for (const poly of polys) {
+      const ring = poly[0]!;
+      let area = 0;
+      for (let j = 1; j < ring.length; j++) area += ring[j - 1]![0]! * ring[j]![1]! - ring[j]![0]! * ring[j - 1]![1]!;
+      const ccw = area > 0;
+      for (let j = 1; j < ring.length; j++) {
+        const [ax, ay] = ring[j - 1] as [number, number], [bx, by] = ring[j] as [number, number];
+        const L = Math.hypot(bx - ax, by - ay);
+        if (L < 0.5) continue;
+        const dx = (bx - ax) / L, dy = (by - ay) / L, nx = ccw ? dy : -dy, ny = ccw ? -dx : dx;
+        if (!(nx > 0.2 || ny < -0.2)) continue;
+        const front = cellAt(ax + dx * L / 2 + nx * 1.2, ay + dy * L / 2 + ny * 1.2);
+        const free = front >= 0 && partOf[front]! < 0;
+        const photo = free && L >= 2.5 && ridgeH[k]! >= 4 && Math.abs(ax - FACADE_WINDOW.x) <= FACADE_WINDOW.dx && Math.abs(ay - FACADE_WINDOW.y) <= FACADE_WINDOW.dy;
+        // A photographed wall is cut out 2.5 m above its ridge, so a gable or parapet above the roof line shows.
+        edges.push({ part: k, ax, ay, dx, dy, L, nx, ny, H: ridgeH[k]! + (photo ? 2.5 : 0), g: groundH[k]!, free, photo });
+      }
+    }
+  });
+  const walls: Wall[] = edges.filter((e) => e.photo);
+  const panos = await listPanos(CACHE, RD_BOX, [['2024-12-01', '2025-03-31'], ['2023-01-01', '2023-04-30'], ['2025-04-01', '2026-12-31']], download);
+  const topAt = (rx: number, ry: number, part: number) => {
+    const c = cellAt(rx, ry);
+    if (c < 0) return -Infinity;
+    const k = partOf[c]!;
+    return k < 0 || pandOf[k] === pandOf[part] ? -Infinity : groundH[k]! + height[c]! / 2;
+  };
+  const { facades, used } = await buildFacades(CACHE, walls, panos, download, topAt);
+  // Sky over a wall's top (the cut reaches 2.5 m over the ridge): bright, grey or blue texels in its top half.
+  for (const f of facades) for (let j = 0; j < f.h * 0.5; j++) for (let i = 0; i < f.w; i++) {
+    const t = j * f.w + i, r = f.rgb[t * 3]!, g = f.rgb[t * 3 + 1]!, b = f.rgb[t * 3 + 2]!;
+    if (r + g + b > 600 || (b > r + 12 && b > 150)) f.ok[t] = 0;
+  }
+  const photoOf = new Map<Wall, Facade>(facades.map((f) => [f.wall, f]));
+  // Designs. A building's photo walls give its wall colour to its other walls; a building no panorama saw gets a brick
+  // of its period from the canal palette.
+  const designs: Design[] = [];
+  const wallOf = new Map<number, number>();
+  for (const e of edges) {
+    const f = photoOf.get(e);
+    if (!f) continue;
+    const d = designWall(e.L, e.H, f, 0, false);
+    if (d.fromPhoto && !wallOf.has(pandOf[e.part]!)) wallOf.set(pandOf[e.part]!, d.wall);
+  }
+  const bySide = new Map<number, number>();
+  let fromPhoto = 0;
+  for (const e of edges) {
+    const pand = pandOf[e.part]!, list = CANAL_WALLS[age[e.part]!] ?? CANAL_WALLS[7]!;
+    const fallback = wallOf.get(pand) ?? rgb(list[hashStr(parts[e.part]!.properties.identificatie) % list.length]!);
+    const d = designWall(e.L, e.H, photoOf.get(e), fallback, !e.free);
+    if (d.fromPhoto) fromPhoto++;
+    const di = designs.push(d) - 1;
+    for (let u = 0.2; u < e.L; u += 0.4) {
+      const c = cellAt(e.ax + e.dx * u - e.nx * 0.3, e.ay + e.dy * u - e.ny * 0.3);
+      if (c < 0 || partOf[c] !== e.part) continue;
+      // A free wall wins over a party wall on the same cell side.
+      for (const key of [e.ny < -0.2 ? c * 2 : -1, e.nx > 0.2 ? c * 2 + 1 : -1]) if (key >= 0 && (!bySide.has(key) || (designs[bySide.get(key)!]!.blank && !d.blank))) bySide.set(key, di);
+    }
+  }
+  const edgeOf = edges;
+  console.log(`[canal] ${edges.length} walls: ${fromPhoto} designed from photos (${used} panoramas), ${edges.filter((e) => !e.free).length} party walls`);
+  function pack(r: number, g: number, b: number): number { return (Math.round(r) | (Math.round(g) << 8) | (Math.round(b) << 16) | (0xff << 24)) >>> 0; }
+  const toRd = (gx: number, gy: number) => [RD_BOX.x0 + gx * CELL_M, RD_BOX.y1 - gy * CELL_M] as const;
+  // Roof cells: the building's own photo colour, unless the cell's own 4 x 4 photo samples differ clearly from it (a
+  // dormer, skylight, roof garden or terrace): then the cell's colour. Clean planes, real roof furniture.
+  const roofCell = new Uint32Array(N);
+  let ownCells = 0, detailCells = 0;
+  for (let i = 0; i < N; i++) {
+    const k = partOf[i]!;
+    if (k < 0) continue;
+    const x = i % COLS, y = (i - x) / COLS, rs: number[] = [], gs: number[] = [], bs: number[] = [];
+    for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) {
+      const c = aerial(...toRd(x + (a + 0.5) / 4, y + (b + 0.5) / 4));
+      if (c !== undefined) { rs.push(c & 255); gs.push((c >>> 8) & 255); bs.push((c >>> 16) & 255); }
+    }
+    const base = own.get(pandOf[k]!);
+    if (!rs.length) { if (base) roofCell[i] = pack(...base); continue; }
+    const med = (v: number[]) => v.sort((p, q) => p - q)[v.length >> 1]!;
+    const cell = photoColour(med(rs) - cast[0]!, med(gs) - cast[1]!, med(bs) - cast[2]!, TUNE.roofSat);
+    const far = !base || Math.hypot(cell[0] - base[0], cell[1] - base[1], cell[2] - base[2]) > ROOF_DETAIL;
+    roofCell[i] = pack(...(far ? cell : base!));
+    if (far) detailCells++; else ownCells++;
+  }
+  console.log(`[canal] roof cells: ${ownCells} in their building's colour, ${detailCells} with their own (detail)`);
+  // One colour per building (judged climb: per-cell photo colour read as streaks), the nearest roof material to its
+  // photo colour; the painter's slope shading gives each plane its own tone. ROOF_DETAIL cells (a roof garden, a big
+  // skylight) keep theirs, also as a material.
+  for (let i = 0; i < N; i++) {
+    if (!roofCell[i]) continue;
+    const c = roofCell[i]!, h = nearestMaterial([c & 255, (c >>> 8) & 255, (c >>> 16) & 255], slanted[partOf[i]!] ? ROOF_PITCHED : ROOF_FLAT);
+    roofCell[i] = (rgb(h) & 0xffffff | (0xff << 24)) >>> 0;
+  }
+  return {
+    shade: { roofLit: TUNE.roofLit ?? 0.08, roofDark: TUNE.roofDark ?? 0.14, wall: TUNE.wallShade ?? 0.12 },
+    roof(x, y) {
+      const c = roofCell[idx(x, y)]!;
+      return c || undefined;
+    },
+    crest(x, y, side, t) {
+      const di = bySide.get(idx(x, y) * 2 + (side === 'left' ? 0 : 1));
+      const d = di === undefined ? undefined : designs[di]!;
+      if (!d?.crest) return undefined;
+      const e = edgeOf[di!]!, [rx, ry] = side === 'left' ? toRd(x + t, y + 1) : toRd(x + 1, y + 1 - t);
+      const i = Math.floor(((rx - e.ax) * e.dx + (ry - e.ay) * e.dy) / TEXEL), v = d.crest[i];
+      return v !== undefined && Number.isFinite(v) ? Math.min(v, ridgeH[e.part]! + 2) : undefined;
+    },
+    wall(x, y, side, t, h, top) {
+      const di = bySide.get(idx(x, y) * 2 + (side === 'left' ? 0 : 1));
+      if (di === undefined) return undefined;
+      const e = edgeOf[di]!, [rx, ry] = side === 'left' ? toRd(x + t, y + 1) : toRd(x + 1, y + 1 - t);
+      const u = (rx - e.ax) * e.dx + (ry - e.ay) * e.dy;
+      return designColour(designs[di]!, e.L, u, h, top);
+    },
+  };
+}
 const origin = projectRD(RD_BOX.x0, RD_BOX.y1);
 // Registration of the old ground/quay painter to the reference water boundary.
 // Measured before correction at Westerdok (-1,-3), Centraal (-2,-2), and the IJ east (-1,-3).
 // This moves only our open-data drawing; it never traces or resamples his art.
-const registration = { x: 1, y: 3 };
+const registration = { x: 1 * FINE, y: 3 * FINE };
 const ox = Math.round(origin.x) + registration.x, oy = Math.round(origin.y) + registration.y;
 const x0 = Math.floor((ox - ROWS * (TW / 2) - 16) / 2048) * 2048;
-const y0 = Math.floor((oy - 180) / 2048) * 2048;
+const y0 = Math.floor((oy - 180 * FINE) / 2048) * 2048;
 const width = Math.ceil((ox + COLS * (TW / 2) + 16 - x0) / 2048) * 2048;
 const imgHeight = Math.ceil((oy + (COLS + ROWS) * (TH / 2) + 8 - y0) / 2048) * 2048;
 console.log(`[noord] painting ${COLS} x ${ROWS} RD cells into ${width} x ${imgHeight} level-0 pixels`);
@@ -802,10 +1064,11 @@ for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1)
   paintBuilding(canvas, world, x, y, sx, sy);
   paintProps(canvas, world, x, y, sx, sy);
 }
-let pixels = new Uint8Array(canvas.data.length);
-for (let i = 0; i < pixels.length; i++) pixels[i] = snap(canvas.data[i]!);
+// Canal: the photo colours stay as they are; each tile gets its own palette (adaptivePNG).
+let pixels: Uint8Array | Uint32Array = CANAL ? Uint32Array.from(canvas.data) : new Uint8Array(canvas.data.length);
+if (!CANAL) { const snap = quantizer(OUTPUT_PALETTE); for (let i = 0; i < pixels.length; i++) pixels[i] = snap(canvas.data[i]!); }
 // Alignment with his art, measured on the whole painting before it is cut to his gaps (the cut leaves little shore).
-const alignment = CANAL ? { dx: 0, dy: 0, correlation: 0, samples: 0 } : measureAlignment(sez, undefined, undefined, 220, 8, imageReader(pixels, width, imgHeight, x0, y0, OUTPUT_PALETTE));
+const alignment = CANAL ? { dx: 0, dy: 0, correlation: 0, samples: 0 } : measureAlignment(sez, undefined, undefined, 220, 8, imageReader(pixels as Uint8Array, width, imgHeight, x0, y0, OUTPUT_PALETTE));
 if (!CANAL) console.log(`[noord] alignment at the IJ south shore: ${alignment.dx}, ${alignment.dy} px (correlation ${alignment.correlation.toFixed(2)})`);
 // Keep ours only where his drawing has no pixels (plus a strip over his edge): elsewhere his art is complete.
 if (!CANAL) {
@@ -829,7 +1092,7 @@ if (!CANAL) {
 const outputDir = CANAL ? 'src/map/public/canal' : 'src/map/public/ours';
 const out = join(CACHE, 'paint');
 mkdirSync(out, { recursive: true });
-for (const f of readdirSync(out)) if (/^(?:[01]_-?[\d.]+_-?[\d.]+|2)\.png$/.test(f)) unlinkSync(`${out}/${f}`);
+for (const f of readdirSync(out)) if (/^(?:[012]_-?[\d.]+_-?[\d.]+|[23])\.png$/.test(f)) unlinkSync(`${out}/${f}`);
 const levels: Array<{ k: number; cs: number; chunks: Array<[number, number]>; x: number; y: number; w: number; h: number }> = [];
 let w = width, h = imgHeight, px0 = x0, py0 = y0;
 const outputs: Array<{ name: string; bytes: number; sha256: string }> = [];
@@ -840,21 +1103,23 @@ function save(name: string, bytes: Buffer) {
 const FAR = CANAL ? CANAL_FAR : FAR_PALETTE;
 const farSnap = quantizer(FAR);
 const farIndices = OUTPUT_PALETTE.map((h, i) => i ? farSnap(rgb(h)) : 0);
-for (let L = 0; L < 3; L++) {
+const LEVELS = CANAL ? 4 : 3, LAST = LEVELS - 1;
+for (let L = 0; L < LEVELS; L++) {
   const palette = L ? FAR : OUTPUT_PALETTE;
-  const encoded = L ? pixels.map(i => farIndices[i]!) : pixels;
+  const encoded = CANAL ? pixels : L ? pixels.map(i => farIndices[i]!) : pixels;
+  const png = (data: Uint8Array | Uint32Array, tw: number, th: number) => (CANAL ? adaptivePNG(data as Uint32Array, tw, th) : writePNG(tw, th, data as Uint8Array, palette));
   const chunks: Array<[number, number]> = [];
-  if (L === 2) { save('2.png', writePNG(w, h, encoded, palette)); chunks.push([0, 0]); }
+  if (L === LAST) { save(`${LAST}.png`, png(encoded, w, h)); chunks.push([0, 0]); }
   else for (let cy = 0; cy < h / 1024; cy++) for (let cx = 0; cx < w / 1024; cx++) {
-    const tile = new Uint8Array(1024 * 1024);
+    const tile = CANAL ? new Uint32Array(1024 * 1024) : new Uint8Array(1024 * 1024);
     for (let yy = 0; yy < 1024; yy++) tile.set(encoded.subarray((cy * 1024 + yy) * w + cx * 1024, (cy * 1024 + yy) * w + cx * 1024 + 1024), yy * 1024);
     if (!tile.some(v => v !== 0)) continue;
     const tx = cx + px0 / 1024, ty = cy + py0 / 1024;
-    chunks.push([tx, ty]); save(`${L}_${tx}_${ty}.png`, writePNG(1024, 1024, tile, palette));
+    chunks.push([tx, ty]); save(`${L}_${tx}_${ty}.png`, png(tile, 1024, 1024));
   }
-  levels.push({ k: 0.5 / 2 ** L, cs: L === 2 ? w : 1024, chunks, x: px0, y: py0, w, h });
-  if (L < 2) {
-    const next = new Uint8Array(w * h / 4);
+  levels.push({ k: (0.5 * FINE) / 2 ** L, cs: L === LAST ? w : 1024, chunks, x: px0, y: py0, w, h });
+  if (L < LAST) {
+    const next = CANAL ? new Uint32Array(w * h / 4) : new Uint8Array(w * h / 4);
     for (let yy = 0; yy < h / 2; yy++) for (let xx = 0; xx < w / 2; xx++) {
       const i = yy * 2 * w + xx * 2;
       const block = [pixels[i]!, pixels[i + 1]!, pixels[i + w]!, pixels[i + w + 1]!];
@@ -895,6 +1160,6 @@ const total = outputs.reduce((n, f) => n + f.bytes, 0);
 if (total > 17_000_000) throw new Error(`ours exceeds 17 MB: ${total}. Fix: shrink DISTRICT_M or REACH_M, or raise this limit and the one in test/mapNoord.test.ts on purpose.`);
 mkdirSync(outputDir, { recursive: true });
 const names = new Set(outputs.map(f => f.name));
-for (const f of readdirSync(outputDir)) if (/^(?:[01]_-?[\d.]+_-?[\d.]+|2)\.png$/.test(f) && !names.has(f)) unlinkSync(`${outputDir}/${f}`);
+for (const f of readdirSync(outputDir)) if (/^(?:[012]_-?[\d.]+_-?[\d.]+|[23])\.png$/.test(f) && !names.has(f)) unlinkSync(`${outputDir}/${f}`);
 for (const f of outputs) writeFileSync(`${outputDir}/${f.name}`, readFileSync(`${out}/${f.name}`));
 console.log(`[noord] ${outputs.length} files, ${total} bytes; ${requests} network requests`);

@@ -61,7 +61,7 @@ export class World {
     this.scale = meta.hi.w / meta.w;
     if (ours) {
       const p = ours.projection;
-      if (ours.sezVersion !== String(meta.version) || p.X0 !== meta.X0 || p.Y0 !== meta.Y0 || p.x !== meta.x || p.y !== meta.y || p.scale !== this.scale / 2 || p.VZ !== meta.VZ) {
+      if (ours.sezVersion !== String(meta.version) || p.X0 !== meta.X0 || p.Y0 !== meta.Y0 || p.x !== meta.x || p.y !== meta.y || (p.scale !== this.scale / 2 && p.scale !== this.scale) || p.VZ !== meta.VZ) {
         throw new Error('Rebuild Noord for this version of the city art: npx tsx scripts/map-noord.ts');
       }
     }
@@ -110,10 +110,12 @@ export class World {
 
   /** Our chunks share his grid; hi reuses level 0 at exactly twice the size. */
   oursLevel(L: 'hi' | 0 | 1 | 2) {
-    const index = L === 'hi' ? 0 : L;
-    const lv = this.ours!.levels[index]!;
+    // Noord has three levels (1/2, 1/4, 1/8; 'hi' reuses 1/2). The canal sample has four, from his sharpest (1:1).
+    const levels = this.ours!.levels, last = levels.length - 1;
+    const index = levels.length === 4 ? { hi: 0, 0: 1, 1: 2, 2: 3 }[L] : L === 'hi' ? 0 : L;
+    const lv = levels[index]!;
     const chunks = new Set(lv.chunks.map(([x, y]) => `${x}_${y}`));
-    return { k: lv.k, span: lv.cs / lv.k, has: (x: number, y: number) => chunks.has(`${x}_${y}`), url: (x: number, y: number) => `${this.oursBase}${index === 2 ? '2' : `${index}_${x}_${y}`}.png` };
+    return { k: lv.k, span: lv.cs / lv.k, has: (x: number, y: number) => chunks.has(`${x}_${y}`), url: (x: number, y: number) => `${this.oursBase}${index === last ? `${last}` : `${index}_${x}_${y}`}.png` };
   }
 
   /**

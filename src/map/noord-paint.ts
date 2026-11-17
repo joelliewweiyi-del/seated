@@ -2,7 +2,7 @@
 // ground, canals and quays, bridges, real trees, houseboats, and every building at its real height, with its roof
 // colour from the aerial photo and walls and windows by the year it was built.
 import { darken, dither, hash, lighten, mix, Pix, rgb } from './pix';
-import { AGE, F, PX_PER_M, T, TH, TW, World } from './noord-grid';
+import { AGE, F, FINE, PX_PER_M, T, TH, TW, World } from './noord-grid';
 
 // Palette measured from sezlab colours; geometry remains our old cell painter.
 const c = rgb;
@@ -86,6 +86,8 @@ export interface Special {
   lit: boolean;
 }
 
+/** Warm afternoon light for photo-skinned planes facing it. */
+const SUN = c('#fff0d2');
 const pick = <X>(list: X[], r: number) => list[Math.floor(r * list.length) % list.length]!;
 const roofCache = new WeakMap<object, number[]>();
 function roofPalette(w: World): number[] {
@@ -265,6 +267,19 @@ export function treeSprite(variant: number): Pix {
   return p;
 }
 
+const fineCache = new WeakMap<Pix, Pix>();
+/** A sprite at FINE times its size (each pixel FINE x FINE), so trees and boats keep their size in metres. */
+function fine(src: Pix): Pix {
+  if (FINE === 1) return src;
+  let out = fineCache.get(src);
+  if (!out) {
+    out = new Pix(src.w * FINE, src.h * FINE);
+    for (let y = 0; y < out.h; y++) for (let x = 0; x < out.w; x++) out.data[y * out.w + x] = src.data[Math.floor(y / FINE) * src.w + Math.floor(x / FINE)]!;
+    fineCache.set(src, out);
+  }
+  return out;
+}
+
 const boatCache = new Map<number, Pix>();
 /** A houseboat, 12 x 7: hull, a cream cabin with a yellow or white roof. */
 function boatSprite(variant: number): Pix {
@@ -290,15 +305,17 @@ export function paintProps(p: Pix, w: World, x: number, y: number, ox: number, o
   const r = hash(x, y, 3);
   if (w.isWater(x, y)) {
     const quay = !w.isWater(x - 1, y) || !w.isWater(x, y - 1) || !w.isWater(x + 1, y) || !w.isWater(x, y + 1);
-    if (!simple && quay && r < 0.035 && w.isWater(x + 1, y) && w.isWater(x - 1, y)) p.blit(boatSprite(Math.floor(r * 100)), ox - 6, oy - 3);
+    if (!simple && quay && r < 0.035 / FINE && w.isWater(x + 1, y) && w.isWater(x - 1, y)) p.blit(fine(boatSprite(Math.floor(r * 100 * FINE))), ox - 6 * FINE, oy - 3 * FINE);
     return;
   }
-  const tree = !!(w.details(x, y) & 1) || (t === T.park && r < (hash(x >> 4, y >> 4, 107) < 0.5 ? 0.006 : 0.025)) || (t === T.wood && r < (hash(x >> 4, y >> 4, 103) < 0.5 ? 0.008 : 0.035)) || (t === T.garden && r < (simple ? 0.0025 : 0.00375));
+  // Inferred trees per area stay the same however fine the cells (FINE x FINE cells per old cell).
+  const d = 1 / (FINE * FINE);
+  const tree = !!(w.details(x, y) & 1) || (t === T.park && r < d * (hash(x >> 4, y >> 4, 107) < 0.5 ? 0.006 : 0.025)) || (t === T.wood && r < d * (hash(x >> 4, y >> 4, 103) < 0.5 ? 0.008 : 0.035)) || (t === T.garden && r < d * (simple ? 0.0025 : 0.00375));
   if (tree) {
     const seed = Math.floor(hash(x, y, 31) * 0x1000000);
     // OSM anchors stay put; scatter inferred park trees within their source cell.
     const jitter = w.details(x, y) & 1 ? 0 : Math.floor(hash(x, y, 37) * 3) - 1;
-    p.blit(treeSprite(seed), ox - 11 + jitter, oy - 25);
+    p.blit(fine(treeSprite(seed)), ox - (11 - jitter) * FINE, oy - 25 * FINE);
   }
 }
 
@@ -317,7 +334,7 @@ function corner(w: World, x: number, y: number, cx: number, cy: number, own: num
     sum += w.heightM(ax, ay);
     n++;
   }
-  return n ? Math.min(own + 8, Math.round((sum / n) * PX_PER_M)) : own;
+  return n ? Math.min(own + 8 * FINE, Math.round((sum / n) * PX_PER_M)) : own;
 }
 
 /**
@@ -356,6 +373,16 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
       [ox - TW / 2, oy + TH / 2 - hL],
     ],
     (px, py) => {
+      const skin = w.features?.skin;
+      if (skin) {
+        // The photo's own roof, shaded lightly by its slope (the photo already has its own sunlight).
+        const a = (px - ox + 0.5) / (TW / 2);
+        const b = (py - (oy - own) + 0.5) / (TH / 2);
+        const photo = skin.roof(x, y, Math.max(0, Math.min(1, (a + b) / 2)), Math.max(0, Math.min(1, (b - a) / 2)));
+        const k = skin.shade ?? { roofLit: 0.08, roofDark: 0.14, wall: 0.12 };
+        // Warm sunlight on planes facing the light, violet shade on the others.
+        if (photo !== undefined) return s > 0 ? mix(photo, SUN, k.roofLit) : s < 0 ? darken(photo, k.roofDark) : photo;
+      }
       // A flat roof's rim catches the light on its two far edges.
       if (!pitched) {
         const a = (px - ox + 0.5) / (TW / 2);
@@ -386,33 +413,40 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
     for (let X = ax; X < bx; X++) {
       const t = (X + 0.5 - ax) / (bx - ax);
       const ground = ay + (by - ay) * t;
-      const edge = ground - (ah + (bh - ah) * t);
+      let edge = ground - (ah + (bh - ah) * t);
+      // A gable from the photo stands above the roof line: the wall goes up to it.
+      const crest = w.features?.skin?.crest?.(x, y, side, t);
+      if (crest !== undefined && crest * PX_PER_M > ground - edge) edge = ground - crest * PX_PER_M;
       const col = X - ax; // 0..3 along this cell's face
       const y0 = Math.floor(edge - 0.5) + 1;
       const y1 = Math.floor(ground - 0.5);
       for (let Y = y0; Y <= y1; Y++) {
         const hp = ground - (Y + 0.5); // pixels above the ground
+        const photo = w.features?.skin?.wall(x, y, side, t, hp / PX_PER_M, (ground - edge - hp) / PX_PER_M);
+        if (photo !== undefined) { const k = w.features?.skin?.shade?.wall ?? 0.12; p.set(X, Y, shade < 0.5 ? mix(photo, SUN, k * (0.5 - shade) * 0.6) : darken(photo, shade * k)); continue; }
         let px = wall;
+        // Procedural bays in his level-0 pixels, so a finer drawing keeps their size in metres.
+        const hq = hp / FINE, ownq = own / FINE;
         if (Y === y0) px = trimmed ? darken(PAL.trim, shade * 0.25) : lighten(wall, 0.12);
-        else if (hp < 1) px = mix(wall, pick(PLINTH, hash(seed, 101)), 0.6);
-        else if (special && hp < 4) px = special.lit ? (hp > 2.5 ? PAL.litHi : PAL.lit) : glass;
-        else if (special && hp < 5) px = col % 2 ? special.awning : lighten(special.awning, 0.3);
+        else if (hq < 1) px = mix(wall, pick(PLINTH, hash(seed, 101)), 0.6);
+        else if (special && hq < 4) px = special.lit ? (hq > 2.5 ? PAL.litHi : PAL.lit) : glass;
+        else if (special && hq < 5) px = col % 2 ? special.awning : lighten(special.awning, 0.3);
         else if (Y > y0 + 1) {
           // Facade bays continue in RD coordinates, instead of restarting every 1.89 m cell.
-          const along = (x - y) * (TW / 2) + X - ox;
+          const along = Math.floor(((x - y) * (TW / 2) + X - ox) / FINE);
           const bay = industrial ? 6 + seed % 5 : age === AGE.new ? 3 + seed % 3 : 3 + seed % 2;
           const floor = industrial ? 9 + seed % 4 : 4 + seed % 2;
           const phase = ((along + seed % bay) % bay + bay) % bay;
-          const f = Math.floor(hp) % floor;
+          const f = Math.floor(hq) % floor;
           const bayId = Math.floor((along + seed % bay) / bay);
           const blank = hash(bayId, seed, side === 'left' ? 1 : 2) < (industrial ? 0.24 : 0.06);
           const win = !blank && (ribbon ? phase !== 0 : phase > 0 && phase < Math.max(2, bay - 1));
-          const glazed = industrial ? hp > own * 0.55 && f > 1 && f < 5 : f === 1 || f === 2;
+          const glazed = industrial ? hq > ownq * 0.55 && f > 1 && f < 5 : f === 1 || f === 2;
           if (win && trimmed && f === 0 && !simple) px = darken(PAL.trim, shade * 0.25);
           else if (win && glazed) {
             const reflect = hash(bayId, seed, 83);
             px = reflect < 0.18 ? glassHi : glass;
-          } else if (industrial && hp < 5 && phase > 1 && phase < bay - 1 && hash(bayId, seed, 89) < 0.18) {
+          } else if (industrial && hq < 5 && phase > 1 && phase < bay - 1 && hash(bayId, seed, 89) < 0.18) {
             px = darken(wall, 0.25); // loading doors, at ground level only
           }
 

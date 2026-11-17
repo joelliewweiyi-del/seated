@@ -221,3 +221,17 @@ Palette (`src/map/canal-style.ts`): no colour comes from his images. Ground, wat
 The level-0 palette is these colours plus the painter's shades of them (`canalPalette()`), near-duplicates merged to fit 255.
 
 Still worse than his: no landmarks (Westerkerk, Paleis, Munttoren are generic masses); fewer boats; no red cycle paths; at zoom 1 our pixels are doubled beside his sharper level; water is truer to life but less legible than his bright blue.
+
+### Per building from open data, judged climb (17 Nov 2026, Exploration)
+
+Joel: "not just colours but actual facade and roof and building design"; "climb so that ours matches his with an opus judge". The canal sample (`SEATED_ART=canal`) now draws every building from its own data, at his sharpest level (FINE 2: 0.94 m cells, 4 levels, k = 1 down to 1/8):
+
+- **Roof shape:** AHN surface model (PDOK WCS `dsm_05m`, 0.5 m, 20 tiles cached in `.cache/canal/<hash>/ahn/`). A pitched 3DBAG part under 600 m² gets its ridge (`b3_h_nok`) along its long axis and eaves on its long sides, so both short ends stand as gable walls; a flat part gets its median laser height; bigger pitched complexes stay flat (a single pitched slab read as a melted mesh).
+- **Roof colour:** each building's median aerial-photo colour (PDOK, 0.5 m), tint taken off and haze lifted, then the nearest of our roof materials (`ROOF_PITCHED` tile, slate, zinc; `ROOF_FLAT` bitumen, gravel, sedum).
+- **Façades:** Amsterdam's street panoramas (`api.data.amsterdam.nl/panorama`, CC BY 4.0, Gemeente Amsterdam), winter recordings first. All equirectangular images are north-centred: their `heading` field must not be applied (checked on the Dam, June 2025 and December 2024). Each street-facing wall is cut from up to two panoramas (line of sight against other roofs), then designed from its photo: the wall material nearest to its photo colour (`WALL_MATERIALS`, canal belt before 1945), window and trim tones, the bay count and storey rhythm that best fit where the photo is dark, a shopfront where the ground floor is mostly glass, and its real top outline (gables, parapets) where the photo shows the wall above the roof line. Party walls are blank brick; a dark seam marks each lot.
+- **Window:** façades only within `FACADE_WINDOW` (about 840 x 640 m round the comparison camera): 898 panoramas, 226 MB, one per second. The whole belt would need about 6,600 (1.5 GB); `MAX_NEW_PANOS` (2,500) stops a build that would download more.
+- **Output:** each tile has its own palette (`adaptivePNG`), 51 files, about 5 MB. Warm build about 2 minutes.
+
+The look knobs (`CANAL_TUNE`, defaults in code) were tuned by a judged climb: build, screenshots at zoom 0.5, 1 and 2, then a headless Opus judge (`claude -p --model opus`) compares the candidate and the current best (random order) against his art as the quality bar, never as a style to copy, and proposes the next knobs. Knob rounds plateaued (4 to 5 of 10); each code step the judge asked for moved it: window grids from the photo facts, fitted roofs, materials, gable outlines, light. Last round: 5 vs 4 for the newest version. Still worse than his: roof edges that look like drips at part boundaries, no ridge lines, landmarks (Paleis, Westerkerk) as plain masses, flat grey courtyards reading as holes, and half the walls without a panorama view (gardens, courtyards) use their building's material.
+
+The painter keeps Noord unchanged at FINE 1: painted with main's and this painter on a random 80 x 80 world, all 34,821 pixels are identical.

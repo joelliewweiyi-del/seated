@@ -8,9 +8,17 @@ export const F = { bridge: 1, tram: 2, ferry: 4, railLine: 8 } as const;
 /** One cell in level-0 pixels, and the room above the ground for buildings and trees. */
 export const TW = 4;
 export const TH = 2;
-export const HEAD = 160;
+export let HEAD = 160;
 /** Exactly sezlab’s level-0 pixels per metre of height. */
-export const PX_PER_M = 1.5 * 0.866;
+export let PX_PER_M = 1.5 * 0.866;
+/** Pixels per level-0 pixel: 1 for Noord (his 1/2 level), 2 for the canal-belt sample (his sharpest level). */
+export let FINE = 1;
+/** Draw at `f` times the resolution: heights, the room above the ground and pixel sizes in the painter follow. */
+export function useFine(f: number): void {
+  FINE = f;
+  HEAD = 160 * f;
+  PX_PER_M = 1.5 * 0.866 * f;
+}
 
 export interface WorldMeta {
   cols: number;
@@ -18,6 +26,21 @@ export interface WorldMeta {
   cellMeters: number;
   roofPalette: string[];
   attribution: string;
+}
+
+/**
+ * Photo skin (canal-belt sample, scripts/canal-skin.ts): the real roof from the aerial photo and the real façade from
+ * street panoramas, as packed colours. u, v run 0..1 across the cell (+x, +y); a wall is the cell's south (left on
+ * screen) or east (right) side, t 0..1 along it, h metres above the ground. undefined: no photo there.
+ */
+export interface Skin {
+  roof(x: number, y: number, u: number, v: number): number | undefined;
+  /** top: metres from h up to the wall's top at that point. */
+  wall(x: number, y: number, side: 'left' | 'right', t: number, h: number, top: number): number | undefined;
+  /** Shading on top of the photo: lit roof plane, shaded roof plane, shaded wall side. */
+  shade?: { roofLit: number; roofDark: number; wall: number };
+  /** A wall's real top (metres above the ground) where its photo shows it standing above the roof: a gable. */
+  crest?(x: number, y: number, side: 'left' | 'right', t: number): number | undefined;
 }
 
 /** Building periods (meta bits 0-2): before 1800, 1800s, 1900-1944, 1945-1979, 1980-1999, 2000 on, unknown. */
@@ -43,7 +66,7 @@ export class World {
     private readonly oy = 0,
     private readonly w = meta.cols,
     private readonly h = meta.rows,
-    readonly features?: { shore: Uint8Array; building: Uint32Array; industrial: Uint8Array; facade: Uint8Array },
+    readonly features?: { shore: Uint8Array; building: Uint32Array; industrial: Uint8Array; facade: Uint8Array; skin?: Skin },
   ) {
     this.cols = meta.cols;
     this.rows = meta.rows;

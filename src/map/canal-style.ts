@@ -1,6 +1,6 @@
 // Seated's own city palette, for the canal-belt sample (scripts/map-noord.ts with SEATED_ART=canal; Joel, 17 Nov 2026).
 // Picked from the real city, never from sezlab's images: ground, water and trees from the PDOK aerial photo of the
-// canal belt (the build's own cache, measured by scripts/canal-colours.ts), façades from Amsterdam's building materials
+// canal belt (the build's own cache, measured by scripts/canal-colours.ts), each roof from that photo, façades from Amsterdam's building materials
 // (Waal-format brick, black-green and white paint, sandstone trims, white window frames). Every pixel of the sample is
 // one of these colours or a shade made from them here.
 import { darken, lighten, rgb } from './pix';
@@ -10,9 +10,10 @@ const hex = (c: number) => '#' + [0, 8, 16].map((s) => ((c >>> s) & 255).toStrin
 /** Ground, water, trees and details. Keys are the painter's (PAL in noord-paint.ts). */
 export const CANAL_PAL = {
   // Canal water: olive green-grey, not the IJ's blue.
-  water: '#456660', waterDeep: '#3a5754', waterLight: '#557870', ripple: '#6a8c80', glint: '#93b0a4',
+  // Brighter and cleaner than the photo's #394d4a (judged climb: canals must read against the streets).
+  water: '#3f7c86', waterDeep: '#356d78', waterLight: '#4d8b92', ripple: '#5f9ba0', glint: '#a8cdcc',
   // Quays: grey hardstone edge, dark wet wall.
-  quay: '#c4bcae', quayWall: '#5e5852',
+  quay: '#d3cbbb', quayWall: '#5e5852',
   // Streets: red-brown and grey klinkers; pavements: grey tiles.
   paving: '#ad9886', pavingDot: '#9c8676', pavement: '#c4bcae', pavementLine: '#b3ab9e',
   asphalt: '#56585a', asphaltDot: '#4a4c4f', asphaltLight: '#686a6b',
@@ -44,34 +45,53 @@ export const CANAL_WALLS = [
 export const CANAL_GLASS = ['#283238', '#2f3438', '#3a3f45', '#2a2e33'];
 export const CANAL_PLINTH = ['#3d3633', '#2f2b2a', '#4a4440'];
 
-/** Roofs: dark grey tiles and slate, orange-red pantiles, zinc, bitumen, gravel, sedum, white. */
-const ROOFS = {
-  tileRed: ['#7e3a28', '#924530', '#a6553a', '#b8673f'],
-  tileBrown: ['#4e3b34', '#5d463c', '#6d5245', '#7d5e4e'],
-  slateBlue: ['#3b4450', '#4b5663', '#5e6b78', '#73808c'],
-  slate: ['#35383c', '#43464a', '#525559', '#626569', '#74777a'],
-  hall: ['#4b4f55', '#5b6066', '#6c7177', '#7f8489'],
-  sedum: ['#5f7340', '#71854a', '#8a9a60'],
-  pale: ['#a8a296', '#c4beb1', '#dcd6ca'],
-  flat: ['#4f4f4e', '#5f5e5c', '#706e6a', '#83807a', '#96928b'],
-};
-export const CANAL_ROOFS = [...new Set(Object.values(ROOFS).flat())];
+/**
+ * Roofs come from the aerial photo, building by building (Joel, 17 Nov 2026: "rebuild per building based on satellite
+ * imagery"): the median colour of each building's roof pixels, the photo's city-wide tint taken off and its haze
+ * lifted (saturation x SATURATE), then median cut to ROOF_COLOURS shared colours so the tiles stay indexed PNGs.
+ */
+export const ROOF_COLOURS = 72;
+const SATURATE = 1.45;
+export function photoColour(r: number, g: number, b: number, sat = SATURATE): [number, number, number] {
+  const grey = (r + g + b) / 3;
+  const c = (v: number) => Math.max(0, Math.min(255, Math.round(grey + (v - grey) * sat)));
+  return [c(r), c(g), c(b)];
+}
 
-/** The aerial photo's mean roof colour (city tint taken off) -> one of CANAL_ROOFS. Same decisions as Noord's roofColour. */
-export function canalRoof(r: number, g: number, b: number, light: number, pitched: boolean, hall: boolean, jitter: number): string {
-  const warm = r - b;
-  const pick = (list: string[]) => list[Math.max(0, Math.min(list.length - 1, Math.floor((light - 0.3) / 0.07) + jitter))]!;
-  if (pitched && hall) return pick(ROOFS.hall);
-  if (pitched) {
-    // Red pantiles only on clearly warm roofs: most canal-belt roofs are anthracite tile or slate.
-    if (warm > 14) return pick(ROOFS.tileRed);
-    if (warm > 5) return pick(ROOFS.tileBrown);
-    if (warm < -8) return pick(ROOFS.slateBlue);
-    return pick(ROOFS.slate);
+/** Weighted median cut: the box with the widest channel splits at its weighted median until there are n boxes. */
+export function medianCut(colours: Array<{ rgb: [number, number, number]; weight: number }>, n: number): { palette: string[]; nearest: (rgb: [number, number, number]) => number } {
+  type Box = typeof colours;
+  const range = (box: Box) => [0, 1, 2].map((ch) => {
+    let lo = 255, hi = 0;
+    for (const c of box) { const v = c.rgb[ch]!; if (v < lo) lo = v; if (v > hi) hi = v; }
+    return hi - lo;
+  });
+  const boxes: Box[] = [colours.filter((c) => c.weight > 0)];
+  while (boxes.length < n) {
+    let best = -1, widest = 0, channel = 0;
+    boxes.forEach((box, i) => {
+      if (box.length < 2) return;
+      const r = range(box), ch = r.indexOf(Math.max(...r));
+      if (r[ch]! > widest) { widest = r[ch]!; best = i; channel = ch; }
+    });
+    if (best < 0) break;
+    const box = boxes[best]!.sort((a, b) => a.rgb[channel]! - b.rgb[channel]!);
+    const total = box.reduce((t, c) => t + c.weight, 0);
+    let acc = 0, cut = 1;
+    for (let i = 0; i < box.length - 1; i++) { acc += box[i]!.weight; if (acc >= total / 2) { cut = i + 1; break; } }
+    boxes.splice(best, 1, box.slice(0, cut), box.slice(cut));
   }
-  if (g - (r + b) / 2 > 6) return pick(ROOFS.sedum);
-  if (warm > 10 && light > 0.6) return pick(ROOFS.pale);
-  return pick(ROOFS.flat);
+  const centres = boxes.map((box) => {
+    const w = box.reduce((t, c) => t + c.weight, 0);
+    return [0, 1, 2].map((ch) => Math.round(box.reduce((t, c) => t + c.rgb[ch]! * c.weight, 0) / w)) as [number, number, number];
+  });
+  const palette = centres.map((c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join(''));
+  const nearest = (rgb: [number, number, number]) => {
+    let best = 0, d = Infinity;
+    centres.forEach((c, i) => { const e = (c[0] - rgb[0]) ** 2 + (c[1] - rgb[1]) ** 2 + (c[2] - rgb[2]) ** 2; if (e < d) { d = e; best = i; } });
+    return best;
+  };
+  return { palette, nearest };
 }
 
 const BOATS = ['#2f4a3c', '#3b4f6b', '#5b2f2a', '#2d2d33', '#e9e1cf', '#cfd9d6', '#f0d9a8', '#d8c2a8', '#e8c04a', '#f4f1ea'];
@@ -80,14 +100,14 @@ const BOATS = ['#2f4a3c', '#3b4f6b', '#5b2f2a', '#2d2d33', '#e9e1cf', '#cfd9d6',
  * The level-0 palette: every base colour, plus the shades the painter makes of walls, roofs and ground (darker toward
  * violet for shade, lighter for lit roof planes and rims). Near-duplicates merge until it fits an indexed PNG.
  */
-export function canalPalette(): string[] {
+export function canalPalette(roofs: string[]): string[] {
   const out: number[] = [];
   const add = (c: number) => out.push(c);
   const shades = (list: string[], ts: number[]) => list.forEach((h) => { const c = rgb(h); add(c); ts.forEach((t) => add(t < 0 ? darken(c, -t) : lighten(c, t))); });
   shades(Object.values(CANAL_PAL), [-0.16]);
   shades(CANAL_WALLS.flat(), [-0.1, -0.2, -0.3, 0.12]);
   shades([...CANAL_GLASS, ...CANAL_PLINTH], [-0.12]);
-  shades(CANAL_ROOFS, [-0.04, -0.26, 0.18, 0.14, 0.3]);
+  shades(roofs, [-0.04, -0.26, 0.18, 0.14]);
   shades(BOATS, [-0.2]);
   [rgb('#2b2733'), rgb('#1d1a24')].forEach(add);
   const dist = (a: number, b: number) => Math.hypot((a & 255) - (b & 255), ((a >>> 8) & 255) - ((b >>> 8) & 255), ((a >>> 16) & 255) - ((b >>> 16) & 255));
@@ -101,3 +121,31 @@ export function canalPalette(): string[] {
 /** Far levels (1/4 and 1/8): 15 colours and transparent, one shared palette so tiles meet without seams. */
 export const CANAL_FAR = ['#000000', '#456660', '#3a5754', '#ad9886', '#c4bcae', '#56585a', '#7a3b2e', '#5b2e27', '#43464a',
   '#626569', '#924530', '#4a6a2e', '#2e4522', '#a7a196', '#e8e2d4', '#2b2733'];
+
+/**
+ * Materials (judged climb, 17 Nov 2026: raw winter-grey photo colours read as grey mush). The photo still decides per
+ * building; its colour picks the nearest of these, Amsterdam's own roof and wall materials, picked for this palette.
+ */
+export const ROOF_MATERIALS = [
+  '#7e3a28', '#924530', '#a6553a', '#b8673f', // red pantiles
+  '#5d463c', '#6d5245', '#7d5e4e', // brown tiles
+  '#35383c', '#43464a', '#525559', '#626569', // anthracite tiles and slate
+  '#3b4450', '#4b5663', '#5e6b78', // blue slate
+  '#7f8489', '#9aa0a4', // zinc
+  '#4f4f4e', '#5f5e5c', '#706e6a', '#83807a', // bitumen
+  '#a8a296', '#c4beb1', // gravel, pale
+  '#5f7340', '#71854a', // sedum
+];
+/** Pitched roofs are tile, slate or zinc; flat roofs bitumen, gravel or sedum (judged climb: no bitumen on a pitch). */
+export const ROOF_PITCHED = ROOF_MATERIALS.slice(0, 16);
+export const ROOF_FLAT = ROOF_MATERIALS.slice(14);
+export const WALL_MATERIALS = [...new Set(CANAL_WALLS.slice(1, 4).flat())]; // canal belt: before 1945
+export function nearestMaterial(rgb: [number, number, number], list: string[]): string {
+  let best = list[0]!, d = Infinity;
+  for (const h of list) {
+    const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const e = (c[0]! - rgb[0]) ** 2 * 0.3 + (c[1]! - rgb[1]) ** 2 * 0.59 + (c[2]! - rgb[2]) ** 2 * 0.11 + ((c[0]! - c[2]!) - (rgb[0] - rgb[2])) ** 2 * 0.6;
+    if (e < d) { d = e; best = h; }
+  }
+  return best;
+}
