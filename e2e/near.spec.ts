@@ -3,11 +3,11 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 // Where you are (Joel, 15 Nov 2026): on a first visit the host asks to use your location; yes puts your character on
 // the map where you stand and opens the list nearest first. The browser's own question only follows a tap.
 const shot = (page: Page, name: string) => page.screenshot({ path: `test-results/screens/map-${name}.png` });
-const GRAHAMS = { latitude: 52.356657, longitude: 4.902563 }; // data/map-places.json
+const CHOUX = { latitude: 52.377548, longitude: 4.907157 }; // data/map-places.json (Graham's Kitchen until it left Seated curated, 17 Nov 2026)
 
 async function visitor(browser: Browser, opts: { phone?: boolean } = {}): Promise<Page> {
   const ctx = await browser.newContext({
-    geolocation: GRAHAMS,
+    geolocation: CHOUX,
     reducedMotion: 'reduce', // the character stops bobbing, so its pixels can be counted
     ...(opts.phone ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
   });
@@ -39,9 +39,9 @@ test('a first visit asks for your location; Show me puts you on the map and list
   await page.context().grantPermissions(['geolocation']); // what the browser's own question does on "Allow"
   await card.getByRole('button', { name: 'Show me' }).click();
   await expect(card).toHaveCount(0);
-  // The list opens nearest first: you stand at Graham's Kitchen.
+  // The list opens nearest first: you stand at Choux.
   await expect(page.locator('.list-head .sum')).toContainText('nearest first');
-  await expect(page.locator('.rows li').first()).toContainText("Graham's Kitchen");
+  await expect(page.locator('.rows li').first()).toContainText('Choux');
   await expect(page.locator('.rows li').first()).toContainText('1 min walk');
   // Your character (no character yet: the grey silhouette) stands where you are, in the middle after the flight.
   await expect.poll(async () => (await silhouette(page)) - before, { timeout: 5000 }).toBeGreaterThan(20);
@@ -84,7 +84,7 @@ test('on a phone the card sits above the list bar and Show me opens the list', a
   await shot(page, '22-where-phone');
   await page.context().grantPermissions(['geolocation']);
   await card.getByRole('button', { name: 'Show me' }).click();
-  await expect(page.locator('.rows li').first()).toContainText("Graham's Kitchen");
+  await expect(page.locator('.rows li').first()).toContainText('Choux');
   await expect(page.locator('.rows li').first()).toBeInViewport();
   await shot(page, '23-where-phone-list');
   await page.context().close();
