@@ -554,14 +554,16 @@ export class MapView {
     const toY = (wy: number) => (wy - cam.y) * z + H / 2;
 
     // The overview underneath his chunks: it shows while chunks load, and alone when far away.
-    if (this.overview.ok) {
+    if (this.overview.ok && !this.world.onlyOurs) {
       ctx.imageSmoothingEnabled = z < 0.125;
       ctx.drawImage(this.overview.img, Math.round(toX(0)), Math.round(toY(0)), Math.round(this.world.width * z), Math.round(this.world.height * z));
       ctx.imageSmoothingEnabled = false;
     }
     // The level whose pixels are at least as fine as the screen's, so images are only ever enlarged.
     let waiting = 0;
-    if (z >= 1) {
+    if (this.world.onlyOurs) {
+      // ?art=ours in a local build: his art hidden, ours alone.
+    } else if (z >= 1) {
       this.drawLevel(0, toX, toY, W, H); // under the sharpest: it fills where a sharp chunk is missing or loading
       waiting = this.drawLevel('hi', toX, toY, W, H);
     } else if (z >= 0.5) waiting = this.drawLevel(0, toX, toY, W, H);

@@ -10,6 +10,8 @@ export const PAL = {
   water: c('#3a869a'),
   waterDeep: c('#30778b'),
   waterLight: c('#41869a'),
+  ripple: c('#4e92a4'),
+  glint: c('#388ba2'),
   quay: c('#e7d4b8'),
   quayWall: c('#797368'),
   paving: c('#dfcdae'),
@@ -18,6 +20,7 @@ export const PAL = {
   pavementLine: c('#dfcdae'),
   asphalt: c('#797368'),
   asphaltDot: c('#686665'),
+  asphaltLight: c('#8b8984'),
   square: c('#e6dab9'),
   squareLine: c('#d8cba8'),
   grass: c('#86b23b'),
@@ -30,6 +33,8 @@ export const PAL = {
   fieldLine: c('#97b85c'),
   concrete: c('#b9a995'),
   concreteLine: c('#a79886'),
+  concreteWorn: c('#b9a489'),
+  concreteLight: c('#c7b399'),
   sand: c('#e8d49c'),
   gravel: c('#a99f8e'),
   rail: c('#6f6860'),
@@ -46,6 +51,8 @@ export const PAL = {
   leafLight: c('#86b23b'),
   leafMid: c('#70a14e'),
   leafDark: c('#2c601d'),
+  leafBright: c('#96c658'),
+  leafDeep: c('#398526'),
   trunk: c('#6b4a33'),
   flowerA: c('#fff0a0'),
   flowerB: c('#f4a7c3'),
@@ -62,6 +69,16 @@ const WALLS: number[][] = [
   ['#ebe7df', '#5d6166', '#c9714c', '#aeb5b8', '#45494d', '#dacdb3', '#8e6c50'],
   ['#a9553d', '#8b5a45', '#c9b9a0', '#9da3a6'],
 ].map((list) => list.map((h) => c(h)));
+const GLASS = ['#2d4f5a', '#393b43', '#474953', '#544b45'].map(c);
+const PLINTH = ['#544b45', '#453a36', '#2a2c33'].map(c);
+
+/** Another art style (the canal-belt sample, scripts/map-noord.ts with SEATED_ART=canal): replaces the colours above for this process. */
+export function useStyle(style: { pal: Partial<Record<keyof typeof PAL, string>>; walls: string[][]; glass: string[]; plinth: string[] }): void {
+  for (const [k, v] of Object.entries(style.pal)) PAL[k as keyof typeof PAL] = c(v!);
+  WALLS.splice(0, WALLS.length, ...style.walls.map((list) => list.map(c)));
+  GLASS.splice(0, GLASS.length, ...style.glass.map(c));
+  PLINTH.splice(0, PLINTH.length, ...style.plinth.map(c));
+}
 
 export interface Special {
   /** Awning colour, from the day's status. */
@@ -112,7 +129,7 @@ function surface(X: number, Y: number, base: number, worn: number, light: number
 
 /** Shade the completed pixel shoreline, never each diamond's guessed land-facing edges. */
 export function finishQuays(p: Pix): void {
-  const waterColours = new Set([PAL.water, PAL.waterDeep, PAL.waterLight, c('#388ba2'), c('#4e92a4')]);
+  const waterColours = new Set([PAL.water, PAL.waterDeep, PAL.waterLight, PAL.glint, PAL.ripple]);
   const water = new Uint8Array(p.data.length);
   for (let i = 0; i < water.length; i++) water[i] = +waterColours.has(p.data[i]!);
   const banks: number[] = [];
@@ -127,7 +144,7 @@ export function finishQuays(p: Pix): void {
 
 /** One continuous one-pixel railing along the water-facing boundary of a completed bridge. */
 export function finishBridges(p: Pix): void {
-  const water = new Set([PAL.water, PAL.waterDeep, PAL.waterLight, c('#388ba2'), c('#4e92a4')]);
+  const water = new Set([PAL.water, PAL.waterDeep, PAL.waterLight, PAL.glint, PAL.ripple]);
   const edges: number[] = [];
   for (let y = 1; y < p.h - 1; y++) for (let x = 1; x < p.w - 1; x++) {
     const i = y * p.w + x;
@@ -152,9 +169,9 @@ export function paintGround(p: Pix, w: World, x: number, y: number, ox: number, 
       const ripple = hash(X >> 1, Y, 41);
       const patch = hash(X >> 4, Y >> 3, 43);
       // Broken short ripples fade away from the actual OSM shore, leaving deep IJ water quiet.
-      if (distance < 18 && ripple < (1 - distance / 18) * 0.25) return patch < 0.45 ? c('#4e92a4') : PAL.waterLight;
+      if (distance < 18 && ripple < (1 - distance / 18) * 0.25) return patch < 0.45 ? PAL.ripple : PAL.waterLight;
       if (distance < 6 && patch < 0.24) return PAL.waterDeep;
-      if (distance < 24 && patch > 0.72 && ripple < 0.04) return c('#388ba2');
+      if (distance < 24 && patch > 0.72 && ripple < 0.04) return PAL.glint;
       return PAL.water;
     });
     return;
@@ -173,9 +190,9 @@ export function paintGround(p: Pix, w: World, x: number, y: number, ox: number, 
       case T.street:
         return S(surface(X, Y, PAL.paving, PAL.pavingDot, PAL.pavement));
       case T.road:
-        return S(surface(X, Y, PAL.asphalt, PAL.asphaltDot, c('#8b8984')));
+        return S(surface(X, Y, PAL.asphalt, PAL.asphaltDot, PAL.asphaltLight));
       case T.stone:
-        return S(surface(X, Y, PAL.quayWall, PAL.asphaltDot, c('#8b8984')));
+        return S(surface(X, Y, PAL.quayWall, PAL.asphaltDot, PAL.asphaltLight));
       case T.square:
         return S(surface(X, Y, PAL.square, PAL.squareLine, PAL.pavement));
       case T.pavement:
@@ -193,7 +210,7 @@ export function paintGround(p: Pix, w: World, x: number, y: number, ox: number, 
       case T.rail:
         return S(dither(X, Y, 0.4) ? darken(PAL.gravel, 0.1) : PAL.gravel);
       case T.industry:
-        return S(surface(X, Y, PAL.concrete, c('#b9a489'), c('#c7b399')));
+        return S(surface(X, Y, PAL.concrete, PAL.concreteWorn, PAL.concreteLight));
       default:
         return S(surface(X, Y, PAL.pavement, PAL.paving, PAL.pavingDot));
     }
@@ -234,9 +251,9 @@ export function treeSprite(variant: number): Pix {
       r: r * (0.4 + hash(v, i, 23) * 0.2),
     };
   })];
-  const tones = v % 4 === 0 ? [c('#96c658'), PAL.leafLight, PAL.leaf, PAL.leafDark]
-    : v % 4 === 1 ? [PAL.leafLight, PAL.leafMid, c('#398526'), PAL.leafDark]
-    : [PAL.leafMid, PAL.leaf, c('#398526'), PAL.leafDark];
+  const tones = v % 4 === 0 ? [PAL.leafBright, PAL.leafLight, PAL.leaf, PAL.leafDark]
+    : v % 4 === 1 ? [PAL.leafLight, PAL.leafMid, PAL.leafDeep, PAL.leafDark]
+    : [PAL.leafMid, PAL.leaf, PAL.leafDeep, PAL.leafDark];
   for (let y = 0; y < 25; y++) for (let x = 0; x < 23; x++) {
     const d = Math.min(...lobes.map(l => Math.hypot((x - l.x) / l.r, (y - l.y) / (l.r * stretch))));
     if (d > 1) continue;
@@ -361,7 +378,7 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
     const normal = w.facadeShade(x, y);
     const shade = normal ? (normal - 1) / 6 : side === 'left' ? 0 : 1;
     const wall = darken(base, shade * 0.3);
-    const glassBase = pick([c('#2d4f5a'), c('#393b43'), c('#474953'), c('#544b45'), PAL.glass], hash(seed, 79));
+    const glassBase = pick([...GLASS, PAL.glass], hash(seed, 79));
     const glass = darken(glassBase, shade * 0.12);
     const glassHi = darken(PAL.glassHi, shade * 0.25);
     const [ax, ay, ah, bx, by, bh] =
@@ -377,7 +394,7 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
         const hp = ground - (Y + 0.5); // pixels above the ground
         let px = wall;
         if (Y === y0) px = trimmed ? darken(PAL.trim, shade * 0.25) : lighten(wall, 0.12);
-        else if (hp < 1) px = mix(wall, pick([c('#544b45'), c('#453a36'), c('#2a2c33')], hash(seed, 101)), 0.6);
+        else if (hp < 1) px = mix(wall, pick(PLINTH, hash(seed, 101)), 0.6);
         else if (special && hp < 4) px = special.lit ? (hp > 2.5 ? PAL.litHi : PAL.lit) : glass;
         else if (special && hp < 5) px = col % 2 ? special.awning : lighten(special.awning, 0.3);
         else if (Y > y0 + 1) {

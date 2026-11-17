@@ -192,3 +192,32 @@ Own review uses the supplied round-1 desk/phone/seam screenshots, untouched refe
 The two requested stale texts are corrected. About now describes outside restaurants’ fog signs. CLAUDE’s City count is **18 outside / 138 listed**, computed from `data/restaurants.json` filtered to Amsterdam, known map places and opt-outs using the same exclusion rules as `buildMapData`, then `World.covers` on the combined manifests. This is the repository list, not a claim about a changing live census.
 
 To revisit: richer open-data roof/pavement detail and the remaining regular apartment bays; the existing CLAUDE Rendering paragraph still describes the old sez-only inward fog wording (only the requested City count was edited). Additional art south of the current Noord extent would fill the real southern gap, but is outside this task’s coverage. No commits, new dependencies, reference-image edits or booking-system requests were made.
+
+## Canal-belt sample in our own palette (17 Nov 2026, Exploration)
+
+Joel asked for a city without sezlab's art. First step: the canal belt (RD x 120300–122200, y 486300–488450: Westermarkt to the Amstel, Brouwersgracht to the Leidsegracht) drawn by this same painter in **our own palette**, never cut to his gaps.
+
+```sh
+SEATED_ART=canal npx tsx scripts/map-noord.ts   # writes src/map/public/canal/ (gitignored)
+npm run dev:map                                 # then open http://localhost:5174/?art=ours
+npx tsx scripts/canal-colours.ts                # real colours from the cached aerial photo
+```
+
+`?art=ours` works only in a local dev build (`import.meta.env.DEV`): his art is hidden and the sample is drawn alone. The live map and production builds never read `canal/`. Cache: `.cache/canal/485d7b426e0f/` (one Overpass terrain query, one tree query, three 3DBAG pages, two PDOK tiles; Overpass answered 502 four times first). Cold build about 10 minutes, almost all Overpass retry waits; warm build 11 s. Output: 19 files, 1,736,273 bytes for about 4 km².
+
+Palette (`src/map/canal-style.ts`): no colour comes from his images. Ground, water and trees were checked against the PDOK aerial photo (canal water median `#394d4a` under 9,647 canal-centre pixels; elm crowns `#576e5b`; street samples are shaded by houses and trees, so street colours are chosen by hand). Façades are Amsterdam materials. The painter's own colours are swapped with `useStyle()` in `noord-paint.ts`; Noord keeps its measured palette unchanged.
+
+| What | Colours |
+| --- | --- |
+| Canal water | `#456660` base, `#3a5754` deep, `#557870` / `#6a8c80` ripples, `#93b0a4` glint |
+| Quays, pavements | `#c4bcae` hardstone and tiles, `#5e5852` wet quay wall |
+| Streets | `#ad9886` red-grey klinkers, `#56585a` asphalt |
+| Canal-house walls (before 1800) | brick `#7a3b2e` `#8a4535` `#6a3328` `#5b2e27` `#9a5a43`, dark brown `#4e3b33`, black-green paint `#33393a` `#2c3230`, white stucco `#e8e2d4`, sandstone `#d6cbb3` |
+| Window frames, cornices | `#f1eee6` |
+| Roofs | anthracite tile and slate `#35383c`–`#74777a`, blue slate `#3b4450`–`#73808c`, brown tile `#4e3b34`–`#7d5e4e`, red pantiles `#7e3a28`–`#b8673f` (only clearly warm roofs in the photo), flat bitumen `#4f4f4e`–`#96928b` |
+| Elms, grass | `#2e4522` to `#86a04a`; grass `#6a873a` |
+| Bridges | brick deck `#9a8676`, oxblood railings `#4a2422` |
+
+The level-0 palette is these colours plus the painter's shades of them (`canalPalette()`), near-duplicates merged to fit 255.
+
+Still worse than his: no landmarks (Westerkerk, Paleis, Munttoren are generic masses); fewer boats; no red cycle paths; at zoom 1 our pixels are doubled beside his sharper level; water is truer to life but less legible than his bright blue.

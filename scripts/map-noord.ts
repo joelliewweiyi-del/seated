@@ -6,7 +6,8 @@ import { createHash } from 'node:crypto';
 import { Pix, rgb } from '../src/map/pix';
 import { World as Grid, TW, TH, T, gapMask } from '../src/map/noord-grid';
 import { cleanSlivers, parkOrStoneTerrain } from '../src/map/noord-tags';
-import { paintGround, paintBuilding, paintProps, finishBridges, finishQuays } from '../src/map/noord-paint';
+import { paintGround, paintBuilding, paintProps, finishBridges, finishQuays, useStyle } from '../src/map/noord-paint';
+import { CANAL_FAR, CANAL_GLASS, CANAL_PAL, CANAL_PLINTH, CANAL_ROOFS, CANAL_WALLS, canalPalette, canalRoof } from '../src/map/canal-style';
 import { readPNG, writePNG } from '../src/map/noord-png';
 import { imageReader, measureAlignment } from '../src/map/noord-alignment';
 import { measurePalette, quantizer, MATERIAL_COLOURS, FAR_PALETTE } from '../src/map/noord-palette';
@@ -20,11 +21,18 @@ const CELL_M = (TW / 2) / (Math.SQRT1_2 * SCALE);
 // y0 484200 (was 486800, before that 487600): his art leaves gaps in Oost, the Indische Buurt and Watergraafsmeer
 // that ours must fill (Joel, 8 Nov 2026). Only those gaps are kept (gapMask), so the box can be large.
 const RD_BOX = { x0: 118000, y0: 484200, x1: 127500, y1: 492500 };
+// SEATED_ART=canal: a sample of the canal belt (Westermarkt to the Amstel, Brouwersgracht to the Leidsegracht) in our own
+// palette (src/map/canal-style.ts), not cut to his gaps, into src/map/public/canal/ (gitignored). Only the local map
+// shows it, with ?art=ours (Joel, 17 Nov 2026: a first look at the city without his art).
+const CANAL = process.env.SEATED_ART === 'canal';
+if (CANAL) Object.assign(RD_BOX, { x0: 120300, y0: 486300, x1: 122200, y1: 488450 });
+if (CANAL) useStyle({ pal: CANAL_PAL, walls: CANAL_WALLS, glass: CANAL_GLASS, plinth: CANAL_PLINTH });
 /** How far our layer reaches over his edge, in his overview pixels (8 world pixels each): his art fades out in a dither about 128 world pixels deep, which ours covers (8 Nov 2026). */
 const UNDER_HIS_EDGE = 16;
 const places = JSON.parse(readFileSync('data/map-places.json', 'utf8'));
 const required = ['bacalar', 'barracuda', 'cornerstore', 'euro-pizza', 'europa', 'helling-7', 'hotel-de-goudfazant', 'klaproos', 'nikotin', 'pelusa'];
 for (const [id, p] of Object.entries(places) as Array<[string, { lat: number; lng: number; area: string }]>) {
+  if (CANAL) break;
   if (!required.includes(id) && !/Noord|Buiksloter|Nieuwendam|Tuindorp/.test(p.area)) continue;
   const rd = wgsToRd(p.lat, p.lng);
   RD_BOX.x0 = Math.min(RD_BOX.x0, Math.floor(rd.x - 100)); RD_BOX.x1 = Math.max(RD_BOX.x1, Math.ceil(rd.x + 100));
@@ -46,7 +54,7 @@ const optOut = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8'))
 const onArt = new City(sez);
 // Fog = outside his art and outside the Noord box (inside the box every gap is drawn already, so those restaurants stand on drawn city).
 const fogPlaces = (Object.entries(places) as Array<[string, { lat: number; lng: number }]>)
-  .filter(([id, p]) => !optOut.has(id) && !onArt.covers(p.lat, p.lng))
+  .filter(([id, p]) => !CANAL && !optOut.has(id) && !onArt.covers(p.lat, p.lng))
   .map(([id, p]) => ({ id, rd: wgsToRd(p.lat, p.lng) }))
   .filter(({ rd }) => !(rd.x >= OLD_BOX.x0 && rd.x <= OLD_BOX.x1 && rd.y >= OLD_BOX.y0 && rd.y <= OLD_BOX.y1));
 if (fogPlaces.length) {
@@ -70,7 +78,7 @@ const COLS = Math.ceil((RD_BOX.x1 - RD_BOX.x0) / CELL_M);
 const ROWS = Math.ceil((RD_BOX.y1 - RD_BOX.y0) / CELL_M);
 const N = COLS * ROWS;
 const UA = 'Seated-map/0.3 (one-off Noord open-data build; seated.food)';
-const CACHE = '.cache/noord/' + createHash('sha256').update(JSON.stringify(RD_BOX)).digest('hex').slice(0, 12);
+const CACHE = `.cache/${CANAL ? 'canal' : 'noord'}/` + createHash('sha256').update(JSON.stringify(RD_BOX)).digest('hex').slice(0, 12);
 let requests = 0;
 async function download(url: string, init: RequestInit = {}): Promise<Response> {
   requests++;
@@ -79,8 +87,8 @@ async function download(url: string, init: RequestInit = {}): Promise<Response> 
   await new Promise(r => setTimeout(r, 1000));
   return response;
 }
-const measured = measurePalette(sez);
-const OUTPUT_PALETTE = measured.palette.filter(c => MATERIAL_COLOURS.has(c));
+const measured = CANAL ? undefined : measurePalette(sez);
+const OUTPUT_PALETTE = measured ? measured.palette.filter(c => MATERIAL_COLOURS.has(c)) : canalPalette();
 const snap = quantizer(OUTPUT_PALETTE);
 // Terrain codes come from the painter's grid model.
 const F = { bridge: 1, tram: 2, ferry: 4, railLine: 8 } as const;
@@ -89,7 +97,7 @@ const F = { bridge: 1, tram: 2, ferry: 4, railLine: 8 } as const;
  * Roof colours: the aerial photo's colour of each roof, made a little bolder, then snapped to this palette so the
  * map stays pixel art. Tile reds, browns, slate, zinc, flat greys, sedum greens, white and glass.
  */
-const ROOF_PALETTE = [
+const ROOF_PALETTE = CANAL ? CANAL_ROOFS : [
   '#7a3524', '#8f3b26', '#a04a2e', '#b8603a', '#c9744a', '#d08860',
   '#5a4032', '#6b4a3a', '#84604a', '#9c7a5e', '#b39b6e', '#8a6f4c',
   '#2f3640', '#3e4854', '#4b5663', '#56616d', '#66717d', '#36405a', '#3f4d66', '#4b5872', '#56637a', '#78818e', '#3d4450', '#4a5260', '#576070', '#66707d',
@@ -647,7 +655,7 @@ for (let k = 0; k < parts.length; k++) {
   // No usable pixels: a grey flat roof.
   const raw = n ? [sums[b4]! / n, sums[b4 + 1]! / n, sums[b4 + 2]! / n] : [140, 140, 140];
   const light = (Math.max(...raw) + Math.min(...raw)) / 2 / 255;
-  const hex = roofColour(raw[0]! - cast[0]!, raw[1]! - cast[1]!, raw[2]! - cast[2]!, light, slanted[k] === 1, pandCells[pandOf[k]!]! * CELL_M * CELL_M > 2400, (hashStr(parts[k]!.properties.identificatie) % 3) - 1);
+  const hex = (CANAL ? canalRoof : roofColour)(raw[0]! - cast[0]!, raw[1]! - cast[1]!, raw[2]! - cast[2]!, light, slanted[k] === 1, pandCells[pandOf[k]!]! * CELL_M * CELL_M > 2400, (hashStr(parts[k]!.properties.identificatie) % 3) - 1);
   const best = ROOF_PALETTE.indexOf(hex);
   if (best < 0) throw new Error(`roof colour ${hex} is not in the palette`);
   partRoof[k] = best;
@@ -797,10 +805,10 @@ for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1)
 let pixels = new Uint8Array(canvas.data.length);
 for (let i = 0; i < pixels.length; i++) pixels[i] = snap(canvas.data[i]!);
 // Alignment with his art, measured on the whole painting before it is cut to his gaps (the cut leaves little shore).
-const alignment = measureAlignment(sez, undefined, undefined, 220, 8, imageReader(pixels, width, imgHeight, x0, y0, OUTPUT_PALETTE));
-console.log(`[noord] alignment at the IJ south shore: ${alignment.dx}, ${alignment.dy} px (correlation ${alignment.correlation.toFixed(2)})`);
+const alignment = CANAL ? { dx: 0, dy: 0, correlation: 0, samples: 0 } : measureAlignment(sez, undefined, undefined, 220, 8, imageReader(pixels, width, imgHeight, x0, y0, OUTPUT_PALETTE));
+if (!CANAL) console.log(`[noord] alignment at the IJ south shore: ${alignment.dx}, ${alignment.dy} px (correlation ${alignment.correlation.toFixed(2)})`);
 // Keep ours only where his drawing has no pixels (plus a strip over his edge): elsewhere his art is complete.
-{
+if (!CANAL) {
   const his = readPNG(readFileSync(`src/map/public/sez/${sez.version}/2.png`));
   const alpha = Uint8Array.from(his.pixels, (p) => +(his.alpha[p]! > 0));
   const keep = gapMask(alpha, his.w, his.h, UNDER_HIS_EDGE);
@@ -818,7 +826,7 @@ console.log(`[noord] alignment at the IJ south shore: ${alignment.dx}, ${alignme
   console.log(`[noord] ${cut} pixels under his art left out`);
 }
 // Stage tiles in the cache: a failed build must not replace the checked-in layer.
-const outputDir = 'src/map/public/ours';
+const outputDir = CANAL ? 'src/map/public/canal' : 'src/map/public/ours';
 const out = join(CACHE, 'paint');
 mkdirSync(out, { recursive: true });
 for (const f of readdirSync(out)) if (/^(?:[01]_-?[\d.]+_-?[\d.]+|2)\.png$/.test(f)) unlinkSync(`${out}/${f}`);
@@ -829,10 +837,11 @@ function save(name: string, bytes: Buffer) {
   writeFileSync(`${out}/${name}`, bytes);
   outputs.push({ name, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') });
 }
-const farSnap = quantizer(FAR_PALETTE);
+const FAR = CANAL ? CANAL_FAR : FAR_PALETTE;
+const farSnap = quantizer(FAR);
 const farIndices = OUTPUT_PALETTE.map((h, i) => i ? farSnap(rgb(h)) : 0);
 for (let L = 0; L < 3; L++) {
-  const palette = L ? FAR_PALETTE : OUTPUT_PALETTE;
+  const palette = L ? FAR : OUTPUT_PALETTE;
   const encoded = L ? pixels.map(i => farIndices[i]!) : pixels;
   const chunks: Array<[number, number]> = [];
   if (L === 2) { save('2.png', writePNG(w, h, encoded, palette)); chunks.push([0, 0]); }
@@ -876,9 +885,9 @@ for (let yy = 0; yy < h; yy++) {
 const manifest = {
   version: 1, sezVersion: sez.version, projection: { X0: sez.X0, Y0: sez.Y0, x: sez.x, y: sez.y, scale: SCALE, VZ: sez.VZ },
   rd: RD_BOX, cellMeters: CELL_M, heightScale: SCALE * sez.VZ, origin: { exact: origin, pixel: { x: ox, y: oy }, registration },
-  credit: 'Noord drawn by Seated; © OpenStreetMap contributors (ODbL); 3DBAG TU Delft/3DGI (CC BY 4.0); PDOK aerial photo Beeldmateriaal Nederland (CC BY 4.0)',
+  credit: (CANAL ? 'Canal belt sample' : 'Noord') + ' drawn by Seated; © OpenStreetMap contributors (ODbL); 3DBAG TU Delft/3DGI (CC BY 4.0); PDOK aerial photo Beeldmateriaal Nederland (CC BY 4.0)',
   alignment: { dx: alignment.dx, dy: alignment.dy, correlation: alignment.correlation, samples: alignment.samples },
-  palette: OUTPUT_PALETTE, measurements: measured.table, levels, coverage: { x: px0, y: py0, w, h, runs }, files: outputs,
+  palette: OUTPUT_PALETTE, measurements: measured?.table, levels, coverage: { x: px0, y: py0, w, h, runs }, files: outputs,
   neighbourhoods: { districtM: DISTRICT_M, closeM: CLOSE_M, reachM: REACH_M, oldBox: OLD_BOX, places: fogPlaces.map((p) => p.id) },
 };
 save('manifest.json', Buffer.from(JSON.stringify(manifest) + '\n'));
