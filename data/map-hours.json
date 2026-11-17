@@ -1,6 +1,16 @@
 {
   "how": "Weekdays each restaurant serves in a normal week, from its own website, else OpenStreetMap opening_hours (ODbL). They settle Tebi days that say Unavailable: open that weekday means full, not open means closed (Joel, 17 Nov 2026).",
   "restaurants": {
+    "alba": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.alba-amsterdam.nl/"
+    },
     "badcuyp": {
       "open": [
         "Mo",
@@ -10,34 +20,58 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/8338810468"
+      "from": "https://badcuypamsterdam.nl/reserveringen/"
+    },
+    "bak": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://bakrestaurant.nl/"
     },
     "bar-centraal": {
-      "open": [
-        "Mo",
-        "Tu",
-        "We",
-        "Th"
-      ],
-      "from": "osm:node/2809208207"
-    },
-    "baut-oost": {
       "open": [
         "Su",
         "Mo",
         "Tu",
         "We",
-        "Th"
+        "Th",
+        "Fr",
+        "Sa"
       ],
-      "from": "osm:node/2415203521"
+      "from": "https://barcentraal.nl/"
+    },
+    "barracuda": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.barracuda.amsterdam/contact-en-openingstijden"
+    },
+    "beulings": {
+      "open": [
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.beulings.nl/nl/"
     },
     "bisous": {
       "open": [
-        "Mo",
-        "Tu",
-        "We"
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
       ],
-      "from": "osm:node/2505936657"
+      "from": "https://bisous-official.com/"
     },
     "bistro-de-la-mer": {
       "open": [
@@ -49,7 +83,18 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2737808629"
+      "from": "https://www.bistrodelamer.com/"
+    },
+    "bistrot-des-alpes": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.bistrotdesalpesamsterdam.nl/home"
     },
     "bistrot-neuf": {
       "open": [
@@ -61,7 +106,7 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/1223236858"
+      "from": "https://neuf.amsterdam/"
     },
     "blauw": {
       "open": [
@@ -73,19 +118,20 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/3600695272"
+      "from": "https://restaurantblauw.nl/"
     },
     "blik": {
       "open": [
         "Su",
+        "Tu",
         "We",
         "Th",
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/6056652792"
+      "from": "https://blikamsterdam.com/"
     },
-    "bougainville": {
+    "boon-de-koot": {
       "open": [
         "Mo",
         "Tu",
@@ -94,14 +140,64 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/6192682978"
+      "from": "https://www.boonendekoot.nl/boonendekoot"
     },
-    "cafe-binnenvisser": {
+    "bottleshop": {
       "open": [
+        "Tu",
+        "We",
+        "Th",
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/10991194985"
+      "from": "https://www.bottleshopams.nl/group-diners"
+    },
+    "bougainville": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.restaurantbougainville.com/"
+    },
+    "bussia": {
+      "open": [
+        "Su",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.bussia.nl/contact/"
+    },
+    "cafe-beurre": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.cafebeurreamsterdam.nl/"
+    },
+    "cafe-binnenvisser": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://binnenvisser.nl/"
     },
     "cafe-caron": {
       "open": [
@@ -113,7 +209,19 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2817453062"
+      "from": "https://cafecaron.nl/contact/"
+    },
+    "cafe-de-klepel": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://cafedeklepel.nl/"
     },
     "cafe-maurits": {
       "open": [
@@ -123,7 +231,7 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/413624747"
+      "from": "https://cafemaurits.nl/"
     },
     "cafe-parlotte": {
       "open": [
@@ -134,7 +242,7 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/3267319061"
+      "from": "https://www.parlotte.nl/contact"
     },
     "cafe-restaurant-amsterdam": {
       "open": [
@@ -146,7 +254,7 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/283241256"
+      "from": "https://cradam.nl/"
     },
     "cafe-wu": {
       "open": [
@@ -156,7 +264,19 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2364940139"
+      "from": "https://cafewu.nl/"
+    },
+    "chez-van-rijn": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://chezvanrijn.nl/nl/"
     },
     "choux": {
       "open": [
@@ -168,19 +288,67 @@
       ],
       "from": "osm:node/2743728350"
     },
-    "cucina-casalinga": {
+    "ciel-bleu": {
       "open": [
-        "Su",
         "Tu",
         "We",
         "Th",
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2816953269"
+      "from": "https://www.cielbleu.nl/"
+    },
+    "copain": {
+      "open": [
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.copain.amsterdam/"
+    },
+    "cornerstore": {
+      "open": [
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://csnoord.com/"
+    },
+    "cucina-casalinga": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://casalinga.nl/"
+    },
+    "cue": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.cue-amsterdam.com/contact"
+    },
+    "daalder": {
+      "open": [
+        "Su",
+        "Mo",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://daalderamsterdam.nl/"
     },
     "de-kas": {
       "open": [
+        "Su",
         "Mo",
         "Tu",
         "We",
@@ -188,7 +356,17 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2830233516"
+      "from": "https://restaurantdekas.com/"
+    },
+    "de-silveren-spiegel": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.desilverenspiegel.com/"
     },
     "entrepot": {
       "open": [
@@ -199,7 +377,26 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/9176789717"
+      "from": "https://restaurantentrepot.nl/"
+    },
+    "europa": {
+      "open": [
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.europa.rest/"
+    },
+    "fa-pekelhaaring": {
+      "open": [
+        "Su",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://pekelhaaring.nl/"
     },
     "flore": {
       "open": [
@@ -208,16 +405,16 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/1310974815"
+      "from": "https://restaurantflore.com/"
     },
     "fuku-ramen": {
       "open": [
-        "Su",
+        "We",
         "Th",
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/393137999"
+      "from": "https://www.fukuramenamsterdam.com/contact-5"
     },
     "gebr-hartering": {
       "open": [
@@ -229,19 +426,66 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/1749038791"
+      "from": "https://www.gebr-hartering.nl/"
+    },
+    "gertrude": {
+      "open": [
+        "Su",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.gertrudeamsterdam.nl/"
+    },
+    "gitane": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.restaurantgitane.nl/"
     },
     "helling-7": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.helling7.nl/"
+    },
+    "het-bosch-waterfront-kitchen": {
       "open": [
         "Mo",
         "Tu",
         "We",
         "Th",
-        "Fr"
+        "Fr",
+        "Sa"
       ],
-      "from": "osm:node/9498791779"
+      "from": "https://hetbosch.com/"
     },
-    "john-dory": {
+    "hotel-de-goudfazant": {
+      "open": [
+        "Su",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://hoteldegoudfazant.nl/contact/"
+    },
+    "jaspers": {
       "open": [
         "Tu",
         "We",
@@ -249,7 +493,27 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/4538578289"
+      "from": "https://www.restaurantjaspers.nl/"
+    },
+    "johannes": {
+      "open": [
+        "Su",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://restaurantjohannes.nl/"
+    },
+    "john-dory": {
+      "open": [
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://johndory.nl/"
     },
     "kaagman-kortekaas": {
       "open": [
@@ -259,7 +523,36 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/1699862313"
+      "from": "https://kaagmanenkortekaas.nl/"
+    },
+    "kamer-bar": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.kamer.bar/contact/"
+    },
+    "ken-sushi": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.kensushi.nl/"
+    },
+    "kenneh": {
+      "open": [
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://restaurantkenneh.com/"
     },
     "kid-amsterdam": {
       "open": [
@@ -271,7 +564,28 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2809521539"
+      "from": "https://kidamsterdam.com/"
+    },
+    "klaproos": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://klaproosamsterdam.nl/"
+    },
+    "la-fiorita": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://lafiorita.nl/"
     },
     "la-vallade": {
       "open": [
@@ -283,7 +597,17 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/95288423"
+      "from": "https://www.lavallade.nl/"
+    },
+    "lars": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://larsamsterdam.nl/"
     },
     "lastage": {
       "open": [
@@ -293,7 +617,19 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2725794732"
+      "from": "https://restaurantlastage.nl/"
+    },
+    "marie": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://marieamsterdam.com/"
     },
     "mos-amsterdam": {
       "open": [
@@ -303,7 +639,17 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2745434808"
+      "from": "https://mosamsterdam.nl/"
+    },
+    "moyo": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.paindemie-amsterdam.com/?ft-shop=reservations"
     },
     "nikotin": {
       "open": [
@@ -313,7 +659,19 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/9040906652"
+      "from": "https://www.nikotin.nl/"
+    },
+    "nnea": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.nneapizza.com/"
     },
     "oriental-city": {
       "open": [
@@ -325,7 +683,18 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/3889159256"
+      "from": "https://www.oriental-city.com/"
+    },
+    "r21": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.r21.amsterdam/"
     },
     "restaurant-212": {
       "open": [
@@ -335,17 +704,31 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2725878761"
+      "from": "https://www.212.amsterdam/restaurant-212"
     },
     "restaurant-kyo": {
       "open": [
         "Su",
+        "Mo",
+        "Tu",
         "We",
         "Th",
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/1908229548"
+      "from": "https://restaurantkyo.nl/"
+    },
+    "restobar-massalia": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.restobarmassalia.nl/"
     },
     "rijsel": {
       "open": [
@@ -355,7 +738,41 @@
         "Th",
         "Fr"
       ],
-      "from": "osm:node/2825119337"
+      "from": "https://rijsel.com/"
+    },
+    "roux": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.restaurantroux.nl/"
+    },
+    "salmuera": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.sal-amsterdam.nl/contact"
+    },
+    "scheepskameel": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://scheepskameel.nl/"
     },
     "sea-palace": {
       "open": [
@@ -369,6 +786,28 @@
       ],
       "from": "osm:node/13404202880"
     },
+    "showw": {
+      "open": [
+        "Su",
+        "Mo",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.restaurantshoww.com/en"
+    },
+    "sinck": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.sinckamsterdam.nl/"
+    },
     "sinne": {
       "open": [
         "Su",
@@ -377,6 +816,18 @@
         "Sa"
       ],
       "from": "osm:node/4576285030"
+    },
+    "toet": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.toetamsterdam.nl/"
     },
     "toscanini": {
       "open": [
@@ -387,27 +838,39 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/1783971866"
+      "from": "https://restauranttoscanini.nl/"
     },
     "troef": {
       "open": [
+        "Su",
+        "Mo",
         "Tu",
         "We",
         "Th",
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2825121921"
+      "from": "https://troefamsterdam.nl/"
     },
     "utage-sake-bar": {
       "open": [
+        "Mo",
         "Tu",
         "We",
         "Th",
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/249401845"
+      "from": "https://www.utage-sakebar.nl/"
+    },
+    "vanoost": {
+      "open": [
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.vanoostrestaurant.com/"
     },
     "vinkeles": {
       "open": [
@@ -417,7 +880,7 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/4571078874"
+      "from": "https://www.vinkeles.com/"
     },
     "vrr": {
       "open": [
@@ -427,7 +890,28 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/1556487107"
+      "from": "https://vrr.rest/"
+    },
+    "watergang": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://restaurantwatergang.nl/"
+    },
+    "weinlokal-stern": {
+      "open": [
+        "Su",
+        "Mo",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "https://www.weinlokalstern.nl/"
     },
     "zoldering": {
       "open": [
@@ -438,7 +922,7 @@
         "Fr",
         "Sa"
       ],
-      "from": "osm:node/2737855506"
+      "from": "https://www.zoldering.nl/contact"
     }
   }
 }
