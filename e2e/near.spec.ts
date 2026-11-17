@@ -42,7 +42,7 @@ test('a first visit asks for your location; Show me puts you on the map and list
   // The list opens nearest first: you stand at Choux.
   await expect(page.locator('.list-head .sum')).toContainText('nearest first');
   await expect(page.locator('.rows li').first()).toContainText('Choux');
-  await expect(page.locator('.rows li').first()).toContainText('1 min walk');
+  await expect(page.locator('.rows li').first()).toContainText('1 min by bike');
   // Your character (no character yet: the grey silhouette) stands where you are, in the middle after the flight.
   await expect.poll(async () => (await silhouette(page)) - before, { timeout: 5000 }).toBeGreaterThan(20);
   await shot(page, '21-where-you-are');

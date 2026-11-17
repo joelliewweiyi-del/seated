@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { ago, badgeStyle, CURATED, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
-import { KIND_WORD, Marks, metres, michelinWords, useRemembered, walk } from './marks';
+import { KIND_WORD, Marks, metres, michelinWords, useRemembered, bike } from './marks';
 import { Nudge, Picker, WhereCard, type ListChoice } from './picker';
 import type { SeatedList } from './api';
 import { Avatar, cleanLook } from './avatar';
@@ -32,7 +32,7 @@ interface Filters {
   bib: boolean;
   hot: boolean;
   fav: boolean;
-  /** Sort by walking distance from where you are. */
+  /** Sort by distance from where you are. */
   near: boolean;
 }
 const NO_FILTERS: Filters = { open: false, stars: false, bib: false, hot: false, fav: false, near: false };
@@ -1020,7 +1020,7 @@ function List(p: ListProps) {
                   </span>
                   <Marks r={r} />
                   <span className="ar">
-                    {p.me ? `${walk(m)} · ` : ''}
+                    {p.me ? `${bike(m)} · ` : ''}
                     {r.area}
                     {next ? ` · free ${dayLabel(next).slice(0, 10)}` : ''}
                   </span>
@@ -1307,7 +1307,7 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
                 Website
               </a>
             )}
-            <a className="btn" href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&travelmode=walking`} target="_blank" rel="noopener">
+            <a className="btn" href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&travelmode=bicycling`} target="_blank" rel="noopener">
               Directions
             </a>
             <button className="btn" onClick={() => share(r, day).then(setShared)}>

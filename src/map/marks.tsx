@@ -1,5 +1,5 @@
 // Small marks and helpers the list, the card and the signs share: MICHELIN distinctions, "hard to get", favourites,
-// walking distance, and settings this device remembers.
+// cycling distance, and settings this device remembers.
 import { useEffect, useState } from 'react';
 import type { MapRestaurant } from './data';
 
@@ -62,10 +62,11 @@ export function metres(a: { lat: number; lng: number }, b: { lat: number; lng: n
   return 2 * 6_371_000 * Math.asin(Math.sqrt(h));
 }
 
-/** Walking time: streets add about a third to the straight line, and people walk about 5 km/h. */
-export function walk(m: number): string {
-  const min = Math.max(1, Math.round((m * 1.3) / (5000 / 60)));
-  return min < 60 ? `${min} min walk` : `${(m / 1000).toFixed(1)} km`;
+/** Cycling time (Joel, 17 Nov 2026: "noone walks in ams"): streets add about a third to the straight line, and people
+ * cycle about 15 km/h in the city. */
+export function bike(m: number): string {
+  const min = Math.max(1, Math.round((m * 1.3) / (15000 / 60)));
+  return min < 60 ? `${min} min by bike` : `${(m / 1000).toFixed(1)} km`;
 }
 
 /** A setting this device remembers. Storage can be blocked or empty; then it is just not remembered. */
