@@ -320,6 +320,15 @@ describe('guides', () => {
     for (const id of picked) expect(places[id]!.michelin, id).toBeTruthy();
   });
 
+  it("Seated curated holds every pick of Mara Grimm's list, and her list comes first in the picker (Joel, 17 Nov 2026)", () => {
+    const file = JSON.parse(readFileSync('data/map-guides.json', 'utf8')) as { guides: Array<{ id: string }>; picks: Record<string, string[]> };
+    const curated = new Set(file.picks['seated']);
+    expect(file.picks['mara-grimm']!.filter((id) => !curated.has(id))).toEqual([]);
+    expect(file.guides[0]!.id).toBe('mara-grimm');
+    const optOut = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8')) as Array<{ id: string }>).map((x) => x.id));
+    expect(file.picks['mara-grimm']!.filter((id) => optOut.has(id))).toEqual([]);
+  });
+
   it('each guide has a short name for the picker and one line of our own, never its own title', () => {
     const file = JSON.parse(readFileSync('data/map-guides.json', 'utf8')) as { guides: Array<{ id: string; name: string; short: string; line: string; url: string }> };
     expect(new Set(file.guides.map((g) => g.id)).size).toBe(file.guides.length);

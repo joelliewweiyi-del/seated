@@ -3,24 +3,6 @@
   "how": "Each guide's own list, read by hand from its page (names only, no text copied). Picks are Seated ids; places Seated cannot place are left out. 'line' is our own one-line description. Press guides only: a creator's list becomes a lens only after the creator says yes.",
   "guides": [
     {
-      "id": "seated",
-      "name": "Seated curated",
-      "short": "Seated curated",
-      "by": "Joel, Seated",
-      "url": "https://seated.food",
-      "date": "2026-11-15",
-      "line": "Where we would send a friend: places Amsterdam's food people go, no tourist traps."
-    },
-    {
-      "id": "michelin",
-      "name": "MICHELIN Guide Netherlands 2026",
-      "short": "MICHELIN",
-      "by": "MICHELIN Guide",
-      "url": "https://guide.michelin.com/nl/en",
-      "date": "2026-10-05",
-      "line": "Every Amsterdam star and Bib Gourmand in this year's guide, checked against the press."
-    },
-    {
       "id": "mara-grimm",
       "name": "Mara Grimm in Het Parool, 8,5 and up",
       "short": "Mara Grimm 8,5+",
@@ -120,6 +102,24 @@
           "url": "https://www.parool.nl/ps/de-wijnen-het-eten-de-sfeer-het-personeel-weinlokal-stern-is-een-van-de-beste-nieuwkomers-van-2026-9~b6b7b7ce"
         }
       }
+    },
+    {
+      "id": "seated",
+      "name": "Seated curated",
+      "short": "Seated curated",
+      "by": "Joel, Seated",
+      "url": "https://seated.food",
+      "date": "2026-11-15",
+      "line": "Where we would send a friend: places Amsterdam's food people go, no tourist traps."
+    },
+    {
+      "id": "michelin",
+      "name": "MICHELIN Guide Netherlands 2026",
+      "short": "MICHELIN",
+      "by": "MICHELIN Guide",
+      "url": "https://guide.michelin.com/nl/en",
+      "date": "2026-10-05",
+      "line": "Every Amsterdam star and Bib Gourmand in this year's guide, checked against the press."
     },
     {
       "id": "timeout-best-2026",
@@ -278,6 +278,7 @@
       "sinne",
       "tannay",
       "testamatta",
+      "thai-thai-poppetje",
       "toet",
       "toscanini",
       "troef",
@@ -285,6 +286,7 @@
       "vanoost",
       "vinkeles",
       "vrr",
+      "vuurtoreneiland",
       "watergang",
       "weinlokal-stern",
       "zoldering"
