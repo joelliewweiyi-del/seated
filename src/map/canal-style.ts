@@ -15,7 +15,8 @@ export const CANAL_PAL = {
   // Quays: grey hardstone edge, dark wet wall.
   quay: '#d3cbbb', quayWall: '#5e5852',
   // Streets: red-brown and grey klinkers; pavements: grey tiles.
-  paving: '#ad9886', pavingDot: '#9c8676', pavement: '#c4bcae', pavementLine: '#b3ab9e',
+  // Close tones (judged climb: wide steps between them read as blotchy patches).
+  paving: '#bba997', pavingDot: '#b5a391', pavement: '#c9beaf', pavementLine: '#c0b4a5',
   asphalt: '#56585a', asphaltDot: '#4a4c4f', asphaltLight: '#686a6b',
   square: '#c2b4a0', squareLine: '#b0a28f',
   grass: '#6a873a', grassDark: '#55712f', grassLight: '#7f9a46', garden: '#5b7634', gardenDark: '#405a28', woods: '#405a28',
@@ -132,14 +133,16 @@ export const ROOF_MATERIALS = [
   '#35383c', '#43464a', '#525559', '#626569', // anthracite tiles and slate
   '#3b4450', '#4b5663', '#5e6b78', // blue slate
   '#7f8489', '#9aa0a4', // zinc
-  '#4f4f4e', '#5f5e5c', '#706e6a', '#83807a', // bitumen
+  '#666562', '#76746f', '#86837d', '#96928b', // bitumen, silver-coated (judged climb: dark flats read as holes)
   '#a8a296', '#c4beb1', // gravel, pale
   '#5f7340', '#71854a', // sedum
 ];
 /** Pitched roofs are tile, slate or zinc; flat roofs bitumen, gravel or sedum (judged climb: no bitumen on a pitch). */
 export const ROOF_PITCHED = ROOF_MATERIALS.slice(0, 16);
 export const ROOF_FLAT = ROOF_MATERIALS.slice(14);
-export const WALL_MATERIALS = [...new Set(CANAL_WALLS.slice(1, 4).flat())]; // canal belt: before 1945
+// Canal belt, before 1945. Seated's world leans to brick (Joel, 17 Nov 2026: "exaggerate the colours"): of the light
+// stones only white plaster stays, so a pale winter photo of brick no longer turns a house beige.
+export const WALL_MATERIALS = [...new Set(CANAL_WALLS.slice(1, 4).flat())].filter((h) => !['#d6cbb3', '#d9d0bd', '#b9a98f'].includes(h));
 export function nearestMaterial(rgb: [number, number, number], list: string[]): string {
   let best = list[0]!, d = Infinity;
   for (const h of list) {
@@ -155,7 +158,7 @@ export function nearestMaterial(rgb: [number, number, number], list: string[]): 
  * Applied to every finished pixel of the canal sample: brick redder, water a clear canal blue, leaves greener, cool
  * greys toward blue slate, and more contrast so lit and shaded planes part. Hue families stay where reality has them.
  */
-export function worldGrade(c: number, g: { sat?: number; contrast?: number; slate?: number } = {}): number {
+export function worldGrade(c: number, g: { sat?: number; contrast?: number; slate?: number; green?: number; stone?: number } = {}): number {
   if (!c) return 0;
   let r = (c & 255) / 255, gr = ((c >>> 8) & 255) / 255, b = ((c >>> 16) & 255) / 255;
   const max = Math.max(r, gr, b), min = Math.min(r, gr, b), l = (max + min) / 2, d = max - min;
@@ -165,10 +168,10 @@ export function worldGrade(c: number, g: { sat?: number; contrast?: number; slat
   const sat = g.sat ?? 1.5, contrast = g.contrast ?? 1.18, slate = g.slate ?? 0.16;
   let L = l, S = s, H = h;
   if (s < 0.1 && b >= r - 0.01) { H = 212; S = Math.max(s, slate * Math.min(1, l * 2.2)); } // cool grey: slate
-  else if (s < 0.1) S = s * 1.4; // warm grey: stays stone
+  else if (s < 0.1) S = l > 0.45 ? Math.max(s * 1.6, g.stone ?? 0.14) : s * 1.4; // warm grey: light stone a little warmer
   else if (h < 40 || h >= 340) { S = s * sat * 1.1; } // brick, tile
   else if (h < 70) { S = s * sat * 0.9; } // sandstone, ochre
-  else if (h < 160) { H = h + (108 - h) * 0.4; S = s * sat * 1.15; L = l * 1.06; } // leaves, grass
+  else if (h < 160) { H = h + (108 - h) * 0.4; S = s * sat * (g.green ?? 0.9); } // leaves, grass (judged climb: 1.15 read as neon)
   else if (h < 250) { H = h + (198 - h) * 0.6; S = s * sat * 1.35; L = l * 1.1; } // water, slate
   else S = s * sat;
   L = 0.47 + (L - 0.47) * contrast;

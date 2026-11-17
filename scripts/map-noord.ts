@@ -3,8 +3,9 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { Pix, rgb } from '../src/map/pix';
-import { World as Grid, TW, TH, T, gapMask, useFine } from '../src/map/noord-grid';
+import { Pix, darken, lighten, mix, rgb } from '../src/map/pix';
+import { addGables, loadBag3d, outline, rasterize } from './canal-mesh';
+import { World as Grid, TW, TH, T, PX_PER_M, gapMask, useFine } from '../src/map/noord-grid';
 import { cleanSlivers, parkOrStoneTerrain } from '../src/map/noord-tags';
 import { paintGround, paintBuilding, paintProps, finishBridges, finishQuays, useStyle } from '../src/map/noord-paint';
 import { TEXEL, TUNE, adaptivePNG, buildFacades, designColour, designWall, listPanos, loadAerial, loadDsm, type Design, type Facade, type Wall } from './canal-skin';
@@ -903,6 +904,8 @@ for (let q = 0; q < shoreTail; q++) {
     shore[j] = d + 1; shoreQueue[shoreTail++] = j;
   }
 }
+/** Canal meshes: a wall's colour at an RD point (set by canalSkin). */
+let meshWall: ((rx: number, ry: number, nx: number, ny: number, z: number, pand: number) => number) | undefined;
 const skin = CANAL ? await canalSkin() : undefined;
 const world = new Grid({ cols: COLS, rows: ROWS, cellMeters: CELL_M, roofPalette: ROOF_PALETTE, attribution: '' }, planes, 0, 0, COLS, ROWS, { shore, building, industrial, facade, skin });
 
@@ -984,6 +987,18 @@ async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
     }
   }
   const edgeOf = edges;
+  // For the LoD 2.2 meshes: a wall point's design (the footprint edge under it), else its building's plain wall.
+  const pandWall = new Map<number, Design>();
+  const plainWall = (pand: number) => { const list = CANAL_WALLS[1]!; return designWall(1900, 20, undefined, rgb(list[pand % list.length]!), false); };
+  for (const [key, di] of bySide) { const p = pandOf[partOf[key >> 1]!]!; if (!pandWall.has(p) || (pandWall.get(p)!.blank && !designs[di]!.blank)) pandWall.set(p, designs[di]!); }
+  meshWall = (rx, ry, nx, ny, z, pand) => {
+    const c = cellAt(rx - nx * 0.45, ry - ny * 0.45);
+    const di = c < 0 ? undefined : bySide.get(c * 2 + (ny < -Math.abs(nx) ? 0 : 1)) ?? bySide.get(c * 2 + (ny < -Math.abs(nx) ? 1 : 0));
+    if (di !== undefined) { const e = edgeOf[di]!; return designColour(designs[di]!, e.L, (rx - e.ax) * e.dx + (ry - e.ay) * e.dy, z, 99); }
+    // No footprint edge under it (a wall between two roof heights, a dormer): its building's wall, with windows.
+    const k = c < 0 ? -1 : partOf[c]!, d = (k < 0 ? undefined : pandWall.get(pandOf[k]!)) ?? pandWall.get(pand) ?? plainWall(pand);
+    return designColour({ ...d, blank: false, bays: 1000 }, 1900, Math.abs(rx * -ny + ry * nx), z, 99);
+  };
   console.log(`[canal] ${edges.length} walls: ${fromPhoto} designed from photos (${used} panoramas), ${edges.filter((e) => !e.free).length} party walls`);
   function pack(r: number, g: number, b: number): number { return (Math.round(r) | (Math.round(g) << 8) | (Math.round(b) << 16) | (0xff << 24)) >>> 0; }
   const toRd = (gx: number, gy: number) => [RD_BOX.x0 + gx * CELL_M, RD_BOX.y1 - gy * CELL_M] as const;
@@ -1058,16 +1073,95 @@ for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
 }
 finishQuays(canvas);
 finishBridges(canvas);
+// Canal: cast shadows on the ground (judged climb: flat light). Per cell, a walk toward the sun (west-south-west) over the
+// building heights; the sun stands lower than the light on the planes so the shadows read, then every ground pixel
+// over a shaded cell darkens.
+if (CANAL && (TUNE.shadows ?? 1)) {
+  const shadow = new Uint8Array(N), rise = (TUNE.sunTan ?? 1.3) * CELL_M, sx = -0.857, sy = 0.514; // grid x east, y south
+  let dark = 0;
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    const i = idx(x, y);
+    if (height[i]) continue;
+    for (let k = 1; k < 60; k++) {
+      const cx = Math.round(x + sx * k), cy = Math.round(y + sy * k);
+      if (!inside(cx, cy)) break;
+      const hm = height[idx(cx, cy)]! / 2;
+      if (hm > k * rise) { shadow[i] = 1; dark++; break; }
+      if (k * rise > 40) break;
+    }
+  }
+  const t = TUNE.shadowDark ?? 0.42;
+  for (let Y = 0; Y < imgHeight; Y++) for (let X = 0; X < width; X++) {
+    const j = Y * width + X, c = canvas.data[j]!;
+    if (!c) continue;
+    const a = (X + x0 - ox + 0.5) / (TW / 2), b = (Y + y0 - oy + 0.5) / (TH / 2); // gx - gy, gx + gy at the ground
+    const gx = Math.floor((a + b) / 2), gy = Math.floor((b - a) / 2);
+    if (inside(gx, gy) && shadow[idx(gx, gy)]) canvas.data[j] = darken(c, t);
+  }
+  console.log(`[canal] ${dark} ground cells in a building's shadow`);
+}
+// Canal: buildings from 3DBAG's LoD 2.2 models where it has one (canal-mesh.ts); cells paint the rest.
+const MESH = CANAL && (TUNE.mesh ?? 1) === 1;
+const meshed = new Uint8Array(MESH ? parts.length : 0);
+let zbuf: Float32Array | undefined;
+if (MESH) {
+  const pandIndex = new Map<string, number>();
+  parts.forEach((p, k) => pandIndex.set(p.properties.identificatie, pandOf[k]!));
+  const all = await loadBag3d(CACHE, RD_BOX, (u) => download(u));
+  const buildings = all.filter((b) => {
+    const pand = pandIndex.get(b.id), p = b.faces[0]!.rings[0]![0]!;
+    const x = Math.floor((p[0]! - RD_BOX.x0) / CELL_M), y = Math.floor((RD_BOX.y1 - p[1]!) / CELL_M);
+    return pand !== undefined && inside(x, y) && K[idx(x, y)];
+  });
+  const pands = buildings.map((b) => pandIndex.get(b.id)!), hasMesh = new Set(pands);
+  let gableCount = 0;
+  if (TUNE.meshGables ?? 1) for (const b of buildings) gableCount += addGables(b, (f) => [0, 1, 3][hashStr(b.id + f) % 3]!);
+  parts.forEach((_, k) => { if (hasMesh.has(pandOf[k]!)) meshed[k] = 1; });
+  const project = (rx: number, ry: number, z: number): [number, number, number] => {
+    const gx = (rx - RD_BOX.x0) / CELL_M, gy = (RD_BOX.y1 - ry) / CELL_M;
+    return [ox - x0 + (gx - gy) * (TW / 2), oy - y0 + (gx + gy) * (TH / 2) - z * PX_PER_M, gx + gy];
+  };
+  const SUN = rgb('#fff0d2'), L = [-0.75, -0.45, 0.9], Ln = Math.hypot(L[0]!, L[1]!, L[2]!), Lh = Math.hypot(L[0]!, L[1]!);
+  const k = skin!.shade!, flatDot = L[2]! / Ln;
+  const roofOf = new Map<number, number>();
+  for (let i = 0; i < N; i++) { const kk = partOf[i]!; if (kk >= 0 && !roofOf.has(pandOf[kk]!)) { const c = skin!.roof(i % COLS, Math.floor(i / COLS), 0, 0); if (c) roofOf.set(pandOf[kk]!, c); } }
+  const r = rasterize(buildings, width, imgHeight, project, (bi, face, n, rx, ry, z) => {
+    if (face.roof) {
+      const cx = Math.floor((rx - RD_BOX.x0) / CELL_M), cy = Math.floor((RD_BOX.y1 - ry) / CELL_M);
+      const base = (inside(cx, cy) && skin!.roof(cx, cy, 0, 0)) || roofOf.get(pands[bi]!) || rgb('#626569');
+      const d = (n[0] * L[0]! + n[1] * L[1]! + n[2] * L[2]!) / Ln - flatDot;
+      return d > 0.08 ? mix(base, SUN, k.roofLit) : d < -0.3 ? darken(base, k.roofDark * (TUNE.meshAway ?? 0.85)) : d < -0.08 ? darken(base, k.roofDark * (TUNE.meshShade ?? 0.6)) : base;
+    }
+    const c = meshWall!(rx, ry, n[0], n[1], z, pands[bi]!);
+    const s = (n[0] * L[0]! + n[1] * L[1]!) / Lh / Math.max(1e-6, Math.hypot(n[0], n[1]));
+    return s > 0 ? mix(c, SUN, k.wall * (TUNE.wallSun ?? 0.7) * s) : darken(c, k.wall * -s);
+  }, [CELL_M, -CELL_M, TH / PX_PER_M]);
+  outline(r, (c) => lighten(c, TUNE.meshTrim ?? 0.45), (c) => darken(c, TUNE.meshSeam ?? 0.55));
+  // Cell buildings without a model first (painter's order), then the meshes over them.
+  for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1); y <= Math.min(ROWS - 1, d); y++) {
+    const x = d - y, i = idx(x, y);
+    if (K[i] && partOf[i]! >= 0 && !meshed[partOf[i]!]) paintBuilding(canvas, world, x, y, ox + (x - y) * (TW / 2) - x0, oy + (x + y) * (TH / 2) - y0);
+  }
+  for (let i = 0; i < r.colour.length; i++) if (r.owner[i]! >= 0) canvas.data[i] = r.colour[i]!;
+  zbuf = r.depth;
+  console.log(`[canal] ${buildings.length} buildings from 3DBAG LoD 2.2 (${all.length} in its tiles), ${parts.length - meshed.reduce((t, v) => t + v, 0)} parts painted as cells, ${gableCount} canal gables`);
+}
+// Props (trees, boats) behind a mesh building stay hidden: a prop pixel draws only where nothing nearer is.
+let gate = Infinity;
+const set = canvas.set.bind(canvas);
+if (zbuf) canvas.set = (X: number, Y: number, c: number) => { const i = (Y | 0) * width + (X | 0); if (!(zbuf![i]! > gate)) set(X, Y, c); };
 for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1); y <= Math.min(ROWS - 1, d); y++) {
   const x = d - y, sx = ox + (x - y) * (TW / 2) - x0, sy = oy + (x + y) * (TH / 2) - y0;
   if (!K[idx(x, y)]) continue;
-  paintBuilding(canvas, world, x, y, sx, sy);
+  if (!MESH) paintBuilding(canvas, world, x, y, sx, sy);
+  gate = x + y + 1.5;
   paintProps(canvas, world, x, y, sx, sy);
 }
+canvas.set = set;
 // Canal: the photo colours stay as they are; each tile gets its own palette (adaptivePNG).
 let pixels: Uint8Array | Uint32Array = CANAL ? Uint32Array.from(canvas.data) : new Uint8Array(canvas.data.length);
 if (CANAL && (TUNE.grade ?? 1)) {
-  const graded = new Map<number, number>(), opts = { sat: TUNE.gradeSat, contrast: TUNE.gradeContrast, slate: TUNE.gradeSlate };
+  const graded = new Map<number, number>(), opts = { sat: TUNE.gradeSat, contrast: TUNE.gradeContrast, slate: TUNE.gradeSlate, green: TUNE.gradeGreen };
   for (let i = 0; i < pixels.length; i++) { const c = pixels[i]!; let v = graded.get(c); if (v === undefined) graded.set(c, (v = worldGrade(c, opts))); pixels[i] = v; }
 }
 if (!CANAL) { const snap = quantizer(OUTPUT_PALETTE); for (let i = 0; i < pixels.length; i++) pixels[i] = snap(canvas.data[i]!); }

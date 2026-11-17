@@ -344,7 +344,7 @@ const packHex = (h: string) => packRgb([1, 3, 5].map((i) => parseInt(h.slice(i, 
 export function designWall(L: number, H: number, f: Facade | undefined, fallbackWall: number, blank: boolean): Design {
   const plain = (wall: number): Design => {
     const [r, g, b] = unpack(wall);
-    return { wall, win: packRgb([r * 0.32, g * 0.34, b * 0.4]), trim: packRgb([236, 232, 222]), bays: Math.max(1, Math.round(L / 1.9)), storey: 3.2, ground: 3.8, shop: false, blank, fromPhoto: false };
+    return legible({ wall, win: packRgb([r * 0.32, g * 0.34, b * 0.4]), trim: packRgb([236, 232, 222]), bays: Math.max(1, Math.round(L / 1.9)), storey: 3.2, ground: 3.8, shop: false, blank, fromPhoto: false });
   };
   if (!f || blank) return plain(fallbackWall);
   const idx: number[] = [];
@@ -396,7 +396,14 @@ export function designWall(L: number, H: number, f: Facade | undefined, fallback
     const v = [-2, -1, 0, 1, 2].map((d) => raw[i + d]).filter((x): x is number => x !== undefined && Number.isFinite(x)).sort((a, b) => a - b);
     return v.length >= 3 ? v[v.length >> 1]! : NaN;
   });
-  return { wall, win, trim, bays, storey, ground, shop: gn > 20 && gd / gn > 0.5, blank: false, fromPhoto: true, crest };
+  return legible({ wall, win, trim, bays, storey, ground, shop: gn > 20 && gd / gn > 0.5, blank: false, fromPhoto: true, crest });
+}
+
+/** Glass that reads on its wall (judged climb: dark windows vanished on dark brick): too close, it takes a pale sky reflection. */
+function legible(d: Design): Design {
+  const lum = (c: number) => { const [r, g, b] = unpack(c); return 0.3 * r! + 0.59 * g! + 0.11 * b!; };
+  if (lum(d.wall) - lum(d.win) < knob('glassContrast', 55)) d.win = lum(d.wall) < 110 ? packHex('#9db3c2') : packRgb(unpack(d.win).map((v) => v * 0.5));
+  return d;
 }
 
 /** The colour of a wall at u metres along it, h above the ground, top metres below its top. */
