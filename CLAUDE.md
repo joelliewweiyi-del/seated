@@ -125,6 +125,19 @@ The city is sezlab's art; everything on top of it is ours (Joel, 5 Nov 2026). Ne
 - uid is `<accessKey>:<accountId>`: one key can cover several restaurants. A time is a table only when it is open online and bookable for the party.
 - The widget link cannot be pre-filled. Never fake its `rwg_token`.
 
+### TableCheck
+
+- Read-only, plain POSTs on `https://production-booking.tablecheck.com/v2/booking/`, JSON body, `Origin`/`Referer` `https://www.tablecheck.com`, no login or cookie (checked 17 Nov 2026; Ciel Bleu, Serre). uid is the shop slug (`okura-nl-cielbleu`).
+- `calendar` (`shop_id`, `start_date`, `end_date`, `pax_adult`, `unavailable: true`): per day tags. `closed` = no service, `cache_unavailable` = nothing free, none = tables. It tells closed from full.
+- `meals_v2` (`shop_id`, `date`, `pax_adult`, `session_ref` uuid): `{ meals: { dinner: [{ t: UTC, a }] } }`; `a` marks a free time. Not settled: one `a: false` time showed an enabled button in the widget. Empty `meals` = closed.
+- A waiting room (queue page) is a failed read. The link cannot be pre-filled: `tablecheck.com/en/{slug}/reserve`.
+
+### Not readable (17 Nov 2026)
+
+- **TheFork** (Bottleshop, Daalder, Satkara): DataDome answers 403 with a captcha to a headless browser. Never get around it.
+- **Fresto** (Jaspers, R21): `backend.fresto.io/booking/experiences/{slug}` gives the weekly plan (closed weekdays) but no free times; the widget works them out from the floor plan in the page.
+- **GoTable** (Restaurant Kyo, `gotable.app/widget/130348`): day states in Turbo HTML behind a session cookie; times not reached. No reader yet.
+
 ### Frank (meetfrank.app)
 
 - Read-only, plain GETs on `https://api.workspace.meetfrank.app/widget-api/{widgetId}/`: `time-slots/month?month&year&number_of_people` (whole weeks; `available`, `waitlist` = full, `unavailable` = no table) and `time-slots/day?date&number_of_people` (times with the restaurant's own offset). Without an `Accept-Language` header it answers 400.
@@ -165,7 +178,7 @@ The city is sezlab's art; everything on top of it is ours (Joel, 5 Nov 2026). Ne
 
 - **Census** (`census.ts`): every `MAP_CENSUS_MINUTES` after the last pass ended (default 15, floor 10, ±10%, first run 90 s after start; Joel, 5 Nov 2026) one `calendar()` read per Amsterdam restaurant, for 2 people, from today to the end of the month of day 63. Slot reads only for open days in the next 3 days. One restaurant at a time, 45 s backstop each. A failed read keeps the last answer (`census_reads.error`); a successful one replaces all days from today, so a day it leaves out is unknown. A move to another system forgets the old days (`seedRestaurants`).
 - **`Platform.calendar()`** answers `open`, `full`, `closed` or `none` per day; a day left out is unknown. Tebi, Formitable and Zenchef use their month calls; Guestplan its day list; SevenRooms reads only 21 days (7 calls), so later days show unknown ("Book on their site").
-- **Day codes** in `data.json`: `o` free, `f` full, `c` closed, `n` none, `l` later (after the last bookable day: the calendar has not opened that far), `?` unknown. Before marking later days, a calendar with no `o` or `f` turns every `n` into `?`; otherwise a weekday with at least three answered days up to the last bookable day and no `o` or `f` turns its `n` days into `c`. Remaining `n` days mean "No tables online", never "Fully booked". `win` is the booking window in days; the card shows "opens about" = day − `win`. The extra days to month end stop a sold-out end of the window from reading as `l` (Vuurtoreneiland, 4 Nov 2026).
+- **Day codes** in `data.json`: `o` free, `f` full, `c` closed, `n` none, `l` later (after the last bookable day: the calendar has not opened that far), `?` unknown. Before marking later days, a calendar with no `o` or `f` turns every `n` into `?`; otherwise a weekday with at least three answered days up to the last bookable day and no `o` or `f` turns its `n` days into `c`. Remaining `n` days mean "No tables online", never "Fully booked". `win` is the booking window in days; the card shows "opens about" = day − `win`. The extra days to month end stop a sold-out end of the window from reading as `l` (Vuurtoreneiland, 4 Nov 2026). **Opening days** (`data/map-hours.json`, Joel, 17 Nov 2026: KID read "no tables" on a sold-out Tuesday): Tebi says Unavailable both when closed and when sold out, so a `n` day becomes `f` on a weekday the restaurant opens and `c` on one it does not. Sources: the restaurant's own site, else OpenStreetMap `opening_hours` (weekdays only).
 - The radar's own sightings for 2 people override the census for that day.
 - **Stale reads:** a restaurant whose last good census read is over 6 hours old shows unknown (`STALE_MS`): Guestplan answered 403 from 10 to 15 Nov 2026 and the map kept five-day-old free tables.
 - **Never on the map:** Esra (hard rule 2, also in `data/map-optout.json`), anything in `map-optout.json`, restaurants outside Amsterdam or without a calendar. `data.json` carries only restaurant facts and calendar states, never settings, watches, bookings or guest details (`test/mapData.test.ts`).

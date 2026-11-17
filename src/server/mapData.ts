@@ -22,6 +22,8 @@ export interface Place {
   michelin?: Michelin;
   /** The guides that pick this restaurant, merged in from data/map-guides.json. */
   guides?: string[];
+  /** Weekdays it serves in a normal week (0 = Sunday), from data/map-hours.json; unknown when absent. */
+  openDays?: number[];
 }
 
 /** A restaurant guide (press or creator) whose picks the map can show as a lens. */
@@ -92,6 +94,9 @@ const PLACES_URL = new URL('../../data/map-places.json', import.meta.url);
 const OPTOUT_URL = new URL('../../data/map-optout.json', import.meta.url);
 const MICHELIN_URL = new URL('../../data/map-michelin.json', import.meta.url);
 const GUIDES_URL = new URL('../../data/map-guides.json', import.meta.url);
+const HOURS_URL = new URL('../../data/map-hours.json', import.meta.url);
+/** Two-letter weekdays as in OpenStreetMap's opening_hours, indexed like Date.getUTCDay(). */
+const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 /** The guide in data/map-guides.json whose picks are every restaurant in data/map-michelin.json. */
 export const MICHELIN_LENS = 'michelin';
 
@@ -119,6 +124,8 @@ export function loadPlaces(): Record<string, Place> {
   for (const [guideId, ids] of Object.entries(picks)) {
     for (const id of ids) if (places[id]) (places[id].guides ??= []).push(guideId);
   }
+  const hours = JSON.parse(readFileSync(HOURS_URL, 'utf8')) as { restaurants: Record<string, { open: string[] }> };
+  for (const [id, { open }] of Object.entries(hours.restaurants)) if (places[id]) places[id].openDays = open.map((d) => WEEKDAYS.indexOf(d));
   return places;
 }
 
@@ -133,7 +140,7 @@ export function loadOptOut(): Set<string> {
  * that takes bookings (open or full) are "later" when the system answered for them with no table.
  * Days the system did not answer for stay unknown.
  */
-export function dayCodes(states: Map<string, DayState>, dates: string[]): { codes: DayCode[]; lastBookable: string | null } {
+export function dayCodes(states: Map<string, DayState>, dates: string[], openDays?: number[]): { codes: DayCode[]; lastBookable: string | null } {
   const codes = dates.map((d) => (states.has(d) ? CODE[states.get(d)!] : '?'));
   let last = -1;
   codes.forEach((c, i) => {
@@ -149,6 +156,13 @@ export function dayCodes(states: Map<string, DayState>, dates: string[]): { code
   for (const days of weekdays) {
     if (days.length >= 3 && !days.some((i) => codes[i] === 'o' || codes[i] === 'f')) {
       for (const i of days) if (codes[i] === 'n') codes[i] = 'c';
+    }
+  }
+  // Known opening days settle the rest (Joel, 17 Nov 2026: KID read "no tables" on a sold-out Tuesday). Tebi says
+  // Unavailable both when closed and when sold out; a day the restaurant opens is full, a day it does not is closed.
+  if (openDays?.length) {
+    for (let i = 0; i <= last; i++) {
+      if (codes[i] === 'n') codes[i] = openDays.includes(new Date(`${dates[i]}T12:00:00Z`).getUTCDay()) ? 'f' : 'c';
     }
   }
   for (let i = last + 1; i < codes.length; i++) if (codes[i] === 'n' || codes[i] === 'c') codes[i] = 'l';
@@ -212,7 +226,7 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
       states.set(d, 'open');
       times[d] = [...new Set([...(times[d] ?? []), ...set])].sort();
     }
-    const all = dayCodes(states, dates);
+    const all = dayCodes(states, dates, place.openDays);
     const codes = all.codes.slice(0, CENSUS_DAYS);
     const lastBookable = all.lastBookable;
     const book: Record<string, string> = {};

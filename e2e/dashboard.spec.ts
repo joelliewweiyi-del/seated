@@ -47,8 +47,8 @@ test('search finds a restaurant and watches Thursday to Saturday dinners in one 
   await shot(page, '02-search');
 
   // A restaurant Seated cannot read says so, instead of offering a watch.
-  await search.fill('ciel bleu');
-  await expect(page.getByTestId('search-result').filter({ hasText: 'Ciel Bleu' })).toContainText('Cannot read yet');
+  await search.fill('bottleshop'); // TheFork: DataDome blocks reads (17 Nov 2026)
+  await expect(page.getByTestId('search-result').filter({ hasText: 'Bottleshop' })).toContainText('Cannot read yet');
   await search.press('Escape');
 
   // The watch list shows the restaurant, with exactly three evenings: the coming Thursday, Friday and Saturday.

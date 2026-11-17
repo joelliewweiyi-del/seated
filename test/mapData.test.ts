@@ -102,6 +102,24 @@ describe('day codes', () => {
     expect(lastBookable).toBe(days[20]);
   });
 
+  it("with known opening days, a no-tables day is full when the place opens and closed when it does not (KID and BAK, 17 Nov 2026)", () => {
+    // 2026-11-15 is a Sunday. Open Wednesday to Sunday; Tebi says Unavailable on Mondays and Tuesdays, and on one sold-out Friday.
+    const days = Array.from({ length: 14 }, (_, i) => addDays('2026-11-15', i));
+    const states = new Map<string, DayState>(days.map((d, i) => [d, i % 7 === 1 || i % 7 === 2 || i === 5 ? 'none' : 'open']));
+    const open = [0, 3, 4, 5, 6];
+    expect(dayCodes(states, days, open).codes.join('')).toBe('occoofo' + 'occoooo');
+    // Without opening days the sold-out Friday stays 'no tables online' (two closed weekdays still need three weeks).
+    expect(dayCodes(states, days).codes.join('')).toBe('onnoono' + 'onnoooo');
+  });
+
+  it('opening days never turn an open, full or closed answer, an unknown day, or a day after the last bookable one', () => {
+    const days = Array.from({ length: 7 }, (_, i) => addDays('2026-11-15', i));
+    const states = new Map<string, DayState>([[days[0]!, 'open'], [days[1]!, 'closed'], [days[2]!, 'full'], [days[4]!, 'none'], [days[5]!, 'none']]);
+    // Open every day per the hours: the none day before the last bookable one is full; after it they stay later.
+    states.set(days[3]!, 'open');
+    expect(dayCodes(states, days, [0, 1, 2, 3, 4, 5, 6]).codes.join('')).toBe('ocfoll?');
+  });
+
   it('labels none as No tables online instead of Fully booked', () => {
     expect(statusOf('n')).toBe('none');
     expect(STATUS_WORD[statusOf('n')]).toBe('No tables online');
@@ -327,6 +345,19 @@ describe('guides', () => {
     expect(file.guides[0]!.id).toBe('mara-grimm');
     const optOut = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8')) as Array<{ id: string }>).map((x) => x.id));
     expect(file.picks['mara-grimm']!.filter((id) => optOut.has(id))).toEqual([]);
+  });
+
+  it('opening days in data/map-hours.json name real places with weekday codes, each with its source, and never Esra', () => {
+    const file = JSON.parse(readFileSync('data/map-hours.json', 'utf8')) as { restaurants: Record<string, { open: string[]; from: string }> };
+    const places = loadPlaces();
+    for (const [id, h] of Object.entries(file.restaurants)) {
+      expect(places[id], id).toBeDefined();
+      expect(h.open.length, id).toBeGreaterThan(0);
+      for (const d of h.open) expect(['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'], id).toContain(d);
+      expect(h.from, id).toMatch(/^(osm:(node|way)\/\d+|https?:\/\/)/);
+      expect(places[id]!.openDays!.length).toBe(h.open.length);
+    }
+    expect(Object.keys(file.restaurants)).not.toContain('esra');
   });
 
   it('each guide has a short name for the picker and one line of our own, never its own title', () => {

@@ -1,0 +1,444 @@
+{
+  "how": "Weekdays each restaurant serves in a normal week, from its own website, else OpenStreetMap opening_hours (ODbL). They settle Tebi days that say Unavailable: open that weekday means full, not open means closed (Joel, 17 Nov 2026).",
+  "restaurants": {
+    "badcuyp": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/8338810468"
+    },
+    "bar-centraal": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th"
+      ],
+      "from": "osm:node/2809208207"
+    },
+    "baut-oost": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th"
+      ],
+      "from": "osm:node/2415203521"
+    },
+    "bisous": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We"
+      ],
+      "from": "osm:node/2505936657"
+    },
+    "bistro-de-la-mer": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2737808629"
+    },
+    "bistrot-neuf": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/1223236858"
+    },
+    "blauw": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/3600695272"
+    },
+    "blik": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/6056652792"
+    },
+    "bougainville": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/6192682978"
+    },
+    "cafe-binnenvisser": {
+      "open": [
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/10991194985"
+    },
+    "cafe-caron": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2817453062"
+    },
+    "cafe-maurits": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/413624747"
+    },
+    "cafe-parlotte": {
+      "open": [
+        "Su",
+        "Mo",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/3267319061"
+    },
+    "cafe-restaurant-amsterdam": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/283241256"
+    },
+    "cafe-wu": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2364940139"
+    },
+    "choux": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2743728350"
+    },
+    "cucina-casalinga": {
+      "open": [
+        "Su",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2816953269"
+    },
+    "de-kas": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2830233516"
+    },
+    "entrepot": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/9176789717"
+    },
+    "flore": {
+      "open": [
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/1310974815"
+    },
+    "fuku-ramen": {
+      "open": [
+        "Su",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/393137999"
+    },
+    "gebr-hartering": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/1749038791"
+    },
+    "helling-7": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr"
+      ],
+      "from": "osm:node/9498791779"
+    },
+    "john-dory": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/4538578289"
+    },
+    "kaagman-kortekaas": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/1699862313"
+    },
+    "kid-amsterdam": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2809521539"
+    },
+    "la-vallade": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/95288423"
+    },
+    "lastage": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2725794732"
+    },
+    "mos-amsterdam": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2745434808"
+    },
+    "nikotin": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/9040906652"
+    },
+    "oriental-city": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/3889159256"
+    },
+    "restaurant-212": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2725878761"
+    },
+    "restaurant-kyo": {
+      "open": [
+        "Su",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/1908229548"
+    },
+    "rijsel": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr"
+      ],
+      "from": "osm:node/2825119337"
+    },
+    "sea-palace": {
+      "open": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/13404202880"
+    },
+    "sinne": {
+      "open": [
+        "Su",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/4576285030"
+    },
+    "toscanini": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/1783971866"
+    },
+    "troef": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2825121921"
+    },
+    "utage-sake-bar": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/249401845"
+    },
+    "vinkeles": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/4571078874"
+    },
+    "vrr": {
+      "open": [
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/1556487107"
+    },
+    "zoldering": {
+      "open": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+      ],
+      "from": "osm:node/2737855506"
+    }
+  }
+}

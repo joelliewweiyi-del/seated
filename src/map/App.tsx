@@ -1385,7 +1385,7 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
             </p>
             <h3>Where it comes from</h3>
             <p>
-              About every 15 minutes we read each restaurant's own public booking calendar (Tebi, Zenchef, Formitable, SevenRooms,
+              About every 15 minutes we read each restaurant's own public booking calendar (Tebi, Zenchef, Formitable, SevenRooms, TableCheck,
               Guestplan, Frank): the same calendar any guest sees. A few restaurants are watched more closely, so their signs change sooner.
             </p>
             {CONTACT && (

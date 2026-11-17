@@ -2,6 +2,7 @@ import { formitable } from './formitable.js';
 import { frank } from './frank.js';
 import { guestplan } from './guestplan.js';
 import { sevenrooms } from './sevenrooms.js';
+import { tablecheck } from './tablecheck.js';
 import { tebi } from './tebi.js';
 import { zenchef } from './zenchef.js';
 import type { Platform } from './types.js';
@@ -18,6 +19,7 @@ export function createPlatforms({
     guestplan: guestplan(),
     zenchef: zenchef(),
     frank: frank(),
+    tablecheck: tablecheck(),
   };
 }
 
@@ -31,5 +33,6 @@ export function demoPlatforms(demo: Platform): Record<string, Platform> {
     guestplan: readOnly('guestplan', 'Guestplan'),
     zenchef: readOnly('zenchef', 'Zenchef'),
     frank: readOnly('frank', 'Frank'),
+    tablecheck: readOnly('tablecheck', 'TableCheck'),
   };
 }

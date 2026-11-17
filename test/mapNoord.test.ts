@@ -102,7 +102,7 @@ describe('Seated Noord', () => {
       }
     }
     for (const m of ours.measurements) expect(rendered.has(m.ours), m.kind).toBe(true);
-  });
+  }, 30_000); // reads all 185 tiles: over 5 s when the whole suite runs (17 Nov 2026)
   it('stands every restaurant that is not opted out on drawn city, never on fog (15 Nov 2026: Toet, Showw and eight more were on fog)', () => {
     const optOut = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8')) as Array<{ id: string }>).map(x => x.id));
     const onFog = Object.entries(places as Record<string, { lat: number; lng: number }>)

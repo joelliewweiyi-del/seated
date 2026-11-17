@@ -601,7 +601,7 @@
     "id": "ciel-bleu",
     "name": "Ciel Bleu",
     "platform": "tablecheck",
-    "platformUid": null,
+    "platformUid": "okura-nl-cielbleu",
     "website": "https://www.cielbleu.nl/",
     "city": "Amsterdam",
     "address": null,
@@ -2105,9 +2105,9 @@
   {
     "id": "roef",
     "name": "Roef",
-    "platform": "other",
-    "platformUid": null,
-    "website": "https://roefamsterdam.nl/",
+    "platform": "tebi",
+    "platformUid": "885366_3274f8ed09a02f1a4357e9a59eba04057ed2907cd1135c735ed969a2ad208035",
+    "website": "https://roef-amsterdam.nl/",
     "city": "Amsterdam",
     "address": null,
     "hot": 1,
@@ -2771,8 +2771,8 @@
   {
     "id": "bistro-de-la-mer",
     "name": "Bistro de la Mer",
-    "platform": "other",
-    "platformUid": null,
+    "platform": "guestplan",
+    "platformUid": "2070b5e87ec0db7420c7d2967ca4c1d69b90cf0f:54707",
     "website": "https://www.bistrodelamer.com/",
     "city": "Amsterdam",
     "address": "Utrechtsestraat 57, 1017 VJ Amsterdam"
@@ -2844,7 +2844,7 @@
     "id": "serre-okura",
     "name": "Serre",
     "platform": "tablecheck",
-    "platformUid": null,
+    "platformUid": "okura-nl-serre",
     "website": "https://www.okura.nl/serre",
     "city": "Amsterdam",
     "address": "Ferdinand Bolstraat 333, 1072 LH Amsterdam"
