@@ -158,8 +158,8 @@ export interface Wall { part: number; ax: number; ay: number; dx: number; dy: nu
 export interface Facade { wall: Wall; w: number; h: number; rgb: Uint8Array; ok: Uint8Array }
 export const TEXEL = 0.3; // metres
 
-/** Joel agreed to about 1,500 downloads for the canal belt (17 Nov 2026); a build that needs far more stops first. */
-const MAX_NEW_PANOS = 2500;
+/** Joel chose panoramas for the whole canal belt, about 6,600 (17 Nov 2026); a build that needs far more stops first. */
+const MAX_NEW_PANOS = 7500;
 const THIN = 12; // metres
 const VIEWS = 2; // panoramas per wall
 const CAMERA_M = 2.6;
@@ -362,7 +362,10 @@ export function designWall(L: number, H: number, f: Facade | undefined, fallback
   const dark = (t: number) => lum(t) < mid - D;
   const photoWall = tone(idx.filter((t) => Math.abs(lum(t) - mid) <= D), knob('facadeSat', 1.35), knob('wallLift', 0));
   // The photo picks the material; the material gives the clean colour (judged climb: grey winter light reads as mush).
-  const wall = knob('wallMaterial', 1) ? packHex(nearestMaterial(unpack(photoWall) as [number, number, number], WALL_MATERIALS)) : photoWall;
+  // White plaster only for a really bright photo wall (full belt, 17 Nov 2026: pale winter light turned brick houses
+  // and the Noorderkerk white); otherwise the nearest brick or paint.
+  const pw = unpack(photoWall) as [number, number, number], bright = 0.3 * pw[0] + 0.59 * pw[1] + 0.11 * pw[2] >= knob('plasterLum', 205);
+  const wall = knob('wallMaterial', 1) ? packHex(nearestMaterial(pw, bright ? WALL_MATERIALS : WALL_MATERIALS.filter((h) => h !== '#e8e2d4'))) : photoWall;
   const win = tone(idx.filter(dark), 1.1, -knob('windowDarken', 0.3));
   const trim = tone(idx.filter((t) => lum(t) > mid + Lt), 1, knob('trimLighten', 0.2));
   // Dark share per column (bays) and per row (storeys), over seen texels.

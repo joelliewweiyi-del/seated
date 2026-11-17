@@ -916,10 +916,10 @@ async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
     const x = Math.floor((rx - RD_BOX.x0) / CELL_M), y = Math.floor((RD_BOX.y1 - ry) / CELL_M);
     return inside(x, y) ? idx(x, y) : -1;
   };
-  // Façades only round the comparison camera (Herengracht near the Huidenstraat): the whole belt needs about 6,600
-  // panoramas (1.5 GB); Joel agreed to about 1,500 for this sample (17 Nov 2026). Elsewhere walls use procedural bays.
+  // Façades from panoramas over the whole canal box (Joel, 17 Nov 2026: option 2, about 6,600 panoramas, 1.5 GB).
+  // FACADE_DX / FACADE_DY narrow it round the comparison camera (Herengracht near the Huidenstraat) for a quick trial.
   const ROOF_DETAIL = TUNE.roofDetail ?? 1000; // RGB distance from the building's colour that makes a roof cell keep its own
-  const FACADE_WINDOW = { x: 121037, y: 487152, dx: Number(process.env.FACADE_DX ?? 420), dy: Number(process.env.FACADE_DY ?? 320) };
+  const FACADE_WINDOW = { x: 121037, y: 487152, dx: Number(process.env.FACADE_DX ?? 1300), dy: Number(process.env.FACADE_DY ?? 1300) };
   // Every outer-ring edge of a 3DBAG part that faces the viewer (south or east; north-west is up). A free wall (no
   // building right in front) near the comparison camera is looked up in the panoramas; an edge with a building in front
   // is a party wall, drawn blank where it shows above its neighbour.
