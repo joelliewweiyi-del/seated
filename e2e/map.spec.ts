@@ -372,7 +372,7 @@ test('restaurants that stood on fog (15 Nov 2026) stand on drawn city, at mid an
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const failed: string[] = [];
   page.on('response', r => { if (/\/(ours|sez)\/.*\.png/.test(r.url()) && !r.ok()) failed.push(r.url()); });
-  for (const [id, lat, lng] of [['toet', 52.342644, 4.89258], ['showw', 52.337398, 4.892941], ['vuurtoreneiland', 52.3806, 5.0189]] as const) {
+  for (const [id, lat, lng] of [['toet', 52.342644, 4.89258], ['showw', 52.337398, 4.892941], ['hotel-de-goudfazant', 52.384539, 4.928246]] as const) {
     await page.goto(`/map/?r=${id}`);
     await settled(page);
     await expect(page.locator('.card')).not.toContainText('Outside the drawn city');
