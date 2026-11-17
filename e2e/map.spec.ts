@@ -410,6 +410,43 @@ test("a critic's list: the card shows the score and year and links to the review
   await expect(page).toHaveURL(/lens=mara-grimm/);
 });
 
+test('far out, the art below a cut-off overview still draws, not fog (Joel, 17 Nov 2026: a straight line, fog below)', async ({ page, browser }) => {
+  // The share of fog-coloured pixels in the lower half of the map, at zoom 0.1 over the middle of his art, once everything has loaded.
+  const fogShare = (p: typeof page) => p.evaluate(() => {
+    type V = { cam: { x: number; y: number; z: number }; target?: { x: number; y: number; z: number }; dirty: boolean; waiting: number; ctx: CanvasRenderingContext2D; canvas: HTMLCanvasElement; overview: { ok: boolean } };
+    const v = (window as unknown as { seatedMap: V }).seatedMap;
+    for (const c of [v.cam, v.target]) if (c) Object.assign(c, { x: 8576, y: 5888, z: 0.1 });
+    v.dirty = true;
+    return new Promise<number>((done) => setTimeout(() => {
+      if (!v.overview.ok || v.waiting > 0) return done(-1);
+      const { width, height } = v.canvas;
+      const d = v.ctx.getImageData(0, Math.round(height * 0.5), Math.round(width * 0.6), Math.round(height * 0.35)).data;
+      const fog = ['#a8a4bc', '#bbb7cb', '#cecbda', '#e3e1ea'].map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (fog.some((f) => Math.abs(f[0]! - d[i]!) + Math.abs(f[1]! - d[i + 1]!) + Math.abs(f[2]! - d[i + 2]!) < 12)) n++;
+      done(n / (d.length / 4));
+    }, 400));
+  });
+  const settled = async (p: typeof page) => {
+    await p.goto('/map/');
+    await expect(p.locator('.list-head h2')).toBeVisible();
+    await expect.poll(() => fogShare(p), { timeout: 20_000 }).toBeGreaterThanOrEqual(0);
+    return fogShare(p);
+  };
+  const whole = await settled(page);
+  // Every copy of the overview arrives cut short, as on Joel's Windows screen, where it showed only its top part.
+  const cut = await browser.newPage({ viewport: page.viewportSize()! });
+  await cut.route(/\/sez\/\d+\/2\.png/, async (route) => {
+    const res = await route.fetch();
+    const body = await res.body();
+    await route.fulfill({ response: res, body: body.subarray(0, Math.floor(body.length * 0.15)) });
+  });
+  const share = await settled(cut);
+  await cut.screenshot({ path: 'test-results/screens/map-overview-cut-far.png' });
+  expect(share).toBeLessThan(whole + 0.05);
+  await cut.close();
+});
+
 test('a city overview cut short is fetched again past the cache, and fog is built only from a whole one (17 Nov 2026)', async ({ page }) => {
   const asked: string[] = [];
   await page.route(/\/sez\/\d+\/2\.png/, async (route) => {

@@ -189,6 +189,19 @@ export function missingArt(alpha: Uint8Array, w: number, h: number, mask: { mw: 
   return art ? missing / art : 0;
 }
 
+/** The manifest's coverage mask (cells of `k` overview pixels) as overview-sized alpha: 1 where his art is. */
+export function maskAlpha(mask: { mw: number; mh: number; bits: string }, w: number, h: number, k: number): Uint8Array {
+  const bits = Uint8Array.from(atob(mask.bits), (ch) => ch.charCodeAt(0));
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const mx = Math.floor(x / k), my = Math.floor(y / k);
+    if (mx >= mask.mw || my >= mask.mh) continue;
+    const i = my * mask.mw + mx;
+    if (bits[i >> 3]! & (1 << (i & 7))) out[y * w + x] = 1;
+  }
+  return out;
+}
+
 function overviewAlpha(img: HTMLImageElement): Uint8Array {
   const c = document.createElement('canvas');
   c.width = img.naturalWidth; c.height = img.naturalHeight;
@@ -455,10 +468,13 @@ export class MapView {
    * cut along a tile (Joel, 8 Nov 2026: "wtf is this" at the gap in his drawing in Oost).
    */
   private drawFogEdge(toX: (x: number) => number, toY: (y: number) => number): void {
-    if (!this.fog || !this.overview.ok || !this.overview.alpha || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
+    if (!this.fog || !this.overview.ok || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
     if (!this.fogMask) {
       const ext = this.oursOverview?.ok ? this.world.ours?.levels[2] : undefined;
-      const layers = [{ alpha: this.overview.alpha, w: this.overview.img.naturalWidth, h: this.overview.img.naturalHeight, x: 0, y: 0 }];
+      // An overview with art missing gives no edge of its own: the manifest's coverage outline stands in (coarser).
+      const ow = Math.round(this.world.width / 8), oh = Math.round(this.world.height / 8);
+      const alpha = this.overview.alpha ?? maskAlpha(this.world.meta.mask, ow, oh, this.world.meta.mask.cell / 8);
+      const layers = [{ alpha, w: ow, h: oh, x: 0, y: 0 }];
       if (ext) layers.push({ alpha: overviewAlpha(this.oursOverview!.img), w: ext.w, h: ext.h, x: ext.x, y: ext.y });
       const union = fogAlphaUnion(layers);
       const fringe = fogEdgeIndex(union.alpha, union.w, union.h, FOG_REACH, this.clear.map(p => ({ x: p.x / 8 - union.x, y: p.y / 8 - union.y })));
@@ -550,6 +566,13 @@ export class MapView {
       waiting = this.drawLevel('hi', toX, toY, W, H);
     } else if (z >= 0.5) waiting = this.drawLevel(0, toX, toY, W, H);
     else if (z >= 0.25) waiting = this.drawLevel(1, toX, toY, W, H);
+    else {
+      // Far out, his 1/4 level too (15 images of 1024 px), over the overview: on some screens the one 2144x1472 overview
+      // shows only its top part (Joel, 17 Nov 2026, Windows: the art cut by a straight line, fog below it).
+      ctx.imageSmoothingEnabled = z < 0.125;
+      waiting = this.drawLevel(1, toX, toY, W, H);
+      ctx.imageSmoothingEnabled = false;
+    }
     // Our layer on top: it is cut to his gaps plus a strip over his edge (scripts/map-noord.ts, gapMask), so it covers
     // only where his art is missing or fades out in a dither, and never the rest of his drawing.
     let oursWaiting = 0;
