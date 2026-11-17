@@ -171,6 +171,24 @@ export function fogAlphaUnion(layers: Array<{ alpha: Uint8Array; w: number; h: n
   return { alpha, x, y, w, h };
 }
 
+/**
+ * Share of the coverage mask's art cells (manifest.mask, `k` overview pixels square) that have no pixel in this
+ * overview: 0 for a whole image. A download cut short decodes only its top rows (Joel, 17 Nov 2026: fog over the canal
+ * belt below row 642), and the fog edge built from it covered the art; the cache then kept that copy for a year.
+ */
+export function missingArt(alpha: Uint8Array, w: number, h: number, mask: { mw: number; mh: number; bits: Uint8Array }, k: number): number {
+  let art = 0, missing = 0;
+  for (let my = 0; my < mask.mh; my++) for (let mx = 0; mx < mask.mw; mx++) {
+    const i = my * mask.mw + mx;
+    if (!(mask.bits[i >> 3]! & (1 << (i & 7)))) continue;
+    art++;
+    let seen = false;
+    for (let y = my * k; y < Math.min(h, (my + 1) * k) && !seen; y++) for (let x = mx * k; x < Math.min(w, (mx + 1) * k); x++) if (alpha[y * w + x]) { seen = true; break; }
+    if (!seen) missing++;
+  }
+  return art ? missing / art : 0;
+}
+
 function overviewAlpha(img: HTMLImageElement): Uint8Array {
   const c = document.createElement('canvas');
   c.width = img.naturalWidth; c.height = img.naturalHeight;
@@ -184,6 +202,8 @@ interface Tile {
   img: HTMLImageElement;
   ok: boolean;
   failed: boolean;
+  /** His overview only: its alpha once checked whole; null when it stayed incomplete (no fog edge from it). */
+  alpha?: Uint8Array | null;
 }
 
 export class MapView {
@@ -233,7 +253,7 @@ export class MapView {
     this.cam = { x: dam.x, y: dam.y, z: 0.5 };
     this.home = { ...this.cam };
     this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.overview = this.load(world.level(2).url(0, 0));
+    this.overview = this.loadOverview(world.level(2).url(0, 0));
     if (world.ours) this.oursOverview = this.load(world.oursLevel(2).url(0, 0));
     this.bindInput();
     this.resize();
@@ -370,6 +390,40 @@ export class MapView {
     this.dirty = false;
   };
 
+  /**
+   * His overview, checked against the manifest's coverage mask before anyone uses it. A copy with art missing (a cut-off
+   * download, kept by the year-long cache) is fetched once more past the cache; if that one is cut off too, the art
+   * still draws but no fog edge is built from it, so fog never covers art.
+   */
+  private loadOverview(url: string, retry = true): Tile {
+    const t: Tile = { img: new Image(), ok: false, failed: false };
+    t.img.onload = () => {
+      const { mw, mh, cell, bits } = this.world.meta.mask;
+      const alpha = overviewAlpha(t.img);
+      const k = cell / (this.world.width / t.img.naturalWidth);
+      const gone = missingArt(alpha, t.img.naturalWidth, t.img.naturalHeight, { mw, mh, bits: Uint8Array.from(atob(bits), (ch) => ch.charCodeAt(0)) }, k);
+      if (gone > 0.01 && retry) {
+        console.warn(`[map] the city overview came back with ${Math.round(gone * 100)}% of its art missing; fetching it again past the cache.`);
+        this.overview = this.loadOverview(`${url}${url.includes('?') ? '&' : '?'}fresh=${Date.now()}`, false);
+        return;
+      }
+      if (gone > 0.01) console.error(`[map] the city overview is still ${Math.round(gone * 100)}% incomplete after a fresh download: drawing it without the fog edge. Fix: reload the page; if it stays, check ${url} on the server.`);
+      t.alpha = gone > 0.01 ? null : alpha;
+      t.ok = true;
+      this.dirty = true;
+    };
+    t.img.onerror = () => {
+      if (retry) {
+        this.overview = this.loadOverview(`${url}${url.includes('?') ? '&' : '?'}fresh=${Date.now()}`, false);
+        return;
+      }
+      t.failed = true;
+      this.dirty = true;
+    };
+    t.img.src = url;
+    return t;
+  }
+
   private load(url: string): Tile {
     const t: Tile = { img: new Image(), ok: false, failed: false };
     t.img.onload = () => {
@@ -401,10 +455,10 @@ export class MapView {
    * cut along a tile (Joel, 8 Nov 2026: "wtf is this" at the gap in his drawing in Oost).
    */
   private drawFogEdge(toX: (x: number) => number, toY: (y: number) => number): void {
-    if (!this.fog || !this.overview.ok || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
+    if (!this.fog || !this.overview.ok || !this.overview.alpha || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
     if (!this.fogMask) {
       const ext = this.oursOverview?.ok ? this.world.ours?.levels[2] : undefined;
-      const layers = [{ alpha: overviewAlpha(this.overview.img), w: this.overview.img.naturalWidth, h: this.overview.img.naturalHeight, x: 0, y: 0 }];
+      const layers = [{ alpha: this.overview.alpha, w: this.overview.img.naturalWidth, h: this.overview.img.naturalHeight, x: 0, y: 0 }];
       if (ext) layers.push({ alpha: overviewAlpha(this.oursOverview!.img), w: ext.w, h: ext.h, x: ext.x, y: ext.y });
       const union = fogAlphaUnion(layers);
       const fringe = fogEdgeIndex(union.alpha, union.w, union.h, FOG_REACH, this.clear.map(p => ({ x: p.x / 8 - union.x, y: p.y / 8 - union.y })));

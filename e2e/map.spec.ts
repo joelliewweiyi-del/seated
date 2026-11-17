@@ -410,6 +410,25 @@ test("a critic's list: the card shows the score and year and links to the review
   await expect(page).toHaveURL(/lens=mara-grimm/);
 });
 
+test('a city overview cut short is fetched again past the cache, and fog is built only from a whole one (17 Nov 2026)', async ({ page }) => {
+  const asked: string[] = [];
+  await page.route(/\/sez\/\d+\/2\.png/, async (route) => {
+    asked.push(route.request().url());
+    const res = await route.fetch();
+    const body = await res.body();
+    // The first copy is cut short, as a dropped download is; the second is whole.
+    await route.fulfill({ response: res, body: asked.length === 1 ? body.subarray(0, Math.floor(body.length * 0.4)) : body });
+  });
+  await page.goto('/map/');
+  await expect(page.locator('.list-head h2')).toBeVisible();
+  await expect.poll(() => asked.length).toBe(2);
+  expect(asked[1]).toContain('fresh=');
+  await expect.poll(() => page.evaluate(() => {
+    const v = (window as unknown as { seatedMap: { overview: { ok: boolean; alpha?: Uint8Array | null } } }).seatedMap;
+    return v.overview.ok && !!v.overview.alpha;
+  })).toBe(true);
+});
+
 test('MICHELIN stars and Bibs are red marks of their own: on the signs, on the pins zoomed out, and in the list', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.locator('.list-head h2')).toBeVisible();
