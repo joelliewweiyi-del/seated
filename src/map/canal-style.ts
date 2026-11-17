@@ -149,3 +149,32 @@ export function nearestMaterial(rgb: [number, number, number], list: string[]): 
   }
   return best;
 }
+
+/**
+ * Seated's world grade (Joel, 17 Nov 2026: "exaggerate the colours … my world … more or less in line with reality").
+ * Applied to every finished pixel of the canal sample: brick redder, water a clear canal blue, leaves greener, cool
+ * greys toward blue slate, and more contrast so lit and shaded planes part. Hue families stay where reality has them.
+ */
+export function worldGrade(c: number, g: { sat?: number; contrast?: number; slate?: number } = {}): number {
+  if (!c) return 0;
+  let r = (c & 255) / 255, gr = ((c >>> 8) & 255) / 255, b = ((c >>> 16) & 255) / 255;
+  const max = Math.max(r, gr, b), min = Math.min(r, gr, b), l = (max + min) / 2, d = max - min;
+  let h = 0, s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (d) h = max === r ? ((gr - b) / d + 6) % 6 : max === gr ? (b - r) / d + 2 : (r - gr) / d + 4;
+  h *= 60;
+  const sat = g.sat ?? 1.5, contrast = g.contrast ?? 1.18, slate = g.slate ?? 0.16;
+  let L = l, S = s, H = h;
+  if (s < 0.1 && b >= r - 0.01) { H = 212; S = Math.max(s, slate * Math.min(1, l * 2.2)); } // cool grey: slate
+  else if (s < 0.1) S = s * 1.4; // warm grey: stays stone
+  else if (h < 40 || h >= 340) { S = s * sat * 1.1; } // brick, tile
+  else if (h < 70) { S = s * sat * 0.9; } // sandstone, ochre
+  else if (h < 160) { H = h + (108 - h) * 0.4; S = s * sat * 1.15; L = l * 1.06; } // leaves, grass
+  else if (h < 250) { H = h + (198 - h) * 0.6; S = s * sat * 1.35; L = l * 1.1; } // water, slate
+  else S = s * sat;
+  L = 0.47 + (L - 0.47) * contrast;
+  S = Math.min(0.85, S); L = Math.max(0.04, Math.min(0.96, L));
+  const C = (1 - Math.abs(2 * L - 1)) * S, X = C * (1 - Math.abs(((H / 60) % 2) - 1)), m = L - C / 2;
+  const [r1, g1, b1] = H < 60 ? [C, X, 0] : H < 120 ? [X, C, 0] : H < 180 ? [0, C, X] : H < 240 ? [0, X, C] : H < 300 ? [X, 0, C] : [C, 0, X];
+  const q = (v: number) => Math.round((v + m) * 255);
+  return (c & 0xff000000) | (q(b1) << 16) | (q(g1) << 8) | q(r1);
+}

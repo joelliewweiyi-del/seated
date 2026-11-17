@@ -1,0 +1,15 @@
+{
+ "facadeSat": 2.2,
+ "darkStep": 34,
+ "lightStep": 40,
+ "windowDarken": 0.6,
+ "trimLighten": 0.4,
+ "wallLift": 0.3,
+ "roofSat": 2.1,
+ "roofMedian": 4,
+ "roofLit": 0.35,
+ "roofDark": 0.6,
+ "wallShade": 0.5,
+ "roofFit": 3,
+ "gradeSlate": 0.08
+}

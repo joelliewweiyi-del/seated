@@ -365,6 +365,9 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
   if (pitched && !s) top = darken(roofCol, 0.04);
   const lowerL = !w.isBuilt(x - 1, y) || w.heightPx(x - 1, y) < own - 2;
   const lowerT = !w.isBuilt(x, y - 1) || w.heightPx(x, y - 1) < own - 2;
+  // Skinned roofs: a dark seam where the next cell is another building, so each house reads as its own roof.
+  const seamL = !!w.features?.skin && w.isBuilt(x - 1, y) && w.buildingSeed(x - 1, y) !== seed;
+  const seamT = !!w.features?.skin && w.isBuilt(x, y - 1) && w.buildingSeed(x, y - 1) !== seed;
   p.poly(
     [
       [ox, oy - hT],
@@ -381,7 +384,11 @@ export function paintBuilding(p: Pix, w: World, x: number, y: number, ox: number
         const photo = skin.roof(x, y, Math.max(0, Math.min(1, (a + b) / 2)), Math.max(0, Math.min(1, (b - a) / 2)));
         const k = skin.shade ?? { roofLit: 0.08, roofDark: 0.14, wall: 0.12 };
         // Warm sunlight on planes facing the light, violet shade on the others.
-        if (photo !== undefined) return s > 0 ? mix(photo, SUN, k.roofLit) : s < 0 ? darken(photo, k.roofDark) : photo;
+        if (photo !== undefined) {
+          const lit = s > 0 ? mix(photo, SUN, k.roofLit) : s < 0 ? darken(photo, k.roofDark) : photo;
+          const sw = k.seamWidth ?? 0;
+          return (seamL && (a + b) / 2 < sw) || (seamT && (b - a) / 2 < sw) ? darken(lit, k.seam ?? 0.4) : lit;
+        }
       }
       // A flat roof's rim catches the light on its two far edges.
       if (!pitched) {

@@ -163,8 +163,8 @@ const MAX_NEW_PANOS = 2500;
 const THIN = 12; // metres
 const VIEWS = 2; // panoramas per wall
 const CAMERA_M = 2.6;
-/** Look knobs for the canal sample, tuned by the judged climb (CANAL_TUNE='{"facadeSat":1.4,...}'). */
-export const TUNE: Record<string, number> = JSON.parse(process.env.CANAL_TUNE ?? '{}');
+/** Look knobs for the canal sample: the judged climb's best in scripts/canal-tune.json; CANAL_TUNE='{...}' replaces it for a trial. */
+export const TUNE: Record<string, number> = JSON.parse(process.env.CANAL_TUNE ?? readFileSync(new URL('canal-tune.json', import.meta.url), 'utf8'));
 const knob = (k: string, d: number) => TUNE[k] ?? d; // camera above the street; the API gives no height (0) for the recordings used
 
 /**

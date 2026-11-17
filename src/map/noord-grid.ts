@@ -38,7 +38,7 @@ export interface Skin {
   /** top: metres from h up to the wall's top at that point. */
   wall(x: number, y: number, side: 'left' | 'right', t: number, h: number, top: number): number | undefined;
   /** Shading on top of the photo: lit roof plane, shaded roof plane, shaded wall side. */
-  shade?: { roofLit: number; roofDark: number; wall: number };
+  shade?: { roofLit: number; roofDark: number; wall: number; seam?: number; seamWidth?: number };
   /** A wall's real top (metres above the ground) where its photo shows it standing above the roof: a gable. */
   crest?(x: number, y: number, side: 'left' | 'right', t: number): number | undefined;
 }

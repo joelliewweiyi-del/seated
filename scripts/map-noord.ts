@@ -8,7 +8,7 @@ import { World as Grid, TW, TH, T, gapMask, useFine } from '../src/map/noord-gri
 import { cleanSlivers, parkOrStoneTerrain } from '../src/map/noord-tags';
 import { paintGround, paintBuilding, paintProps, finishBridges, finishQuays, useStyle } from '../src/map/noord-paint';
 import { TEXEL, TUNE, adaptivePNG, buildFacades, designColour, designWall, listPanos, loadAerial, loadDsm, type Design, type Facade, type Wall } from './canal-skin';
-import { ROOF_FLAT, ROOF_PITCHED, nearestMaterial, CANAL_FAR, CANAL_GLASS, CANAL_PAL, CANAL_PLINTH, CANAL_WALLS, ROOF_COLOURS, canalPalette, medianCut, photoColour } from '../src/map/canal-style';
+import { ROOF_FLAT, ROOF_PITCHED, nearestMaterial, CANAL_FAR, CANAL_GLASS, CANAL_PAL, CANAL_PLINTH, CANAL_WALLS, ROOF_COLOURS, canalPalette, medianCut, photoColour, worldGrade } from '../src/map/canal-style';
 import { readPNG, writePNG } from '../src/map/noord-png';
 import { imageReader, measureAlignment } from '../src/map/noord-alignment';
 import { measurePalette, quantizer, MATERIAL_COLOURS, FAR_PALETTE } from '../src/map/noord-palette';
@@ -1017,7 +1017,7 @@ async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
     roofCell[i] = (rgb(h) & 0xffffff | (0xff << 24)) >>> 0;
   }
   return {
-    shade: { roofLit: TUNE.roofLit ?? 0.08, roofDark: TUNE.roofDark ?? 0.14, wall: TUNE.wallShade ?? 0.12 },
+    shade: { roofLit: TUNE.roofLit ?? 0.08, roofDark: TUNE.roofDark ?? 0.14, wall: TUNE.wallShade ?? 0.12, seam: TUNE.seamDark ?? 0.35, seamWidth: TUNE.seamWidth ?? 0.2 },
     roof(x, y) {
       const c = roofCell[idx(x, y)]!;
       return c || undefined;
@@ -1066,6 +1066,10 @@ for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1)
 }
 // Canal: the photo colours stay as they are; each tile gets its own palette (adaptivePNG).
 let pixels: Uint8Array | Uint32Array = CANAL ? Uint32Array.from(canvas.data) : new Uint8Array(canvas.data.length);
+if (CANAL && (TUNE.grade ?? 1)) {
+  const graded = new Map<number, number>(), opts = { sat: TUNE.gradeSat, contrast: TUNE.gradeContrast, slate: TUNE.gradeSlate };
+  for (let i = 0; i < pixels.length; i++) { const c = pixels[i]!; let v = graded.get(c); if (v === undefined) graded.set(c, (v = worldGrade(c, opts))); pixels[i] = v; }
+}
 if (!CANAL) { const snap = quantizer(OUTPUT_PALETTE); for (let i = 0; i < pixels.length; i++) pixels[i] = snap(canvas.data[i]!); }
 // Alignment with his art, measured on the whole painting before it is cut to his gaps (the cut leaves little shore).
 const alignment = CANAL ? { dx: 0, dy: 0, correlation: 0, samples: 0 } : measureAlignment(sez, undefined, undefined, 220, 8, imageReader(pixels as Uint8Array, width, imgHeight, x0, y0, OUTPUT_PALETTE));
