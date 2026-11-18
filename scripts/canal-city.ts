@@ -99,35 +99,53 @@ const files: Array<{ name: string; bytes: number }> = [];
 const save = (name: string, bytes: Buffer) => (writeFileSync(join(stage, name), bytes), files.push({ name, bytes: bytes.length }));
 const LAST = manifests[0]!.m.levels.length - 1;
 const levels: Level[] = [];
-for (let L = 0; L < LAST; L++) {
-  // Each 1024 chunk: copied when one tile has it, composited in depth order when several do.
-  const owners = new Map<string, string[]>();
-  for (const { t } of manifests) for (const f of readdirSync(join(TILES_DIR, t.name))) {
-    const m = f.match(new RegExp(`^${L}_(-?[\\d.]+)_(-?[\\d.]+)\\.png$`));
-    if (m) owners.set(f, [...(owners.get(f) ?? []), join(TILES_DIR, t.name, f)]);
-  }
-  for (const [name, paths] of owners) {
-    if (paths.length === 1) { copyFileSync(paths[0]!, join(stage, name)); files.push({ name, bytes: readFileSync(paths[0]!).length }); continue; }
-    const acc = new Uint32Array(1024 * 1024);
-    for (const p of paths) { const { data } = readPNG(p); for (let i = 0; i < acc.length; i++) if (data[i]) acc[i] = data[i]!; }
-    save(name, adaptivePNG(acc, 1024, 1024));
-  }
-  const chunks = [...owners.keys()].map((n) => n.match(/^\d_(-?[\d.]+)_(-?[\d.]+)\.png$/)!.slice(1).map(Number) as [number, number]);
-  const ls = manifests.map(({ m }) => m.levels[L]!);
-  const x = Math.min(...ls.map((l) => l.x)), y = Math.min(...ls.map((l) => l.y));
-  levels.push({ k: ls[0]!.k, cs: 1024, chunks, x, y, w: Math.max(...ls.map((l) => l.x + l.w)) - x, h: Math.max(...ls.map((l) => l.y + l.h)) - y });
+// Level 0: each 1024 chunk copied when one tile has it, composited in depth order when several do.
+const owners = new Map<string, string[]>();
+for (const { t } of manifests) for (const f of readdirSync(join(TILES_DIR, t.name))) if (/^0_-?\d+_-?\d+\.png$/.test(f)) owners.set(f, [...(owners.get(f) ?? []), join(TILES_DIR, t.name, f)]);
+for (const [name, paths] of owners) {
+  if (paths.length === 1) { copyFileSync(paths[0]!, join(stage, name)); files.push({ name, bytes: readFileSync(paths[0]!).length }); continue; }
+  const acc = new Uint32Array(1024 * 1024);
+  for (const p of paths) { const { data } = readPNG(p); for (let i = 0; i < acc.length; i++) if (data[i]) acc[i] = data[i]!; }
+  save(name, adaptivePNG(acc, 1024, 1024));
 }
-// The overview: one image over every tile's overview.
-const lasts = manifests.map(({ t, m }) => ({ t, l: m.levels[LAST]! }));
-const ox = Math.min(...lasts.map(({ l }) => l.x)), oy = Math.min(...lasts.map(({ l }) => l.y));
-const ow = Math.max(...lasts.map(({ l }) => l.x + l.w)) - ox, oh = Math.max(...lasts.map(({ l }) => l.y + l.h)) - oy;
+/** Half size, the modal pixel of each 2 x 2 block (as map-noord.ts): no blended colours; any opaque pixel keeps coverage. */
+function halve(src: Uint32Array, w: number, h: number, dst: Uint32Array, dw: number, ox: number, oy: number) {
+  for (let yy = 0; yy < h / 2; yy++) for (let xx = 0; xx < w / 2; xx++) {
+    const i = yy * 2 * w + xx * 2, block = [src[i]!, src[i + 1]!, src[i + w]!, src[i + w + 1]!];
+    let best = 0, count = 0;
+    for (const c of block) { if (!c) continue; const n = block.reduce((n, v) => n + +(v === c), 0); if (n > count) { best = c; count = n; } }
+    dst[(oy + yy) * dw + ox + xx] = best;
+  }
+}
+const chunkList = (L: number) => [...new Set(readdirSync(stage).filter((f) => f.startsWith(`${L}_`)))].map((f) => f.slice(0, -4).split('_').slice(1).map(Number) as [number, number]);
+const levelOf = (L: number, chunks: Array<[number, number]>): Level => {
+  const xs = chunks.map(([x]) => x), ys = chunks.map(([, y]) => y);
+  const x = Math.min(...xs) * 1024, y = Math.min(...ys) * 1024;
+  return { k: manifests[0]!.m.levels[L]!.k, cs: 1024, chunks, x, y, w: (Math.max(...xs) + 1) * 1024 - x, h: (Math.max(...ys) + 1) * 1024 - y };
+};
+levels.push(levelOf(0, chunkList(0)));
+// Levels 1 and 2 from the merged level below, on one whole-chunk grid: the viewer asks only for whole chunk numbers
+// (world.ts oursLevel), so a tile's half-chunk names (2_1.5_0.5) were never drawn.
+for (let L = 1; L < LAST; L++) {
+  const parents = new Map<string, [number, number]>();
+  for (const [cx, cy] of chunkList(L - 1)) parents.set(`${Math.floor(cx / 2)}_${Math.floor(cy / 2)}`, [Math.floor(cx / 2), Math.floor(cy / 2)]);
+  for (const [px, py] of parents.values()) {
+    const tile = new Uint32Array(1024 * 1024);
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) {
+      const child = join(stage, `${L - 1}_${px * 2 + dx}_${py * 2 + dy}.png`);
+      if (existsSync(child)) halve(readPNG(child).data, 1024, 1024, tile, 1024, dx * 512, dy * 512);
+    }
+    if (tile.some((v) => v !== 0)) save(`${L}_${px}_${py}.png`, adaptivePNG(tile, 1024, 1024));
+  }
+  levels.push(levelOf(L, chunkList(L)));
+}
+// The overview: half of level LAST - 1, one image.
+const below = levels[LAST - 1]!;
+const ox = below.x / 2, oy = below.y / 2, ow = below.w / 2, oh = below.h / 2;
 const over = new Uint32Array(ow * oh);
-for (const { t, l } of lasts) {
-  const { w, h, data } = readPNG(join(TILES_DIR, t.name, `${LAST}.png`));
-  for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) { const v = data[yy * w + xx]!; if (v) over[(yy + l.y - oy) * ow + xx + l.x - ox] = v; }
-}
+for (const [cx, cy] of below.chunks) halve(readPNG(join(stage, `${LAST - 1}_${cx}_${cy}.png`)).data, 1024, 1024, over, ow, cx * 512 - ox, cy * 512 - oy);
 save(`${LAST}.png`, adaptivePNG(over, ow, oh));
-levels.push({ k: lasts[0]!.l.k, cs: ow, chunks: [[0, 0]], x: ox, y: oy, w: ow, h: oh });
+levels.push({ k: manifests[0]!.m.levels[LAST]!.k, cs: ow, chunks: [[0, 0]], x: ox, y: oy, w: ow, h: oh });
 const runs: number[][] = [];
 for (let yy = 0; yy < oh; yy++) {
   const row: number[] = [];

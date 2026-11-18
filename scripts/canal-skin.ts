@@ -324,9 +324,12 @@ export function adaptivePNG(data: Uint32Array, w: number, h: number): Buffer {
   let palette: string[], index: Map<number, number>;
   if (unique.length <= 255) { palette = ['#000000', ...unique.map(hex)]; index = new Map(unique.map((c, i) => [c, i + 1])); }
   else {
-    const cut = medianCut(unique.map((c) => ({ rgb: channels(c), weight: counts.get(c)! })), 255);
-    palette = ['#000000', ...cut.palette];
-    index = new Map(unique.map((c) => [c, cut.nearest(channels(c)) + 1]));
+    // The 160 most common colours stay exact, so water, streets and roofs keep one colour across images; a per-image
+    // cut of every colour moved the IJ to a lighter blue in one tile of the whole-city build (18 Nov 2026).
+    const byCount = unique.sort((a, b) => counts.get(b)! - counts.get(a)!), exact = byCount.slice(0, 160), rest = byCount.slice(160);
+    const cut = medianCut(rest.map((c) => ({ rgb: channels(c), weight: counts.get(c)! })), 255 - exact.length);
+    palette = ['#000000', ...exact.map(hex), ...cut.palette];
+    index = new Map([...exact.map((c, i) => [c, i + 1] as [number, number]), ...rest.map((c) => [c, exact.length + 1 + cut.nearest(channels(c))] as [number, number])]);
   }
   const px = new Uint8Array(w * h);
   for (let i = 0; i < px.length; i++) px[i] = data[i] ? index.get(data[i]!)! : 0;
