@@ -242,3 +242,10 @@ The look knobs (`scripts/canal-tune.json`; `CANAL_TUNE` replaces them for a tria
 Judged rounds (Opus, one round each, against the previous best): 3D models 6 vs 5 (first 6); softer roof shade and legible glass 6 vs 5; gable shapes with bells 5 vs 6 (lost), without bells and with windows on every wall 6 vs 5; long low-sun shadows 6 vs 6 (lost: read as dark pavement), short shadows and close paving tones 6 vs 6 (won); stronger wall sun, fewer beige materials, darker house seams 6 vs 5. Still open: roofs of deep blocks read as a jumble, canal rows lack a clear per-house rhythm, landmarks (Paleis, Nieuwe Kerk) are plain masses, dither noise on water at zoom 2, near-black shaded façades.
 
 The painter keeps Noord unchanged at FINE 1: painted with main's and this painter on a random 80 x 80 world, all 34,821 pixels are identical.
+
+## The whole city (19 Nov 2026)
+
+Joel chose the Amsterdam panoramas for all of Amsterdam (18 Nov 2026; Google Street View's terms forbid building content from it). `scripts/canal-city.ts` cuts the map's box (RD 118000-127500 x 484200-492500) into 4 x 4 tiles and builds each with `SEATED_ART=canal CANAL_BOX=... CANAL_OUT=.cache/canal/tiles/<tile>` (one canvas for the whole box would be about 40,000 x 20,000 pixels; a tile peaks at 2.7 GB). Panoramas are shared by all tiles in `.cache/canal/pano` and kept 1000 px wide. Cold run: about 9 hours, almost all sequential panorama downloads (the canal-belt tile alone 138 min); 10,864 panoramas, 1.4 GB.
+
+The merge composites level-0 chunks in depth order (west and north first) and rebuilds the far levels from the merged level 0 on one whole-chunk grid: the viewer only asks for whole chunk numbers (`oursLevel` in `world.ts`), so a tile's half-chunk names (`2_1.5_0.5`) were never drawn, in the canal sample too. `adaptivePNG` keeps the 160 commonest colours of an image exact: a per-image cut of every colour turned the IJ light blue in one tile. Checked: `npm run verify:map -- --judge` found no fog or signs on fog with `?art=ours` (35 such findings before); tile joins on land showed no seam (Jordaan/canal belt).
+
