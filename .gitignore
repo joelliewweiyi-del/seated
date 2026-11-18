@@ -27,5 +27,5 @@ src/map/public/sez/*
 # One-off open-data map downloads and build measurements
 .cache/
 
-# Canal-belt sample of our own art (SEATED_ART=canal npx tsx scripts/map-noord.ts): local only, not on the live map
+# Canal-belt sample of our own art (SEATED_ART=canal npx tsx scripts/map-noord.ts): built locally, deployed by scripts/map-deploy.sh, shown only with ?art=ours
 src/map/public/canal/

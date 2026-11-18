@@ -562,7 +562,7 @@ export class MapView {
     // The level whose pixels are at least as fine as the screen's, so images are only ever enlarged.
     let waiting = 0;
     if (this.world.onlyOurs) {
-      // ?art=ours in a local build: his art hidden, ours alone.
+      // ?art=ours: his art hidden, ours alone.
     } else if (z >= 1) {
       this.drawLevel(0, toX, toY, W, H); // under the sharpest: it fills where a sharp chunk is missing or loading
       waiting = this.drawLevel('hi', toX, toY, W, H);

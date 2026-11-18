@@ -29,6 +29,11 @@ npx tsx scripts/api-schema.ts
 export VITE_SEATED_API=$(node -p "require('./deploy/map/api.json').url")
 export VITE_SEATED_API_KEY=$(node -p "require('./deploy/map/api.json').key")
 npx tsx scripts/map-sez-sync.ts # the city art (sezlab, with permission): fetches only what is missing
+# Our canal-belt sample (?art=ours): gitignored, built from open data cached in .cache/ (offline when warm).
+if [[ ! -f src/map/public/canal/manifest.json ]]; then
+  echo "No canal sample in src/map/public/canal: run SEATED_ART=canal npx tsx scripts/map-noord.ts first (offline from .cache)." >&2
+  exit 1
+fi
 npx vite build -c vite.map.config.ts
 npx tsx scripts/map-og.ts dist/map # the share card (og.jpg): built here, never committed (it shows his art)
 # A data.json in the build would shadow the /data.json rewrite and freeze the public map.

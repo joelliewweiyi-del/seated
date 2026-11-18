@@ -203,7 +203,7 @@ npm run dev:map                                 # then open http://localhost:517
 npx tsx scripts/canal-colours.ts                # real colours from the cached aerial photo
 ```
 
-`?art=ours` works only in a local dev build (`import.meta.env.DEV`): his art is hidden and the sample is drawn alone. The live map and production builds never read `canal/`. Cache: `.cache/canal/485d7b426e0f/` (one Overpass terrain query, one tree query, three 3DBAG pages, two PDOK tiles; Overpass answered 502 four times first). Cold build about 10 minutes, almost all Overpass retry waits; warm build 11 s. Output: 19 files, 1,736,273 bytes for about 4 km².
+`?art=ours` hides his art and draws the sample alone. Since 18 Nov 2026 (Joel: "deploy") it also works on seated.food: `canal/` is gitignored but `scripts/map-deploy.sh` refuses to deploy without it, and the credit line and About dialog then name 3DBAG and the Amsterdam panoramas (both CC BY 4.0) instead of sezlab. Without `?art=ours` the live map is unchanged. Cache: `.cache/canal/485d7b426e0f/` (one Overpass terrain query, one tree query, three 3DBAG pages, two PDOK tiles; Overpass answered 502 four times first). Cold build about 10 minutes, almost all Overpass retry waits; warm build 11 s. Output: 19 files, 1,736,273 bytes for about 4 km².
 
 Palette (`src/map/canal-style.ts`): no colour comes from his images. Ground, water and trees were checked against the PDOK aerial photo (canal water median `#394d4a` under 9,647 canal-centre pixels; elm crowns `#576e5b`; street samples are shaded by houses and trees, so street colours are chosen by hand). Façades are Amsterdam materials. The painter's own colours are swapped with `useStyle()` in `noord-paint.ts`; Noord keeps its measured palette unchanged.
 

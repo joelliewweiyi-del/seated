@@ -55,7 +55,7 @@ export class World {
     readonly base = './sez/',
     readonly ours?: OursManifest,
     readonly oursBase = './ours/',
-    /** Local builds only, ?art=ours: his art hidden, our canal-belt sample shown instead (scripts/map-noord.ts, SEATED_ART=canal). */
+    /** ?art=ours: his art hidden, our canal-belt sample shown instead (scripts/map-noord.ts, SEATED_ART=canal). */
     readonly onlyOurs = false,
   ) {
     this.scale = meta.hi.w / meta.w;
@@ -74,7 +74,7 @@ export class World {
   static async load(base = './sez/'): Promise<World> {
     const res = await fetch(`${base}manifest.json`);
     if (!res.ok) throw new Error(`the city map answered ${res.status}`);
-    const onlyOurs = import.meta.env.DEV && new URLSearchParams(location.search).get('art') === 'ours';
+    const onlyOurs = new URLSearchParams(location.search).get('art') === 'ours';
     const oursBase = onlyOurs ? './canal/' : './ours/';
     const extension = await fetch(`${oursBase}manifest.json`);
     if (!extension.ok) throw new Error(`the Noord map answered ${extension.status}${onlyOurs ? ': build the sample with SEATED_ART=canal npx tsx scripts/map-noord.ts' : ''}`);

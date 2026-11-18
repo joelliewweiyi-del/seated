@@ -13,6 +13,8 @@ import { World } from './world';
 
 const CONTACT = (import.meta.env.VITE_MAP_CONTACT as string | undefined) ?? '';
 const REFRESH_MS = 3 * 60_000;
+/** ?art=ours: Seated's own canal-belt sample instead of sezlab's art (world.ts); it needs its own credits. */
+const OUR_ART = new URLSearchParams(location.search).get('art') === 'ours';
 const STATUS_RANK: Record<Status, number> = { open: 300, later: 200, full: 100, none: 100, closed: 50, unknown: 0 };
 const ORDER: Status[] = ['open', 'later', 'full', 'none', 'closed', 'unknown'];
 /** Booking pages that take no date from a link: the guest picks the day there (Tebi, Guestplan, Frank). */
@@ -589,7 +591,16 @@ export function App() {
           )}
 
           <footer className="foot">
-            Art <a href="https://sezlab.dev/amsterdam">sezlab</a> (<a href="https://github.com/sponsors/sezkus">sponsor</a>) · ©{' '}
+            {OUR_ART ? (
+              <>
+                Art Seated, from <a href="https://3dbag.nl">3DBAG</a> (CC BY 4.0) and{' '}
+                <a href="https://api.data.amsterdam.nl/panorama/">Gemeente Amsterdam panoramas</a> (CC BY 4.0) · ©{' '}
+              </>
+            ) : (
+              <>
+                Art <a href="https://sezlab.dev/amsterdam">sezlab</a> (<a href="https://github.com/sponsors/sezkus">sponsor</a>) · ©{' '}
+              </>
+            )}
             <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
           </footer>
         </>
@@ -1400,6 +1411,13 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
               </>
             )}
             <h3>The city</h3>
+            {OUR_ART && (
+              <p>
+                This view (?art=ours) shows Seated's own drawing of the canal belt instead: buildings from the 3DBAG 3D models
+                (TU Delft and 3DGI, CC BY 4.0), façade colours from Gemeente Amsterdam street panoramas (CC BY 4.0), streets and
+                water from OpenStreetMap.
+              </p>
+            )}
             <p>
               The city is drawn by sezlab: <a href="https://sezlab.dev/amsterdam">sezlab.dev/amsterdam</a>, used with his permission.
               Like his work? <a href="https://github.com/sponsors/sezkus">Sponsor him</a>. His drawing is made from 3DBAG (TU Delft and
