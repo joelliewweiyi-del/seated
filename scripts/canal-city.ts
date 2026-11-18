@@ -6,6 +6,7 @@
  *
  *   npx tsx scripts/canal-city.ts            # builds missing tiles (a finished tile is kept), then merges
  *   npx tsx scripts/canal-city.ts --merge    # merges the tiles built so far
+ *   npx tsx scripts/canal-city.ts --list     # counts the tiles
  *
  * Downloads are sequential and cached in .cache/ (panoramas in .cache/canal/pano, shared by all tiles); a stopped
  * run resumes where it stopped. About 45 minutes and 1,500 panoramas per tile (De Pijp, 18 Nov 2026).
@@ -16,28 +17,67 @@ import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { adaptivePNG } from './canal-skin';
 
-// In frame metres (map-noord.ts turns the canal grid 45 degrees so north is up, Joel 19 Nov 2026): every restaurant on
-// the map (frame x 118466-124865, y 483853-489854 on 19 Nov 2026) with about 1.2 km round it.
+// In frame metres (map-noord.ts turns the canal grid 45 degrees so north is up, Joel 19 Nov 2026). The first 16 tiles
+// cover every restaurant on the map (frame x 118466-124865, y 483853-489854) with about 1.2 km round it; the same grid
+// runs on over the whole municipality (Joel, 19 Nov 2026: all of Amsterdam): a tile is built when it touches the
+// municipality (PDOK Gemeentegebied, cached in .cache/canal/amsterdam.json).
 const CITY = { x0: 117250, y0: 482650, x1: 126250, y1: 491050 };
-const NX = 4, NY = 4;
+const NX = 4, NY = 4, TW = (CITY.x1 - CITY.x0) / NX, TH = (CITY.y1 - CITY.y0) / NY;
 const TILES_DIR = '.cache/canal/tiles-north';
 const OUT = 'src/map/public/canal';
+const PIVOT = { x: 121500, y: 487400 }, C = Math.SQRT1_2; // TURN and PIVOT in map-noord.ts
+const toFrame = (x: number, y: number): [number, number] => [PIVOT.x + (x - PIVOT.x) * C - (y - PIVOT.y) * C, PIVOT.y + (x - PIVOT.x) * C + (y - PIVOT.y) * C];
+const fromFrame = (x: number, y: number): [number, number] => [PIVOT.x + (x - PIVOT.x) * C + (y - PIVOT.y) * C, PIVOT.y - (x - PIVOT.x) * C + (y - PIVOT.y) * C];
 
-interface Tile { name: string; box: { x0: number; y0: number; x1: number; y1: number }; edges: string }
-const tiles: Tile[] = [];
-for (let iy = 0; iy < NY; iy++) for (let ix = 0; ix < NX; ix++) {
-  const x0 = Math.round(CITY.x0 + ((CITY.x1 - CITY.x0) * ix) / NX), x1 = Math.round(CITY.x0 + ((CITY.x1 - CITY.x0) * (ix + 1)) / NX);
-  const y0 = Math.round(CITY.y0 + ((CITY.y1 - CITY.y0) * iy) / NY), y1 = Math.round(CITY.y0 + ((CITY.y1 - CITY.y0) * (iy + 1)) / NY);
-  // The city's outer sides get map-noord's edge (CANAL_EDGES); sides shared with another tile get none, so tiles meet without seams.
-  const edges = (iy === NY - 1 ? 'n' : '') + (ix === NX - 1 ? 'e' : '') + (iy === 0 ? 's' : '') + (ix === 0 ? 'w' : '');
-  tiles.push({ name: `t${ix}${iy}`, box: { x0, y0, x1, y1 }, edges });
+const boundaryFile = '.cache/canal/amsterdam.json';
+if (!existsSync(boundaryFile)) {
+  const filter = '<Filter><PropertyIsEqualTo><PropertyName>naam</PropertyName><Literal>Amsterdam</Literal></PropertyIsEqualTo></Filter>';
+  const url = 'https://service.pdok.nl/kadaster/bestuurlijkegebieden/wfs/v1_0?service=WFS&version=2.0.0&request=GetFeature&typeNames=bestuurlijkegebieden:Gemeentegebied' +
+    `&outputFormat=application/json&srsName=EPSG:28992&filter=${encodeURIComponent(filter)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`PDOK municipality boundary ${res.status}: try again later, or save the GeoJSON by hand to ${boundaryFile}`);
+  mkdirSync('.cache/canal', { recursive: true });
+  writeFileSync(boundaryFile, await res.text());
 }
+const rings = (JSON.parse(readFileSync(boundaryFile, 'utf8')) as { features: Array<{ geometry: { type: string; coordinates: number[][][][] } }> })
+  .features[0]!.geometry.coordinates.flatMap((poly) => poly) as number[][][];
+const inCity = (x: number, y: number) => {
+  let inside = false;
+  for (const ring of rings) for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]!, [xj, yj] = ring[j]!;
+    if (yi! > y !== yj! > y && x < ((xj! - xi!) * (y - yi!)) / (yj! - yi!) + xi!) inside = !inside;
+  }
+  return inside;
+};
+const framed = rings.flat().map(([x, y]) => toFrame(x!, y!));
+const ix0 = Math.floor((Math.min(...framed.map((p) => p[0])) - CITY.x0) / TW), ix1 = Math.floor((Math.max(...framed.map((p) => p[0])) - CITY.x0) / TW);
+const iy0 = Math.floor((Math.min(...framed.map((p) => p[1])) - CITY.y0) / TH), iy1 = Math.floor((Math.max(...framed.map((p) => p[1])) - CITY.y0) / TH);
+
+interface Tile { name: string; box: { x0: number; y0: number; x1: number; y1: number }; edges: string; ix: number; iy: number }
+const tiles: Tile[] = [];
+for (let iy = iy0; iy <= iy1; iy++) for (let ix = ix0; ix <= ix1; ix++) {
+  const x0 = Math.round(CITY.x0 + TW * ix), x1 = Math.round(CITY.x0 + TW * (ix + 1));
+  const y0 = Math.round(CITY.y0 + TH * iy), y1 = Math.round(CITY.y0 + TH * (iy + 1));
+  const first = ix >= 0 && ix < NX && iy >= 0 && iy < NY;
+  // A 9 x 9 grid of points in the tile: built when any lies in the municipality (the first 16 always).
+  let touches = first;
+  for (let a = 0; a <= 8 && !touches; a++) for (let b = 0; b <= 8 && !touches; b++) touches = inCity(...fromFrame(x0 + ((x1 - x0) * a) / 8, y0 + ((y1 - y0) * b) / 8));
+  if (touches) tiles.push({ name: first ? `t${ix}${iy}` : `t${ix}_${iy}`, box: { x0, y0, x1, y1 }, edges: '', ix, iy });
+}
+// The city's outer sides get map-noord's edge (CANAL_EDGES): a side with no built tile next to it. Shared sides get
+// none, so tiles meet without seams.
+const placed = new Set(tiles.map((t) => `${t.ix},${t.iy}`));
+for (const t of tiles) t.edges = ([['n', 0, 1], ['e', 1, 0], ['s', 0, -1], ['w', -1, 0]] as const).filter(([, dx, dy]) => !placed.has(`${t.ix + dx},${t.iy + dy}`)).map(([k]) => k).join('');
+console.log(`[city] ${tiles.length} tiles (${tiles.filter((t) => t.name.includes('_')).length} beyond the first 16)`);
+if (process.argv.includes('--list')) process.exit(0);
 // Depth on screen grows with the frame's east and south (map-noord: gx + gy), so draw its west and north first.
 const depth = (t: Tile) => (t.box.x0 + t.box.x1) / 2 - (t.box.y0 + t.box.y1) / 2;
 tiles.sort((a, b) => depth(a) - depth(b));
 
 if (!process.argv.includes('--merge')) {
-  for (const t of tiles) {
+  // Nearest the centre first, so a run stopped part way has added the most useful area.
+  const centre = (t: Tile) => Math.hypot((t.box.x0 + t.box.x1) / 2 - PIVOT.x, (t.box.y0 + t.box.y1) / 2 - PIVOT.y);
+  for (const t of [...tiles].sort((a, b) => centre(a) - centre(b))) {
     const dir = join(TILES_DIR, t.name);
     if (existsSync(join(dir, 'manifest.json'))) continue;
     mkdirSync(dir, { recursive: true });
