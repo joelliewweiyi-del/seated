@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { ago, badgeStyle, CURATED, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
-import { MapView, type Marker } from './render';
+import { MapView, ZOOMS, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, bike } from './marks';
 import { Nudge, Picker, WhereCard, type ListChoice } from './picker';
@@ -290,8 +290,14 @@ export function App() {
           const view = viewRef.current;
           if (view && world) {
             const a = world.project(here.lat, here.lng);
-            // Centred in the part of the map the list leaves free, so the places near you are not under it.
-            const c = centred(view, a.x, a.y, Math.max(view.cam.z, 1), null);
+            // Centred in the part of the map the list leaves free, so the places near you are not under it, and at
+            // the closest zoom step that still shows the three nearest signs (round 2 of verify-map: Café Caron,
+            // a minute away, stood off screen at zoom 1).
+            const nearest = placed
+              .map((p) => ({ x: p.ax, y: p.ay }))
+              .sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y))
+              .slice(0, 3);
+            const c = centred(view, a.x, a.y, fitZoom(view, a, nearest, Math.max(view.cam.z, 1)), null);
             view.flyTo(c.x, c.y, c.z);
           }
           if (show) {
@@ -303,7 +309,7 @@ export function App() {
         { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
       );
     },
-    [world, setWhere, setFilters],
+    [world, placed, setWhere, setFilters],
   );
   useEffect(() => {
     if (filters.near && !me) locate(false);
@@ -691,6 +697,19 @@ function centred(view: MapView, x: number, y: number, z: number, bottom: number 
   const cx = (s.left + (innerWidth - s.right)) / 2;
   const cy = (s.top + (innerHeight - (bottom ?? s.bottom))) / 2 + 24;
   return { x: x + (innerWidth / 2 - cx) / z, y: y + (innerHeight / 2 - cy) / z, z };
+}
+
+/** The largest zoom step up to `max` at which every point fits round (x, y) when `centred` puts it in the middle,
+ *  with room for a sign (half its width beside, its board above). Never further out than names show (0.25). */
+function fitZoom(view: MapView, at: { x: number; y: number }, pts: Array<{ x: number; y: number }>, max: number): number {
+  const s = view.safe;
+  const cy = (s.top + (innerHeight - s.bottom)) / 2 + 24;
+  const side = (innerWidth - s.right - s.left) / 2 - 100;
+  const up = cy - s.top - 40;
+  const down = innerHeight - s.bottom - cy - 10;
+  const fits = (z: number) =>
+    pts.every((p) => Math.abs(p.x - at.x) * z <= side && (p.y - at.y) * z >= -up && (p.y - at.y) * z <= down);
+  return [...ZOOMS].reverse().find((z) => z <= max && z >= 0.25 && fits(z)) ?? 0.25;
 }
 
 function nextOpenDay(data: MapData, day: string, shown: (r: MapRestaurant) => boolean): string | null {
