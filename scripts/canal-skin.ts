@@ -348,6 +348,8 @@ export interface Design { wall: number; win: number; trim: number; bays: number;
 const packRgb = (c: number[]) => ((Math.round(c[0]!) | (Math.round(c[1]!) << 8) | (Math.round(c[2]!) << 16) | (0xff << 24)) >>> 0);
 const unpack = (c: number) => [c & 255, (c >>> 8) & 255, (c >>> 16) & 255];
 const packHex = (h: string) => packRgb([1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+// Front doors in Amsterdam door paint: dark green, navy, oxblood, black (the boats' colours, already in the palette).
+const DOORS = ['#2f4a3c', '#3b4f6b', '#5b2f2a', '#2d2d33'].map(packHex);
 
 /** A wall's design from its straightened photo views (raw texels), or a plain one with the given wall colour. */
 export function designWall(L: number, H: number, f: Facade | undefined, fallbackWall: number, blank: boolean): Design {
@@ -429,6 +431,14 @@ export function designColour(d: Design, L: number, u: number, h: number, top: nu
   const half = Math.max(0.4, knob('windowWidth', 0.21) * B);
   if (h < d.ground) {
     if (d.shop) return h > 0.3 && h < d.ground - 0.45 && off < 0.42 * B ? d.win : h >= d.ground - 0.45 && off < 0.42 * B ? d.trim : d.wall;
+    // A front door every third bay (judged climb: streets read stamped, no doors), its bay and paint from the wall's
+    // length, in a light frame under a fanlight.
+    const pick = Math.floor(L * 3.7);
+    if (Math.floor(u / B) % 3 === (d.bays < 3 ? 0 : pick % 3)) {
+      const dh = Math.max(0.45, 0.27 * B), lintel = d.ground - 0.55;
+      if (off < dh && h < lintel - 0.4) return DOORS[pick % DOORS.length]!;
+      return off < dh + 0.3 && h < lintel ? d.trim : d.wall;
+    }
     return h > 0.9 && h < d.ground - 0.6 && off < half ? d.win : d.wall;
   }
   const z = (h - d.ground) % d.storey;
