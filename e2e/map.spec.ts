@@ -517,3 +517,15 @@ test('the map opens on the Seated curated list; Every restaurant shows all and t
   await page.reload();
   await expect(page.locator('.chip.lens')).toHaveText('Lists');
 });
+
+// Our canal-belt sample is gitignored (built locally, deployed by scripts/map-deploy.sh), so CI has none to show.
+test('?art=ours stays in the link while the map rewrites it, and credits 3DBAG and the panoramas', async ({ page }) => {
+  const { existsSync } = await import('node:fs');
+  test.skip(!existsSync('dist/map/canal/manifest.json'), 'no canal sample in dist/map (SEATED_ART=canal npx tsx scripts/map-noord.ts)');
+  await page.goto('/map/?art=ours');
+  await page.getByLabel('Find a restaurant').fill('Bacalar');
+  await page.locator('.rows .row').filter({ hasText: 'Bacalar' }).click();
+  await expect(page).toHaveURL(/[?&]r=bacalar/);
+  await expect(page).toHaveURL(/[?&]art=ours/); // 18 Nov 2026: the link lost it, a reload showed his art again
+  await expect(page.locator('footer.foot')).toContainText('3DBAG');
+});

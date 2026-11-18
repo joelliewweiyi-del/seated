@@ -357,6 +357,7 @@ export function App() {
   useEffect(() => {
     if (!data || !day) return;
     const q = new URLSearchParams();
+    if (OUR_ART) q.set('art', 'ours'); // a reload or a shared link keeps the same art
     if (day !== data.start) q.set('date', day);
     if (selected) q.set('r', selected);
     if (lensId === 'all') q.set('lens', 'all');
