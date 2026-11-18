@@ -840,6 +840,34 @@ for (let i = 0; i < N; i++) {
   roof[i] = roofShade(base, contrast > 20 ? 1 : contrast < -20 ? -1 : 0);
 }
 
+// Canal: quays under buildings on the water (judged climb: brick blocks in the IJ read as sunk in the river). A building
+// that is not a houseboat (bigger than 200 m2 or over 6 m) with 30% or more of its footprint on OSM water stands on a
+// stone quay: its water cells and a 2 m ring of water round it become pavement, so the painter draws a quay edge there.
+if (CANAL) {
+  const wet = new Map<number, { water: number; cells: number; top: number }>();
+  const wetCell = (i: number) => T_(i) === T.water && !((terrain[i]! >> 4) & F.bridge);
+  for (let i = 0; i < N; i++) {
+    const k = partOf[i]!;
+    if (k < 0) continue;
+    const w = wet.get(pandOf[k]!) ?? wet.set(pandOf[k]!, { water: 0, cells: 0, top: 0 }).get(pandOf[k]!)!;
+    w.water += wetCell(i) ? 1 : 0; w.cells++; w.top = Math.max(w.top, ridgeH[k]!);
+  }
+  const piers = new Set([...wet].filter(([, w]) => w.water >= 0.3 * w.cells && (w.cells * CELL_M * CELL_M > 200 || w.top > 6)).map(([p]) => p));
+  const ring = Math.ceil(2 / CELL_M);
+  let quay = 0;
+  for (let i = 0; i < N; i++) {
+    const k = partOf[i]!;
+    if (k < 0 || !piers.has(pandOf[k]!)) continue;
+    const x = i % COLS, y = (i - x) / COLS;
+    for (let dy = -ring; dy <= ring; dy++) for (let dx = -ring; dx <= ring; dx++) {
+      if (!inside(x + dx, y + dy)) continue;
+      const j = idx(x + dx, y + dy);
+      if (wetCell(j)) { setT(T.pavement)(j); quay++; }
+    }
+  }
+  console.log(`[canal] ${piers.size} buildings on the water stand on a quay (${quay} water cells paved)`);
+}
+
 // 5. Ground that is neither street nor building: pavement near streets and water, gardens inside blocks.
 {
   const near = new Uint8Array(N).fill(255);
