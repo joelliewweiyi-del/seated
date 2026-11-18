@@ -41,10 +41,16 @@ if (!process.argv.includes('--merge')) {
     mkdirSync(dir, { recursive: true });
     const started = Date.now();
     console.log(`[city] tile ${t.name} ${JSON.stringify(t.box)}`);
-    const r = spawnSync('npx', ['tsx', 'scripts/map-noord.ts'], {
-      stdio: 'inherit',
-      env: { ...process.env, SEATED_ART: 'canal', CANAL_BOX: `${t.box.x0},${t.box.y0},${t.box.x1},${t.box.y1}`, CANAL_OUT: dir, CANAL_MAX_PANOS: '20000' },
-    });
+    // Overpass answers 502 or 504 when it is busy (19 Nov 2026, twice in one run): a failed tile waits 10 minutes and
+    // tries again, twice; the downloads it finished are cached.
+    let r = { status: 1 as number | null };
+    for (let attempt = 1; attempt <= 3 && r.status !== 0; attempt++) {
+      if (attempt > 1) { console.log(`[city] tile ${t.name} failed; try ${attempt} in 10 minutes`); spawnSync('sleep', ['600']); }
+      r = spawnSync('npx', ['tsx', 'scripts/map-noord.ts'], {
+        stdio: 'inherit',
+        env: { ...process.env, SEATED_ART: 'canal', CANAL_BOX: `${t.box.x0},${t.box.y0},${t.box.x1},${t.box.y1}`, CANAL_OUT: dir, CANAL_MAX_PANOS: '20000' },
+      });
+    }
     if (r.status !== 0) {
       rmSync(join(dir, 'manifest.json'), { force: true });
       throw new Error(`tile ${t.name} failed (exit ${r.status}): read the output above, fix, and run again; finished tiles are kept`);
