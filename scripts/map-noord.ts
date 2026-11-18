@@ -31,6 +31,12 @@ const RD_BOX = { x0: 118000, y0: 484200, x1: 127500, y1: 492500 };
 // shows it, with ?art=ours (Joel, 17 Nov 2026: a first look at the city without his art).
 const CANAL = process.env.SEATED_ART === 'canal';
 if (CANAL) Object.assign(RD_BOX, { x0: 120300, y0: 486300, x1: 122200, y1: 488450 });
+// CANAL_BOX=x0,y0,x1,y1: one tile of the whole-city build (scripts/canal-city.ts, Joel, 18 Nov 2026), written to CANAL_OUT.
+if (CANAL && process.env.CANAL_BOX) {
+  const [x0, y0, x1, y1] = process.env.CANAL_BOX.split(',').map(Number);
+  if (![x0, y0, x1, y1].every(Number.isFinite) || x1! <= x0! || y1! <= y0!) throw new Error(`CANAL_BOX must be x0,y0,x1,y1 in RD metres, got "${process.env.CANAL_BOX}"`);
+  Object.assign(RD_BOX, { x0, y0, x1, y1 });
+}
 if (CANAL) useStyle({ pal: CANAL_PAL, walls: CANAL_WALLS, glass: CANAL_GLASS, plinth: CANAL_PLINTH });
 /** How far our layer reaches over his edge, in his overview pixels (8 world pixels each): his art fades out in a dither about 128 world pixels deep, which ours covers (8 Nov 2026). */
 const UNDER_HIS_EDGE = 16;
@@ -1187,7 +1193,7 @@ if (!CANAL) {
   console.log(`[noord] ${cut} pixels under his art left out`);
 }
 // Stage tiles in the cache: a failed build must not replace the checked-in layer.
-const outputDir = CANAL ? 'src/map/public/canal' : 'src/map/public/ours';
+const outputDir = CANAL ? (process.env.CANAL_OUT ?? 'src/map/public/canal') : 'src/map/public/ours';
 const out = join(CACHE, 'paint');
 mkdirSync(out, { recursive: true });
 for (const f of readdirSync(out)) if (/^(?:[012]_-?[\d.]+_-?[\d.]+|[23])\.png$/.test(f)) unlinkSync(`${out}/${f}`);

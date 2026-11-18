@@ -158,8 +158,11 @@ export interface Wall { part: number; ax: number; ay: number; dx: number; dy: nu
 export interface Facade { wall: Wall; w: number; h: number; rgb: Uint8Array; ok: Uint8Array }
 export const TEXEL = 0.3; // metres
 
-/** Joel chose panoramas for the whole canal belt, about 6,600 (17 Nov 2026); a build that needs far more stops first. */
-const MAX_NEW_PANOS = 7500;
+/** Joel chose panoramas for the whole canal belt, about 6,600 (17 Nov 2026), then for the whole city (18 Nov 2026):
+ *  scripts/canal-city.ts raises the cap per tile with CANAL_MAX_PANOS. A build that needs more stops first. */
+const MAX_NEW_PANOS = Number(process.env.CANAL_MAX_PANOS ?? 7500);
+/** Panoramas are kept 1000 px wide (the API's small is 2000): about 20 cm per pixel at 35 m, finer than a 30 cm texel. */
+const PANO_W = 1000;
 const THIN = 12; // metres
 const VIEWS = 2; // panoramas per wall
 const CAMERA_M = 2.6;
@@ -207,12 +210,12 @@ export async function buildFacades(
     for (const c of pick) { if (!chosen.has(c.p.id)) chosen.set(c.p.id, []); chosen.get(c.p.id)!.push({ wall: wi }); }
   });
   console.log(`[canal] ${walls.length} street-facing walls, ${chosen.size} panoramas chosen; ${noView} walls with no panorama 5 to 35 m in front`);
-  const fetchNeeded = [...chosen.keys()].filter((id) => !existsSync(join(cache, 'pano', `${id}.jpg`)) && !existsSync(join(cache, 'pano', `${id}.jpg.gone`))).length;
+  const fetchNeeded = [...chosen.keys()].filter((id) => !existsSync(join(cache, '..', 'pano', `${id}.jpg`)) && !existsSync(join(cache, '..', 'pano', `${id}.jpg.gone`))).length;
   if (fetchNeeded > MAX_NEW_PANOS) throw new Error(`${fetchNeeded} panoramas to download, more than MAX_NEW_PANOS (${MAX_NEW_PANOS}): narrow the box or raise the limit on purpose`);
 
   const views: Array<Array<{ rgb: Uint8Array; ok: Uint8Array }>> = walls.map(() => []);
   const byId = new Map(panos.map((p) => [p.id, p]));
-  const dir = join(cache, 'pano');
+  const dir = join(cache, '..', 'pano'); // shared by every box, so tiles never download a panorama twice
   mkdirSync(dir, { recursive: true });
   let done = 0;
   for (const [id, uses] of chosen) {
@@ -223,6 +226,7 @@ export async function buildFacades(
       // Listed but not served (404): remembered, so a warm build asks again only after the cache is cleared.
       if (!res.ok) { console.log(`[canal] panorama ${id}: ${res.status}, skipped`); if (res.status === 404) writeFileSync(gone, ''); continue; }
       writeFileSync(jpg, Buffer.from(await res.arrayBuffer()));
+      execFileSync('sips', ['-Z', String(PANO_W), jpg], { stdio: 'ignore' });
     }
     const img = decodeJpeg(jpg);
     for (const { wall: wi } of uses) views[wi]!.push(straighten(walls[wi]!, p, img, topAt));
