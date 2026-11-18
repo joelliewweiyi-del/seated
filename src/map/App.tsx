@@ -290,7 +290,9 @@ export function App() {
           const view = viewRef.current;
           if (view && world) {
             const a = world.project(here.lat, here.lng);
-            view.flyTo(a.x, a.y, Math.max(view.cam.z, 1));
+            // Centred in the part of the map the list leaves free, so the places near you are not under it.
+            const c = centred(view, a.x, a.y, Math.max(view.cam.z, 1), null);
+            view.flyTo(c.x, c.y, c.z);
           }
           if (show) {
             setFilters((f) => ({ ...f, near: true }));
@@ -334,6 +336,8 @@ export function App() {
         bottom: narrow && side ? innerHeight - side.top + 6 : foot ? innerHeight - foot.top : 0,
         left: 0,
       };
+      const zoom = document.querySelector('.zoom')?.getBoundingClientRect();
+      view.controls = zoom && zoom.width ? [{ x: zoom.left, y: zoom.top, w: zoom.width, h: zoom.height }] : [];
     };
     measure();
     const ro = new ResizeObserver(measure);

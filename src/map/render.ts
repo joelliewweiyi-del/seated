@@ -253,6 +253,8 @@ export class MapView {
   reducedMotion = false;
   /** Screen areas covered by panels: signs there shrink to pins. */
   safe = { top: 0, right: 0, bottom: 0, left: 0 };
+  /** Screen boxes of controls on the map itself (the zoom buttons), set by the page like `safe`. */
+  controls: Array<{ x: number; y: number; w: number; h: number }> = [];
   private home = { x: 0, y: 0, z: 0.5 };
   private wheelAcc = 0;
 
@@ -611,7 +613,8 @@ export class MapView {
   private drawMarkers(ctx: CanvasRenderingContext2D, toX: (x: number) => number, toY: (y: number) => number, W: number, H: number, now: number): void {
     this.hits = [];
     const z = this.cam.z;
-    const placed: Array<{ x: number; y: number; w: number; h: number }> = [];
+    // The zoom buttons count as placed: a name that would cover them shrinks to a pin.
+    const placed: Array<{ x: number; y: number; w: number; h: number }> = this.controls.map((c) => ({ ...c }));
     const overlaps = (r: { x: number; y: number; w: number; h: number }) =>
       placed.some((o) => r.x < o.x + o.w + 2 && r.x + r.w + 2 > o.x && r.y < o.y + o.h + 2 && r.y + r.h + 2 > o.y);
     const order = [...this.markers].sort((a, b) => {

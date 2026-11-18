@@ -1098,6 +1098,9 @@ a {
   .filters .chip {
     padding: 11px 12px;
   }
+  .filters .chip.lens {
+    padding-right: 24px; /* room for the arrow: the line above would put it on the text */
+  }
   .search {
     padding: 11px 10px;
     font-size: 16px; /* 16 px keeps iOS from zooming in on focus */
