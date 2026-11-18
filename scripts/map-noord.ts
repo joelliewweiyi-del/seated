@@ -1186,6 +1186,23 @@ if (MESH) {
   const stepTone = TUNE.roofStep ?? 0.09;
   const toned = (c: number, s: number) => (s > 0 ? lighten(c, s * stepTone) : s < 0 ? darken(c, -s * stepTone) : c);
   console.log(`[canal] roof tone steps: ${[...roofStep.values()].filter((s) => s !== 0).length} of ${touching.size} same-coloured neighbours shifted`);
+  // Houseboats (judged climb: boats in the IJ drawn as brick boxes in open water). A low, small building (ridge at most
+  // 6 m, at most 200 m2) with 60% or more of its footprint on OSM water gets a boat's sides, not brick: a dark hull, a
+  // light gunwale and a painted cabin with a row of windows, the paint picked by the building.
+  const wet = new Map<number, { water: number; cells: number; top: number }>();
+  for (let i = 0; i < N; i++) {
+    const kk = partOf[i]!;
+    if (kk < 0) continue;
+    const w = wet.get(pandOf[kk]!) ?? wet.set(pandOf[kk]!, { water: 0, cells: 0, top: 0 }).get(pandOf[kk]!)!;
+    w.water += T_(i) === T.water ? 1 : 0; w.cells++; w.top = Math.max(w.top, ridgeH[kk]!);
+  }
+  const boats = new Set([...wet].filter(([, w]) => w.water >= 0.6 * w.cells && w.cells * CELL_M * CELL_M <= 200 && w.top <= 6).map(([p]) => p));
+  const BOAT_PAINT = ['#3d5a45', '#2f4a63', '#e8e2d4', '#7a2e2a', '#4a6b7a', '#2f2b2a'].map(rgb), HULL = rgb('#36323d'), BOAT_GLASS = rgb(CANAL_GLASS[0]!);
+  const boatWall = (pand: number, u: number, z: number) => {
+    const paint = BOAT_PAINT[pand % BOAT_PAINT.length]!;
+    return z < 0.9 ? HULL : z < 1.2 ? lighten(paint, 0.35) : z >= 1.5 && z < 2.3 && u % 2.2 >= 0.6 && u % 2.2 < 1.6 ? BOAT_GLASS : paint;
+  };
+  console.log(`[canal] ${boats.size} houseboats on the water`);
   const ownCell = (x: number, y: number, pand: number) => inside(x, y) && partOf[idx(x, y)]! >= 0 && pandOf[partOf[idx(x, y)]!] === pand;
   const r = rasterize(buildings, width, imgHeight, project, (bi, face, n, rx, ry, z) => {
     if (face.roof) {
@@ -1195,7 +1212,7 @@ if (MESH) {
       const d = (n[0] * L[0]! + n[1] * L[1]! + n[2] * L[2]!) / Ln - flatDot;
       return d > 0.08 ? mix(base, SUN, k.roofLit) : d < -0.3 ? darken(base, k.roofDark * (TUNE.meshAway ?? 0.85)) : d < -0.08 ? darken(base, k.roofDark * (TUNE.meshShade ?? 0.6)) : base;
     }
-    const c = meshWall!(rx, ry, n[0], n[1], z, pands[bi]!);
+    const c = boats.has(pands[bi]!) ? boatWall(pands[bi]!, Math.abs(rx * -n[1] + ry * n[0]), z) : meshWall!(rx, ry, n[0], n[1], z, pands[bi]!);
     const s = (n[0] * L[0]! + n[1] * L[1]!) / Lh / Math.max(1e-6, Math.hypot(n[0], n[1]));
     return s > 0 ? mix(c, SUN, k.wall * (TUNE.wallSun ?? 0.7) * s) : darken(c, k.wall * -s);
   }, unturn([CELL_M, -CELL_M, TH / PX_PER_M]));
