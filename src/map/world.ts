@@ -38,6 +38,9 @@ export interface OursManifest {
   projection: { X0: number; Y0: number; x: number; y: number; scale: number; VZ: number };
   levels: Array<{ k: number; cs: number; chunks: Array<[number, number]>; x: number; y: number; w: number; h: number }>;
   coverage: { x: number; y: number; w: number; h: number; runs: number[][] };
+  /** Our art for the whole city is drawn north up: RD turned by `turn` radians about `pivot` before his projection. */
+  turn?: number;
+  pivot?: { x: number; y: number };
 }
 
 const R2 = Math.SQRT1_2;
@@ -83,7 +86,13 @@ export class World {
 
   /** A point at `metres` above the ground -> world pixels. */
   project(lat: number, lng: number, metres = 0): { x: number; y: number } {
-    const { x: rx, y: ry } = wgsToRd(lat, lng);
+    let { x: rx, y: ry } = wgsToRd(lat, lng);
+    // ?art=ours is drawn north up (scripts/map-noord.ts, TURN): signs and the camera turn with it.
+    const turn = this.onlyOurs ? (this.ours?.turn ?? 0) : 0;
+    if (turn) {
+      const { x: px, y: py } = this.ours!.pivot!, c = Math.cos(turn), s = Math.sin(turn);
+      [rx, ry] = [px + (rx - px) * c - (ry - py) * s, py + (rx - px) * s + (ry - py) * c];
+    }
     const x = rx - this.meta.X0;
     const y = ry - this.meta.Y0;
     const px = (x + y) * R2;
@@ -100,6 +109,7 @@ export class World {
       const row = coverage.runs[my];
       if (row) for (let i = 0; i < row.length; i += 2) if (mx >= row[i]! && mx < row[i + 1]!) return true;
     }
+    if (this.onlyOurs) return false; // his art is hidden: only ours counts
     const { mw, mh, cell } = this.meta.mask;
     const mx = Math.floor(x / cell);
     const my = Math.floor(y / cell);

@@ -18,7 +18,7 @@ export interface Building { id: string; faces: Face[] }
  * and twice that per level up (checked against the index's own boxes for levels 9 and 10, 17 Nov 2026).
  */
 export async function loadBag3d(cache: string, box: { x0: number; y0: number; x1: number; y1: number }, download: (url: string) => Promise<Response>): Promise<Building[]> {
-  const dir = join(cache, 'bag3d-lod22');
+  const dir = join(cache, '..', 'bag3d-lod22'); // shared by every box: 3DBAG's own tiles
   mkdirSync(dir, { recursive: true });
   const indexFile = join(dir, 'tile_index.fgb');
   if (!existsSync(indexFile)) writeFileSync(indexFile, Buffer.from(await (await download(INDEX)).arrayBuffer()));

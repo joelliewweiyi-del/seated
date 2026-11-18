@@ -54,7 +54,7 @@ export function readFloatTiff(buf: Buffer): { w: number; h: number; data: Float3
 
 /** AHN surface heights (metres NAP) over the box, 0.5 m; NaN where AHN has none (water, gaps). */
 export async function loadDsm(cache: string, box: Box, download: Download): Promise<(rx: number, ry: number) => number> {
-  const dir = join(cache, 'ahn'), T = 500, R = 0.5, N = T / R;
+  const dir = join(cache, '..', 'ahn'), T = 500, R = 0.5, N = T / R; // shared by every box: named by real position
   mkdirSync(dir, { recursive: true });
   const x0 = Math.floor(box.x0 / T) * T, y0 = Math.floor(box.y0 / T) * T;
   const nx = Math.ceil((box.x1 - x0) / T), ny = Math.ceil((box.y1 - y0) / T);
@@ -99,8 +99,10 @@ export function decodeJpeg(jpg: string): { w: number; h: number; rgb: Uint8Array
 
 /** PDOK aerial photo at 0.5 m over the box: packed colour (r | g<<8 | b<<16) at an RD point, or undefined outside. */
 export async function loadAerial(cache: string, box: Box, download: Download): Promise<(rx: number, ry: number) => number | undefined> {
-  const dir = join(cache, 'aerial50'), T = 1000, P = 2000;
+  // Shared by every box, on a fixed 1 km grid, so neighbouring tiles of the city build reuse each other's photos.
+  const dir = join(cache, '..', 'aerial50'), T = 1000, P = 2000;
   mkdirSync(dir, { recursive: true });
+  box = { ...box, x0: Math.floor(box.x0 / T) * T, y0: Math.floor(box.y0 / T) * T };
   const nx = Math.ceil((box.x1 - box.x0) / T), ny = Math.ceil((box.y1 - box.y0) / T);
   const tiles: Array<{ w: number; h: number; rgb: Uint8Array }> = [];
   for (let iy = 0; iy < ny; iy++) for (let ix = 0; ix < nx; ix++) {

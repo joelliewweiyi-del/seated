@@ -16,9 +16,11 @@ import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { adaptivePNG } from './canal-skin';
 
-const CITY = { x0: 118000, y0: 484200, x1: 127500, y1: 492500 }; // RD_BOX in scripts/map-noord.ts: the map's box
+// In frame metres (map-noord.ts turns the canal grid 45 degrees so north is up, Joel 19 Nov 2026): every restaurant on
+// the map (frame x 118466-124865, y 483853-489854 on 19 Nov 2026) with about 1.2 km round it.
+const CITY = { x0: 117250, y0: 482650, x1: 126250, y1: 491050 };
 const NX = 4, NY = 4;
-const TILES_DIR = '.cache/canal/tiles';
+const TILES_DIR = '.cache/canal/tiles-north';
 const OUT = 'src/map/public/canal';
 
 interface Tile { name: string; box: { x0: number; y0: number; x1: number; y1: number } }
@@ -28,7 +30,7 @@ for (let iy = 0; iy < NY; iy++) for (let ix = 0; ix < NX; ix++) {
   const y0 = Math.round(CITY.y0 + ((CITY.y1 - CITY.y0) * iy) / NY), y1 = Math.round(CITY.y0 + ((CITY.y1 - CITY.y0) * (iy + 1)) / NY);
   tiles.push({ name: `t${ix}${iy}`, box: { x0, y0, x1, y1 } });
 }
-// Depth on screen grows east and south (map-noord: gx + gy), so draw west and north first.
+// Depth on screen grows with the frame's east and south (map-noord: gx + gy), so draw its west and north first.
 const depth = (t: Tile) => (t.box.x0 + t.box.x1) / 2 - (t.box.y0 + t.box.y1) / 2;
 tiles.sort((a, b) => depth(a) - depth(b));
 

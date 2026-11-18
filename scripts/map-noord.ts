@@ -78,6 +78,23 @@ if (fogPlaces.length) {
   if (Math.max(...ys) + grow > RD_BOX.y1) throw new Error('a neighbourhood reaches north of the box: move RD_BOX.y1 by whole cells');
 }
 console.log(`[noord] ${fogPlaces.length} restaurants on fog get a neighbourhood: ${fogPlaces.map((p) => p.id).join(', ')}`);
+// North up for our own art (Joel, 19 Nov 2026: "north is not facing north"). His projection puts north-west at the top,
+// so the canal build draws its grid in a frame turned 45 degrees about PIVOT: real north lands on the frame's north-west,
+// straight up on screen. GRID is the box in frame metres (CANAL_BOX is read as frame metres); RD_BOX becomes the real
+// box round it, for the downloads. Noord keeps his angle (TURN 0: GRID = RD_BOX). world.ts turns signs the same way.
+const TURN = CANAL ? Math.PI / 4 : 0, PIVOT = { x: 121500, y: 487400 }, cT = Math.cos(TURN), sT = Math.sin(TURN);
+const toFrame = (x: number, y: number): [number, number] => !TURN ? [x, y] : [PIVOT.x + (x - PIVOT.x) * cT - (y - PIVOT.y) * sT, PIVOT.y + (x - PIVOT.x) * sT + (y - PIVOT.y) * cT];
+const fromFrame = (x: number, y: number): [number, number] => !TURN ? [x, y] : [PIVOT.x + (x - PIVOT.x) * cT + (y - PIVOT.y) * sT, PIVOT.y - (x - PIVOT.x) * sT + (y - PIVOT.y) * cT];
+/** A direction drawn in the frame (screen-fixed, like the light and the viewer) in real RD axes. */
+const unturn = (v: number[]): [number, number, number] => [cT * v[0]! + sT * v[1]!, -sT * v[0]! + cT * v[1]!, v[2]!];
+const GRID = { ...RD_BOX };
+if (TURN) {
+  const cs = [[GRID.x0, GRID.y0], [GRID.x0, GRID.y1], [GRID.x1, GRID.y0], [GRID.x1, GRID.y1]].map(([x, y]) => fromFrame(x!, y!));
+  Object.assign(RD_BOX, { x0: Math.floor(Math.min(...cs.map((c) => c[0]))), y0: Math.floor(Math.min(...cs.map((c) => c[1]))), x1: Math.ceil(Math.max(...cs.map((c) => c[0]))), y1: Math.ceil(Math.max(...cs.map((c) => c[1]))) });
+}
+/** Grid cell coordinates (fractional) of a real RD point, and back. */
+const rdToGrid = (x: number, y: number): [number, number] => { const [fx, fy] = toFrame(x, y); return [(fx - GRID.x0) / CELL_M, (GRID.y1 - fy) / CELL_M]; };
+const gridToRd = (gx: number, gy: number): [number, number] => fromFrame(GRID.x0 + gx * CELL_M, GRID.y1 - gy * CELL_M);
 /** RD metres -> level-0 pixels of his projection (world pixels; the overview is 4 of them per pixel). */
 const projectRD = (x: number, y: number) => ({
   x: ((x - sez.X0 + y - sez.Y0) * Math.SQRT1_2 - sez.x) * SCALE,
@@ -85,8 +102,8 @@ const projectRD = (x: number, y: number) => ({
 });
 const corners = [rdToWgs(RD_BOX.x0, RD_BOX.y0), rdToWgs(RD_BOX.x0, RD_BOX.y1), rdToWgs(RD_BOX.x1, RD_BOX.y0), rdToWgs(RD_BOX.x1, RD_BOX.y1)];
 const BBOX = { south: Math.min(...corners.map(p => p.lat)), north: Math.max(...corners.map(p => p.lat)), west: Math.min(...corners.map(p => p.lng)), east: Math.max(...corners.map(p => p.lng)) };
-const COLS = Math.ceil((RD_BOX.x1 - RD_BOX.x0) / CELL_M);
-const ROWS = Math.ceil((RD_BOX.y1 - RD_BOX.y0) / CELL_M);
+const COLS = Math.ceil((GRID.x1 - GRID.x0) / CELL_M);
+const ROWS = Math.ceil((GRID.y1 - GRID.y0) / CELL_M);
 const N = COLS * ROWS;
 const UA = 'Seated-map/0.3 (one-off Noord open-data build; seated.food)';
 const CACHE = `.cache/${CANAL ? 'canal' : 'noord'}/` + createHash('sha256').update(JSON.stringify(RD_BOX)).digest('hex').slice(0, 12);
@@ -128,7 +145,7 @@ interface Pt {
   lat: number;
   lon: number;
 }
-const rdToXY = (x: number, y: number): [number, number] => [(x - RD_BOX.x0) / CELL_M, (RD_BOX.y1 - y) / CELL_M];
+const rdToXY = rdToGrid;
 const toXY = (p: Pt): [number, number] => { const rd = wgsToRd(p.lat, p.lon); return rdToXY(rd.x, rd.y); };
 
 /** Even-odd fill of a set of rings at cell centres. */
@@ -393,7 +410,7 @@ const K = new Uint8Array(N);
   const disc = new Uint8Array(N), art = new Uint8Array(N), old = new Uint8Array(N);
   for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
     const i = idx(x, y);
-    const rd = { x: RD_BOX.x0 + (x + 0.5) * CELL_M, y: RD_BOX.y1 - (y + 0.5) * CELL_M };
+    const [rdx, rdy] = gridToRd(x + 0.5, y + 0.5), rd = { x: rdx, y: rdy };
     const p = projectRD(rd.x, rd.y);
     const ox = Math.floor(p.x / 4), oy = Math.floor(p.y / 4);
     art[i] = ox >= 0 && oy >= 0 && ox < artHi.w && oy < artHi.h && artHi.alpha[oy * artHi.w + ox]! > 0 ? 1 : 0;
@@ -581,7 +598,7 @@ if (CANAL) {
     if (k < 0) continue;
     const x = i % COLS, y = (i - x) / COLS, hs: number[] = [];
     for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) {
-      const v = dsm(RD_BOX.x0 + (x + (a + 0.5) / 4) * CELL_M, RD_BOX.y1 - (y + (b + 0.5) / 4) * CELL_M);
+      const v = dsm(...gridToRd(x + (a + 0.5) / 4, y + (b + 0.5) / 4));
       if (Number.isFinite(v)) hs.push(v - groundH[k]!);
     }
     if (hs.length < 4) continue;
@@ -652,7 +669,7 @@ const byTileForCheck = new Map<number, number[]>();
   const byTile = new Map<number, number[]>();
   for (let i = 0; i < N; i++) {
     if (CANAL && K[i]) {
-      const rx = RD_BOX.x0 + ((i % COLS) + 0.5) * CELL_M, ry = RD_BOX.y1 - (Math.floor(i / COLS) + 0.5) * CELL_M;
+      const [rx, ry] = gridToRd((i % COLS) + 0.5, Math.floor(i / COLS) + 0.5);
       const key = Math.floor((ry - RD_BOX.y0) / TILE) * AX + Math.floor((rx - RD_BOX.x0) / TILE);
       if (!byTileForCheck.has(key)) byTileForCheck.set(key, []);
       byTileForCheck.get(key)!.push(i);
@@ -660,7 +677,7 @@ const byTileForCheck = new Map<number, number[]>();
     if (partOf[i]! < 0 || !K[i]) continue; // only tiles that paint (a neighbourhood's tiles are fetched only if it needs them)
     const x = i % COLS;
     const y = (i - x) / COLS;
-    const rd = { x: RD_BOX.x0 + (x + 0.5) * CELL_M, y: RD_BOX.y1 - (y + 0.5) * CELL_M };
+    const [rdx, rdy] = gridToRd(x + 0.5, y + 0.5), rd = { x: rdx, y: rdy };
     const ax = Math.floor((rd.x - RD_BOX.x0) / TILE);
     const ay = Math.floor((rd.y - RD_BOX.y0) / TILE);
     if (ax < 0 || ay < 0 || ax >= AX || ay >= AY) continue;
@@ -767,7 +784,7 @@ if (CANAL) {
       const ax = key % AX, ay = (key - ax) / AX, photo = await aerialTile(ax, ay);
       for (const i of list) {
         const x = i % COLS, y = (i - x) / COLS;
-        const rx = Math.floor(RD_BOX.x0 + (x + 0.5) * CELL_M - RD_BOX.x0 - ax * TILE), ry = Math.floor(RD_BOX.y0 + (ay + 1) * TILE - (RD_BOX.y1 - (y + 0.5) * CELL_M));
+        const [rdx, rdy] = gridToRd(x + 0.5, y + 0.5), rx = Math.floor(rdx - RD_BOX.x0 - ax * TILE), ry = Math.floor(RD_BOX.y0 + (ay + 1) * TILE - rdy);
         if (rx < 0 || ry < 0 || rx >= TILE || ry >= TILE) continue;
         const o = (ry * TILE + rx) * 3, left = (y * COLS * 2 + x) * 3, right = left + COLS * 3;
         for (let c = 0; c < 3; c++) img[left + c] = photo[o + c]!;
@@ -919,14 +936,14 @@ const world = new Grid({ cols: COLS, rows: ROWS, cellMeters: CELL_M, roofPalette
 async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
   const aerial = await loadAerial(CACHE, RD_BOX, download);
   const cellAt = (rx: number, ry: number) => {
-    const x = Math.floor((rx - RD_BOX.x0) / CELL_M), y = Math.floor((RD_BOX.y1 - ry) / CELL_M);
+    const [gx, gy] = rdToGrid(rx, ry), x = Math.floor(gx), y = Math.floor(gy);
     return inside(x, y) ? idx(x, y) : -1;
   };
   // Façades from panoramas over the whole canal box (Joel, 17 Nov 2026: option 2, about 6,600 panoramas, 1.5 GB).
   // FACADE_DX / FACADE_DY narrow it round the comparison camera (Herengracht near the Huidenstraat) for a quick trial.
   const ROOF_DETAIL = TUNE.roofDetail ?? 1000; // RGB distance from the building's colour that makes a roof cell keep its own
   const FACADE_WINDOW = { x: 121037, y: 487152, dx: Number(process.env.FACADE_DX ?? 1300), dy: Number(process.env.FACADE_DY ?? 1300) };
-  // Every outer-ring edge of a 3DBAG part that faces the viewer (south or east; north-west is up). A free wall (no
+  // Every outer-ring edge of a 3DBAG part that faces the viewer (the frame's south or east; its north-west is up). A free wall (no
   // building right in front) near the comparison camera is looked up in the panoramas; an edge with a building in front
   // is a party wall, drawn blank where it shows above its neighbour.
   type Edge = Wall & { free: boolean; photo: boolean };
@@ -943,7 +960,7 @@ async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
         const L = Math.hypot(bx - ax, by - ay);
         if (L < 0.5) continue;
         const dx = (bx - ax) / L, dy = (by - ay) / L, nx = ccw ? dy : -dy, ny = ccw ? -dx : dx;
-        if (!(nx > 0.2 || ny < -0.2)) continue;
+        if (!(nx * cT - ny * sT > 0.2 || nx * sT + ny * cT < -0.2)) continue; // facing the frame's south or east
         const front = cellAt(ax + dx * L / 2 + nx * 1.2, ay + dy * L / 2 + ny * 1.2);
         const free = front >= 0 && partOf[front]! < 0;
         const photo = free && L >= 2.5 && ridgeH[k]! >= 4 && Math.abs(ax - FACADE_WINDOW.x) <= FACADE_WINDOW.dx && Math.abs(ay - FACADE_WINDOW.y) <= FACADE_WINDOW.dy;
@@ -1007,7 +1024,7 @@ async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
   };
   console.log(`[canal] ${edges.length} walls: ${fromPhoto} designed from photos (${used} panoramas), ${edges.filter((e) => !e.free).length} party walls`);
   function pack(r: number, g: number, b: number): number { return (Math.round(r) | (Math.round(g) << 8) | (Math.round(b) << 16) | (0xff << 24)) >>> 0; }
-  const toRd = (gx: number, gy: number) => [RD_BOX.x0 + gx * CELL_M, RD_BOX.y1 - gy * CELL_M] as const;
+  const toRd = (gx: number, gy: number) => gridToRd(gx, gy) as readonly [number, number];
   // Roof cells: the building's own photo colour, unless the cell's own 4 x 4 photo samples differ clearly from it (a
   // dormer, skylight, roof garden or terrace): then the cell's colour. Clean planes, real roof furniture.
   const roofCell = new Uint32Array(N);
@@ -1060,7 +1077,7 @@ async function canalSkin(): Promise<import('../src/map/noord-grid').Skin> {
     },
   };
 }
-const origin = projectRD(RD_BOX.x0, RD_BOX.y1);
+const origin = projectRD(GRID.x0, GRID.y1); // the grid's corner, in frame metres
 // Registration of the old ground/quay painter to the reference water boundary.
 // Measured before correction at Westerdok (-1,-3), Centraal (-2,-2), and the IJ east (-1,-3).
 // This moves only our open-data drawing; it never traces or resamples his art.
@@ -1116,7 +1133,7 @@ if (MESH) {
   const all = await loadBag3d(CACHE, RD_BOX, (u) => download(u));
   const buildings = all.filter((b) => {
     const pand = pandIndex.get(b.id), p = b.faces[0]!.rings[0]![0]!;
-    const x = Math.floor((p[0]! - RD_BOX.x0) / CELL_M), y = Math.floor((RD_BOX.y1 - p[1]!) / CELL_M);
+    const [gx, gy] = rdToGrid(p[0]!, p[1]!), x = Math.floor(gx), y = Math.floor(gy);
     return pand !== undefined && inside(x, y) && K[idx(x, y)];
   });
   const pands = buildings.map((b) => pandIndex.get(b.id)!), hasMesh = new Set(pands);
@@ -1124,16 +1141,16 @@ if (MESH) {
   if (TUNE.meshGables ?? 1) for (const b of buildings) gableCount += addGables(b, (f) => [0, 1, 3][hashStr(b.id + f) % 3]!);
   parts.forEach((_, k) => { if (hasMesh.has(pandOf[k]!)) meshed[k] = 1; });
   const project = (rx: number, ry: number, z: number): [number, number, number] => {
-    const gx = (rx - RD_BOX.x0) / CELL_M, gy = (RD_BOX.y1 - ry) / CELL_M;
+    const [gx, gy] = rdToGrid(rx, ry);
     return [ox - x0 + (gx - gy) * (TW / 2), oy - y0 + (gx + gy) * (TH / 2) - z * PX_PER_M, gx + gy];
   };
-  const SUN = rgb('#fff0d2'), L = [-0.75, -0.45, 0.9], Ln = Math.hypot(L[0]!, L[1]!, L[2]!), Lh = Math.hypot(L[0]!, L[1]!);
+  const SUN = rgb('#fff0d2'), L = unturn([-0.75, -0.45, 0.9]), Ln = Math.hypot(L[0]!, L[1]!, L[2]!), Lh = Math.hypot(L[0]!, L[1]!);
   const k = skin!.shade!, flatDot = L[2]! / Ln;
   const roofOf = new Map<number, number>();
   for (let i = 0; i < N; i++) { const kk = partOf[i]!; if (kk >= 0 && !roofOf.has(pandOf[kk]!)) { const c = skin!.roof(i % COLS, Math.floor(i / COLS), 0, 0); if (c) roofOf.set(pandOf[kk]!, c); } }
   const r = rasterize(buildings, width, imgHeight, project, (bi, face, n, rx, ry, z) => {
     if (face.roof) {
-      const cx = Math.floor((rx - RD_BOX.x0) / CELL_M), cy = Math.floor((RD_BOX.y1 - ry) / CELL_M);
+      const [gcx, gcy] = rdToGrid(rx, ry), cx = Math.floor(gcx), cy = Math.floor(gcy);
       const base = (inside(cx, cy) && skin!.roof(cx, cy, 0, 0)) || roofOf.get(pands[bi]!) || rgb('#626569');
       const d = (n[0] * L[0]! + n[1] * L[1]! + n[2] * L[2]!) / Ln - flatDot;
       return d > 0.08 ? mix(base, SUN, k.roofLit) : d < -0.3 ? darken(base, k.roofDark * (TUNE.meshAway ?? 0.85)) : d < -0.08 ? darken(base, k.roofDark * (TUNE.meshShade ?? 0.6)) : base;
@@ -1141,7 +1158,7 @@ if (MESH) {
     const c = meshWall!(rx, ry, n[0], n[1], z, pands[bi]!);
     const s = (n[0] * L[0]! + n[1] * L[1]!) / Lh / Math.max(1e-6, Math.hypot(n[0], n[1]));
     return s > 0 ? mix(c, SUN, k.wall * (TUNE.wallSun ?? 0.7) * s) : darken(c, k.wall * -s);
-  }, [CELL_M, -CELL_M, TH / PX_PER_M]);
+  }, unturn([CELL_M, -CELL_M, TH / PX_PER_M]));
   outline(r, (c) => lighten(c, TUNE.meshTrim ?? 0.45), (c) => darken(c, TUNE.meshSeam ?? 0.55));
   // Cell buildings without a model first (painter's order), then the meshes over them.
   for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1); y <= Math.min(ROWS - 1, d); y++) {
@@ -1253,7 +1270,7 @@ for (let yy = 0; yy < h; yy++) {
 }
 const manifest = {
   version: 1, sezVersion: sez.version, projection: { X0: sez.X0, Y0: sez.Y0, x: sez.x, y: sez.y, scale: SCALE, VZ: sez.VZ },
-  rd: RD_BOX, cellMeters: CELL_M, heightScale: SCALE * sez.VZ, origin: { exact: origin, pixel: { x: ox, y: oy }, registration },
+  rd: RD_BOX, grid: GRID, turn: TURN, pivot: PIVOT, cellMeters: CELL_M, heightScale: SCALE * sez.VZ, origin: { exact: origin, pixel: { x: ox, y: oy }, registration },
   credit: (CANAL ? 'Canal belt sample' : 'Noord') + ' drawn by Seated; © OpenStreetMap contributors (ODbL); 3DBAG TU Delft/3DGI (CC BY 4.0); PDOK aerial photo Beeldmateriaal Nederland (CC BY 4.0)',
   alignment: { dx: alignment.dx, dy: alignment.dy, correlation: alignment.correlation, samples: alignment.samples },
   palette: OUTPUT_PALETTE, measurements: measured?.table, levels, coverage: { x: px0, y: py0, w, h, runs }, files: outputs,
