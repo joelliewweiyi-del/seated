@@ -1148,12 +1148,27 @@ if (MESH) {
   };
   const SUN = rgb('#fff0d2'), L = unturn([-0.75, -0.45, 0.9]), Ln = Math.hypot(L[0]!, L[1]!, L[2]!), Lh = Math.hypot(L[0]!, L[1]!);
   const k = skin!.shade!, flatDot = L[2]! / Ln;
-  const roofOf = new Map<number, number>();
-  for (let i = 0; i < N; i++) { const kk = partOf[i]!; if (kk >= 0 && !roofOf.has(pandOf[kk]!)) { const c = skin!.roof(i % COLS, Math.floor(i / COLS), 0, 0); if (c) roofOf.set(pandOf[kk]!, c); } }
+  // A building's roof colour: its most common cell colour (the first cell found could be a skylight or a terrace). A roof
+  // point takes its own cell's colour (a roof garden, a skylight) only well inside its own building (judged climb: cells
+  // on a roof's edge, half street or given to the neighbour by the 0.94 m grid, made big flat roofs ragged at the edges,
+  // with loose shards in the neighbour's colour).
+  const roofOf = new Map<number, number>(), tally = new Map<number, Map<number, number>>();
+  for (let i = 0; i < N; i++) {
+    const kk = partOf[i]!;
+    if (kk < 0) continue;
+    const c = skin!.roof(i % COLS, Math.floor(i / COLS), 0, 0);
+    if (!c) continue;
+    const t = tally.get(pandOf[kk]!) ?? new Map<number, number>();
+    t.set(c, (t.get(c) ?? 0) + 1);
+    tally.set(pandOf[kk]!, t);
+  }
+  for (const [p, t] of tally) roofOf.set(p, [...t].reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
+  const ownCell = (x: number, y: number, pand: number) => inside(x, y) && partOf[idx(x, y)]! >= 0 && pandOf[partOf[idx(x, y)]!] === pand;
   const r = rasterize(buildings, width, imgHeight, project, (bi, face, n, rx, ry, z) => {
     if (face.roof) {
-      const [gcx, gcy] = rdToGrid(rx, ry), cx = Math.floor(gcx), cy = Math.floor(gcy);
-      const base = (inside(cx, cy) && skin!.roof(cx, cy, 0, 0)) || roofOf.get(pands[bi]!) || rgb('#626569');
+      const [gcx, gcy] = rdToGrid(rx, ry), cx = Math.floor(gcx), cy = Math.floor(gcy), pand = pands[bi]!;
+      const inner = ownCell(cx, cy, pand) && ownCell(cx - 1, cy, pand) && ownCell(cx + 1, cy, pand) && ownCell(cx, cy - 1, pand) && ownCell(cx, cy + 1, pand);
+      const base = (inner && skin!.roof(cx, cy, 0, 0)) || roofOf.get(pand) || rgb('#626569');
       const d = (n[0] * L[0]! + n[1] * L[1]! + n[2] * L[2]!) / Ln - flatDot;
       return d > 0.08 ? mix(base, SUN, k.roofLit) : d < -0.3 ? darken(base, k.roofDark * (TUNE.meshAway ?? 0.85)) : d < -0.08 ? darken(base, k.roofDark * (TUNE.meshShade ?? 0.6)) : base;
     }
