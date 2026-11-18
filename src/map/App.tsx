@@ -594,8 +594,8 @@ export function App() {
           <footer className="foot">
             {OUR_ART ? (
               <>
-                Art Seated, from <a href="https://3dbag.nl">3DBAG</a> (CC BY 4.0) and{' '}
-                <a href="https://api.data.amsterdam.nl/panorama/">Gemeente Amsterdam panoramas</a> (CC BY 4.0) · ©{' '}
+                Art Seated, from <a href="https://3dbag.nl">3DBAG</a> and{' '}
+                <a href="https://api.data.amsterdam.nl/panorama/">panoramas</a> (CC BY 4.0) · ©{' '}
               </>
             ) : (
               <>

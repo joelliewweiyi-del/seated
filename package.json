@@ -18,7 +18,9 @@
     "map:export": "tsx --disable-warning=ExperimentalWarning scripts/map-export.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "verify:map": "tsx scripts/verify-map.ts",
+    "verify:map:loop": "bash scripts/verify-map-loop.sh"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.3",
