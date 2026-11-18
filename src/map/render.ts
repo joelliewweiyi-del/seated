@@ -634,7 +634,8 @@ export class MapView {
       const label = full ? `${m.name} ${michelinMark(m) ?? ''}  ${m.badge}` : m.badge;
       const tw = Math.ceil(ctx.measureText(label).width);
       const bw = full ? tw + 26 : Math.max(22, tw + 18);
-      const rect = { x: x - bw / 2, y: y - 30, w: bw, h: 22 };
+      // The board drawSign draws (top = y - 32), so the clear-of-panels margin holds for what is drawn.
+      const rect = { x: x - bw / 2, y: y - 32, w: bw, h: 22 };
       const s = this.safe;
       const clipped = rect.x < s.left + 4 || rect.y < s.top + 4 || rect.x + rect.w > W - s.right - 4 || rect.y + rect.h + 10 > H - s.bottom;
       if (y < s.top || y > H - s.bottom + 20 || x < s.left || x > W - s.right) {
