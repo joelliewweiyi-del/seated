@@ -23,12 +23,14 @@ const NX = 4, NY = 4;
 const TILES_DIR = '.cache/canal/tiles-north';
 const OUT = 'src/map/public/canal';
 
-interface Tile { name: string; box: { x0: number; y0: number; x1: number; y1: number } }
+interface Tile { name: string; box: { x0: number; y0: number; x1: number; y1: number }; edges: string }
 const tiles: Tile[] = [];
 for (let iy = 0; iy < NY; iy++) for (let ix = 0; ix < NX; ix++) {
   const x0 = Math.round(CITY.x0 + ((CITY.x1 - CITY.x0) * ix) / NX), x1 = Math.round(CITY.x0 + ((CITY.x1 - CITY.x0) * (ix + 1)) / NX);
   const y0 = Math.round(CITY.y0 + ((CITY.y1 - CITY.y0) * iy) / NY), y1 = Math.round(CITY.y0 + ((CITY.y1 - CITY.y0) * (iy + 1)) / NY);
-  tiles.push({ name: `t${ix}${iy}`, box: { x0, y0, x1, y1 } });
+  // The city's outer sides get map-noord's edge (CANAL_EDGES); sides shared with another tile get none, so tiles meet without seams.
+  const edges = (iy === NY - 1 ? 'n' : '') + (ix === NX - 1 ? 'e' : '') + (iy === 0 ? 's' : '') + (ix === 0 ? 'w' : '');
+  tiles.push({ name: `t${ix}${iy}`, box: { x0, y0, x1, y1 }, edges });
 }
 // Depth on screen grows with the frame's east and south (map-noord: gx + gy), so draw its west and north first.
 const depth = (t: Tile) => (t.box.x0 + t.box.x1) / 2 - (t.box.y0 + t.box.y1) / 2;
@@ -48,7 +50,7 @@ if (!process.argv.includes('--merge')) {
       if (attempt > 1) { console.log(`[city] tile ${t.name} failed; try ${attempt} in 10 minutes`); spawnSync('sleep', ['600']); }
       r = spawnSync('npx', ['tsx', 'scripts/map-noord.ts'], {
         stdio: 'inherit',
-        env: { ...process.env, SEATED_ART: 'canal', CANAL_BOX: `${t.box.x0},${t.box.y0},${t.box.x1},${t.box.y1}`, CANAL_OUT: dir, CANAL_MAX_PANOS: '20000' },
+        env: { ...process.env, SEATED_ART: 'canal', CANAL_BOX: `${t.box.x0},${t.box.y0},${t.box.x1},${t.box.y1}`, CANAL_OUT: dir, CANAL_EDGES: t.edges, CANAL_MAX_PANOS: '20000' },
       });
     }
     if (r.status !== 0) {

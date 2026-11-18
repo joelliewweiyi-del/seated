@@ -1088,7 +1088,7 @@ const ox = Math.round(origin.x) + registration.x, oy = Math.round(origin.y) + re
 const x0 = Math.floor((ox - ROWS * (TW / 2) - 16) / 2048) * 2048;
 const y0 = Math.floor((oy - 180 * FINE) / 2048) * 2048;
 const width = Math.ceil((ox + COLS * (TW / 2) + 16 - x0) / 2048) * 2048;
-const imgHeight = Math.ceil((oy + (COLS + ROWS) * (TH / 2) + 8 - y0) / 2048) * 2048;
+const imgHeight = Math.ceil((oy + (COLS + ROWS) * (TH / 2) + 8 + (CANAL ? 16 : 0) - y0) / 2048) * 2048; // canal: room for the edge's cut face
 console.log(`[noord] painting ${COLS} x ${ROWS} RD cells into ${width} x ${imgHeight} level-0 pixels`);
 const canvas = new Pix(width, imgHeight);
 // Paint the whole ground first: foreground ground must not erase a taller building behind it.
@@ -1183,6 +1183,40 @@ for (let d = 0; d < COLS + ROWS - 1; d++) for (let y = Math.max(0, d - COLS + 1)
   paintProps(canvas, world, x, y, sx, sy);
 }
 canvas.set = set;
+// Canal: the map's edge reads as the edge of a board (judged climb: the box ended in blank along straight diagonals, like a
+// render that failed to load). Under the front edges (frame south and east) a cut face of the ground 3 m deep, the south
+// face lit and the east face in shade as the walls are, a darker lip under the ground and a dark violet line under the
+// face; along the back edges (north and west) a dark violet line on the empty side. Only on the map's border sides
+// (CANAL_EDGES, letters n e s w, default all four): canal-city.ts names the city's outer sides, so its tiles meet without seams.
+if (CANAL) {
+  const sides = process.env.CANAL_EDGES ?? 'nesw', line = rgb('#2b2733'), soil = rgb('#8a7560'), depth = Math.round(3 * PX_PER_M);
+  const at = (X: number, Y: number) => (X >= 0 && Y >= 0 && X < width && Y < imgHeight ? Y * width + X : -1);
+  for (let X = 0; X < width; X++) {
+    const a = (X + x0 - ox + 0.5) / (TW / 2); // gx - gy along this column
+    if (a < -ROWS || a > COLS) continue;
+    // Front: the column's lowest ground point, on the south edge (gy = ROWS) or the east edge (gx = COLS).
+    const south = 2 * ROWS + a < 2 * COLS - a, low = oy - y0 + Math.min(2 * COLS - a, 2 * ROWS + a) * (TH / 2);
+    if (sides.includes(south ? 's' : 'e')) {
+      let top = -1;
+      for (let Y = Math.floor(low) + 2; Y >= Math.floor(low) - 4; Y--) { const j = at(X, Y); if (j >= 0 && canvas.data[j]) { top = Y; break; } }
+      const face = south ? soil : darken(soil, 0.35), lip = darken(face, 0.3);
+      if (top >= 0) for (let Y = top + 1; Y <= top + depth + 1; Y++) {
+        const j = at(X, Y);
+        if (j >= 0 && !canvas.data[j]) canvas.data[j] = Y > top + depth ? line : Y === top + 1 ? lip : face;
+      }
+    }
+    // Back: the column's highest ground point, on the west edge (gx = 0) or the north edge (gy = 0). A building standing
+    // on the edge covers it and keeps its own outline.
+    const high = oy - y0 + Math.abs(a) * (TH / 2);
+    if (sides.includes(a < 0 ? 'w' : 'n')) for (let Y = Math.floor(high) - 2; Y <= Math.floor(high) + 4; Y++) {
+      const j = at(X, Y);
+      if (j < 0 || !canvas.data[j]) continue;
+      const k = at(X, Y - 1);
+      if (k >= 0 && !canvas.data[k]) canvas.data[k] = line;
+      break;
+    }
+  }
+}
 // Canal: the photo colours stay as they are; each tile gets its own palette (adaptivePNG).
 let pixels: Uint8Array | Uint32Array = CANAL ? Uint32Array.from(canvas.data) : new Uint8Array(canvas.data.length);
 if (CANAL && (TUNE.grade ?? 1)) {
