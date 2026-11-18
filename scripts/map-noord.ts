@@ -1163,12 +1163,35 @@ if (MESH) {
     tally.set(pandOf[kk]!, t);
   }
   for (const [p, t] of tally) roofOf.set(p, [...t].reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
+  // Neighbours with the same roof colour take different tone steps (judged climb: the blocks round the Dam and the
+  // Kalverstraat read as one flat grey slab, the houses lost). Greedy over buildings that touch on the grid: the first of
+  // 0, +1, -1, +2 that no same-coloured neighbour already has; a step is TUNE.roofStep lighter or darker.
+  const touching = new Map<number, Set<number>>();
+  for (let i = 0; i < N; i++) {
+    const kk = partOf[i]!;
+    if (kk < 0) continue;
+    const p = pandOf[kk]!, x = i % COLS;
+    for (const j of [x + 1 < COLS ? i + 1 : -1, i + COLS < N ? i + COLS : -1]) {
+      const kj = j < 0 ? -1 : partOf[j]!, q = kj < 0 ? -1 : pandOf[kj]!;
+      if (q < 0 || q === p || roofOf.get(p) === undefined || roofOf.get(p) !== roofOf.get(q)) continue;
+      (touching.get(p) ?? touching.set(p, new Set()).get(p)!).add(q);
+      (touching.get(q) ?? touching.set(q, new Set()).get(q)!).add(p);
+    }
+  }
+  const roofStep = new Map<number, number>();
+  for (const [p, near] of touching) {
+    const taken = new Set([...near].map((q) => roofStep.get(q)));
+    roofStep.set(p, [0, 1, -1, 2].find((s) => !taken.has(s)) ?? 0);
+  }
+  const stepTone = TUNE.roofStep ?? 0.09;
+  const toned = (c: number, s: number) => (s > 0 ? lighten(c, s * stepTone) : s < 0 ? darken(c, -s * stepTone) : c);
+  console.log(`[canal] roof tone steps: ${[...roofStep.values()].filter((s) => s !== 0).length} of ${touching.size} same-coloured neighbours shifted`);
   const ownCell = (x: number, y: number, pand: number) => inside(x, y) && partOf[idx(x, y)]! >= 0 && pandOf[partOf[idx(x, y)]!] === pand;
   const r = rasterize(buildings, width, imgHeight, project, (bi, face, n, rx, ry, z) => {
     if (face.roof) {
       const [gcx, gcy] = rdToGrid(rx, ry), cx = Math.floor(gcx), cy = Math.floor(gcy), pand = pands[bi]!;
       const inner = ownCell(cx, cy, pand) && ownCell(cx - 1, cy, pand) && ownCell(cx + 1, cy, pand) && ownCell(cx, cy - 1, pand) && ownCell(cx, cy + 1, pand);
-      const base = (inner && skin!.roof(cx, cy, 0, 0)) || roofOf.get(pand) || rgb('#626569');
+      const base = toned((inner && skin!.roof(cx, cy, 0, 0)) || roofOf.get(pand) || rgb('#626569'), roofStep.get(pand) ?? 0);
       const d = (n[0] * L[0]! + n[1] * L[1]! + n[2] * L[2]!) / Ln - flatDot;
       return d > 0.08 ? mix(base, SUN, k.roofLit) : d < -0.3 ? darken(base, k.roofDark * (TUNE.meshAway ?? 0.85)) : d < -0.08 ? darken(base, k.roofDark * (TUNE.meshShade ?? 0.6)) : base;
     }
