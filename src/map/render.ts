@@ -649,7 +649,7 @@ export class MapView {
       drawn.push({ m, x, y, full });
     }
     // Draw back to front: low-ranked dots first, the selected sign last.
-    for (const d of drawn.reverse()) this.drawSign(ctx, d.m, d.x, d.y, d.full, now);
+    for (const d of drawn.reverse()) this.drawSign(ctx, d.m, d.x, d.y, d.full, now, W - this.safe.right - 4);
   }
 
   private michelinWidth(ctx: CanvasRenderingContext2D, m: Marker, small = false): number {
@@ -668,7 +668,8 @@ export class MapView {
     ctx.fillText(michelinMark(m)!, x + (small ? 3 : 5), y + h / 2 + 1);
   }
 
-  private drawSign(ctx: CanvasRenderingContext2D, m: Marker, x: number, y: number, full: boolean, now: number): void {
+  /** `right`: the screen x a pin's MICHELIN tag must stay left of (the screen edge or a panel). */
+  private drawSign(ctx: CanvasRenderingContext2D, m: Marker, x: number, y: number, full: boolean, now: number, right: number): void {
     const sel = m.id === this.selected;
     const hov = m.id === this.hovered;
     const ink = '#2b2733';
@@ -681,8 +682,11 @@ export class MapView {
       pxCircle(ctx, x, y - 10, r, m.dim ? '#d9d5df' : m.colour);
       ctx.fillStyle = '#ffffff88';
       ctx.fillRect(x - 2, y - 13, 2, 2);
-      // MICHELIN stays visible zoomed out: a small red tag beside the stud.
-      if (m.michelin && !m.dim) this.drawMichelin(ctx, m, x + r + 1, y - 21, true);
+      // MICHELIN stays visible zoomed out: a small red tag beside the stud, on its left when the right runs off screen.
+      if (m.michelin && !m.dim) {
+        const tw = this.michelinWidth(ctx, m, true);
+        this.drawMichelin(ctx, m, x + r + 1 + tw > right ? x - r - 1 - tw : x + r + 1, y - 21, true);
+      }
       this.hits.push({ id: m.id, x: x - 9, y: y - 20, w: 18, h: 22 });
       return;
     }
