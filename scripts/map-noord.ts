@@ -414,7 +414,8 @@ const K = new Uint8Array(N);
     const p = projectRD(rd.x, rd.y);
     const ox = Math.floor(p.x / 4), oy = Math.floor(p.y / 4);
     art[i] = ox >= 0 && oy >= 0 && ox < artHi.w && oy < artHi.h && artHi.alpha[oy * artHi.w + ox]! > 0 ? 1 : 0;
-    old[i] = rd.x >= OLD_BOX.x0 && rd.x <= OLD_BOX.x1 && rd.y >= OLD_BOX.y0 && rd.y <= OLD_BOX.y1 ? 1 : 0;
+    const [fx, fy] = toFrame(rd.x, rd.y); // OLD_BOX is in frame metres (the canal box is given turned)
+    old[i] = fx >= OLD_BOX.x0 && fx <= OLD_BOX.x1 && fy >= OLD_BOX.y0 && fy <= OLD_BOX.y1 ? 1 : 0;
   }
   const r = DISTRICT_M / CELL_M;
   for (const p of fogPlaces) {
@@ -775,6 +776,7 @@ if (CANAL) {
   for (let k = 0; k < parts.length; k++) partRoof[k] = cut.nearest(own.get(pandOf[k]!) ?? fallback);
   // How far each building's palette colour is from its own photo colour (RGB distance), so a palette change is measured.
   const errors = [...own.values()].map((c) => { const h = cut.palette[cut.nearest(c)]!; return Math.hypot(...c.map((v, j) => v - parseInt(h.slice(1 + j * 2, 3 + j * 2), 16))); }).sort((a, b) => a - b);
+  if (!errors.length) throw new Error('no building got a roof colour from the aerial photo: check the paint mask K and the aerial tiles for this box');
   console.log(`[canal] roof colour error per building: median ${errors[errors.length >> 1]!.toFixed(1)}, 95th percentile ${errors[Math.floor(errors.length * 0.95)]!.toFixed(1)}, max ${errors.at(-1)!.toFixed(1)}`);
   OUTPUT_PALETTE.push(...canalPalette(ROOF_PALETTE));
   // Check image (top down, one pixel per cell): the aerial photo left, each building in its assigned roof colour right.
