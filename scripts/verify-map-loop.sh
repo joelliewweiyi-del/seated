@@ -25,15 +25,21 @@ for i in $(seq 1 "$rounds"); do
   fi
   status=failing
   [[ $i == "$rounds" ]] && break
-  claude -p --model opus --permission-mode acceptEdits \
-    --allowedTools "Read,Edit,Write,Grep,Glob,Bash(npm run typecheck),Bash(npm test),Bash(npx vite build -c vite.map.config.ts)" \
-    "Fix what $out/report.json found on Seated's public map (src/map). The screenshots are beside it; read the ones you fix.
+  # The prompt goes on stdin: --allowedTools takes several values and would swallow it.
+  if ! claude -p --model opus --permission-mode acceptEdits \
+    --allowedTools "Read,Edit,Write,Grep,Glob,Bash(npm run typecheck),Bash(npm test),Bash(npx vite build -c vite.map.config.ts)" <<EOF
+Fix what $out/report.json found on Seated's public map (src/map). The screenshots are beside it; read the ones you fix.
 Follow CLAUDE.md (map design language, hard rules). Surgical changes, the codebase's style, no new dependencies.
 Fix only clear bugs: overlaps, cut-off text, things off the screen, a lost link, errors. A finding that needs a design
 decision (what art to draw where, a new feature, a change of look) is not yours: list it under 'Needs Joel' in
 $out/fixes.md and leave the code. Never edit sezlab's images (src/map/public/sez), never deploy, never run git.
 After your changes run npm run typecheck and npm test; both must pass. Write $out/fixes.md: per finding, fixed (file and
-what) or left (why)." || echo "Round $i: Claude stopped with an error; the next round checks what it left." >&2
+what) or left (why).
+EOF
+  then
+    echo "Round $i: the fixing Claude failed (output above). Nothing queued: run claude -p by hand to see why, then rerun." >&2
+    exit 1
+  fi
   npm run typecheck && npm test
   git add -A src scripts e2e test docs
   if git diff --cached --quiet; then
