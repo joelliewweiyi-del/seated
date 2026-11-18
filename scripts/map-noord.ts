@@ -37,7 +37,7 @@ if (CANAL && process.env.CANAL_BOX) {
   if (![x0, y0, x1, y1].every(Number.isFinite) || x1! <= x0! || y1! <= y0!) throw new Error(`CANAL_BOX must be x0,y0,x1,y1 in RD metres, got "${process.env.CANAL_BOX}"`);
   Object.assign(RD_BOX, { x0, y0, x1, y1 });
 }
-if (CANAL) useStyle({ pal: CANAL_PAL, walls: CANAL_WALLS, glass: CANAL_GLASS, plinth: CANAL_PLINTH });
+if (CANAL) useStyle({ pal: CANAL_PAL, walls: CANAL_WALLS, glass: CANAL_GLASS, plinth: CANAL_PLINTH, calmPaving: true });
 /** How far our layer reaches over his edge, in his overview pixels (8 world pixels each): his art fades out in a dither about 128 world pixels deep, which ours covers (8 Nov 2026). */
 const UNDER_HIS_EDGE = 16;
 const places = JSON.parse(readFileSync('data/map-places.json', 'utf8'));

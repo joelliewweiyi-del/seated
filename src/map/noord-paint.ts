@@ -73,7 +73,8 @@ const GLASS = ['#2d4f5a', '#393b43', '#474953', '#544b45'].map(c);
 const PLINTH = ['#544b45', '#453a36', '#2a2c33'].map(c);
 
 /** Another art style (the canal-belt sample, scripts/map-noord.ts with SEATED_ART=canal): replaces the colours above for this process. */
-export function useStyle(style: { pal: Partial<Record<keyof typeof PAL, string>>; walls: string[][]; glass: string[]; plinth: string[] }): void {
+export function useStyle(style: { pal: Partial<Record<keyof typeof PAL, string>>; walls: string[][]; glass: string[]; plinth: string[]; calmPaving?: boolean }): void {
+  CALM_PAVING = !!style.calmPaving;
   for (const [k, v] of Object.entries(style.pal)) PAL[k as keyof typeof PAL] = c(v!);
   WALLS.splice(0, WALLS.length, ...style.walls.map((list) => list.map(c)));
   GLASS.splice(0, GLASS.length, ...style.glass.map(c));
@@ -127,6 +128,15 @@ function surface(X: number, Y: number, base: number, worn: number, light: number
   if (patch + edge < 0.31) return worn;
   if (patch + edge > 0.72) return light;
   return base;
+}
+
+/**
+ * Calm paving (canal style; judged climb: plazas read as dithered streaks and blotches): the stone's own colour with
+ * sparse single-pixel grit, no wear patches, so a wide square or quay reads as one paved surface.
+ */
+let CALM_PAVING = false;
+function paved(X: number, Y: number, base: number, grit: number): number {
+  return hash(X, Y, 73) < 0.035 ? grit : base;
 }
 
 /** Shade the completed pixel shoreline, never each diamond's guessed land-facing edges. */
@@ -188,6 +198,11 @@ export function paintGround(p: Pix, w: World, x: number, y: number, ox: number, 
   diamond(p, ox, oy, (px, py) => {
     const X = px + gx;
     const Y = py + gy;
+    if (CALM_PAVING) {
+      if (t === T.street) return S(paved(X, Y, PAL.paving, PAL.pavingDot));
+      if (t === T.square) return S(paved(X, Y, PAL.square, PAL.squareLine));
+      if (t === T.pavement || t === T.land) return S(paved(X, Y, PAL.pavement, PAL.pavementLine));
+    }
     switch (t) {
       case T.street:
         return S(surface(X, Y, PAL.paving, PAL.pavingDot, PAL.pavement));
