@@ -1072,6 +1072,16 @@ a {
     /* Up to 70% of the screen, but never over the top bar or the open day strip. */
     max-height: min(82%, calc(100% - var(--top-h, 60px) - 44px));
   }
+  /* Near me: half the screen (NEAR_SHEET in App.tsx), so your character and the signs round you stay in sight. */
+  .side.near {
+    max-height: 46%;
+  }
+  /* In half a screen the rows come first: no guide line, search, chips or key ("Show all" on the active line goes back). */
+  .side.near .lens-line,
+  .side.near .filters,
+  .side.near .list-foot {
+    display: none;
+  }
   .foot {
     left: 8px;
     bottom: calc(6px + env(safe-area-inset-bottom));

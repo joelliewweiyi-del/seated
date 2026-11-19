@@ -18,15 +18,19 @@ async function visitor(browser: Browser, opts: { phone?: boolean } = {}): Promis
   return ctx.newPage();
 }
 
-/** Pixels of the no-character silhouette's outline colour (#6e6878) in the middle of the map. */
-const silhouette = (page: Page) =>
-  page.locator('canvas').evaluate((c: HTMLCanvasElement) => {
+/** Pixels of the no-character silhouette's outline colour (#6e6878) in the middle of the map, or, with `above`, in
+ *  the whole map above that screen height (CSS pixels). */
+const silhouette = (page: Page, above?: number) =>
+  page.locator('canvas').evaluate((c: HTMLCanvasElement, above?: number) => {
     const ctx = c.getContext('2d')!;
-    const { data } = ctx.getImageData(Math.round(c.width / 2) - 200, Math.round(c.height / 2) - 200, 400, 400);
+    const k = c.width / c.clientWidth;
+    const { data } = above
+      ? ctx.getImageData(0, 0, c.width, Math.round(above * k))
+      : ctx.getImageData(Math.round(c.width / 2) - 200, Math.round(c.height / 2) - 200, 400, 400);
     let n = 0;
     for (let i = 0; i < data.length; i += 4) if (data[i] === 0x6e && data[i + 1] === 0x68 && data[i + 2] === 0x78) n++;
     return n;
-  });
+  }, above);
 
 test('a first visit asks for your location; Show me puts you on the map and lists what is closest first', async ({ browser }) => {
   const page = await visitor(browser);
@@ -86,6 +90,13 @@ test('on a phone the card sits above the list bar and Show me opens the list', a
   await card.getByRole('button', { name: 'Show me' }).click();
   await expect(page.locator('.rows li').first()).toContainText('Choux');
   await expect(page.locator('.rows li').first()).toBeInViewport();
+  // Half the screen, not all of it: your character stands in the map above the list (Joel, 19 Nov 2026).
+  const side = (await page.locator('.side').boundingBox())!;
+  expect(side.height).toBeLessThanOrEqual(844 * 0.47);
+  // The rows come first: the nearest three show in full, over the search and chips.
+  await shot(page, '23-where-phone-list');
+  for (let i = 0; i < 3; i++) await expect(page.locator('.rows li').nth(i)).toBeInViewport({ ratio: 1 });
+  await expect.poll(() => silhouette(page, side.y), { timeout: 5000 }).toBeGreaterThan(20);
   await shot(page, '23-where-phone-list');
   await page.context().close();
 });

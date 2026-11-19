@@ -297,7 +297,9 @@ export function App() {
               .map((p) => ({ x: p.ax, y: p.ay }))
               .sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y))
               .slice(0, 3);
-            const c = centred(view, a.x, a.y, fitZoom(view, a, nearest, Math.max(view.cam.z, 1)), null);
+            // On a phone Show me opens the list half-height (NEAR_SHEET): centre in the map above it, not above the closed bar.
+            const sheet = show && innerWidth <= 900 ? Math.round(innerHeight * NEAR_SHEET) + 36 : null;
+            const c = centred(view, a.x, a.y, fitZoom(view, a, nearest, Math.max(view.cam.z, 1), sheet), sheet);
             view.flyTo(c.x, c.y, c.z);
           }
           if (show) {
@@ -541,7 +543,7 @@ export function App() {
             onYou={() => (you.account || you.answered ? setDialog('you') : openWelcome('q0'))}
           />
 
-          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
+          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
               <Card
                 r={sel}
@@ -692,6 +694,10 @@ export function App() {
 }
 
 /** The camera that puts world point (x, y) in the middle of the screen the panels leave free. */
+/** Near me on a phone: the list opens to this share of the screen, so the map and your character stay in sight
+ *  (Joel, 19 Nov 2026: the full list hid both). Keep in step with `.side.near` in styles.css. */
+const NEAR_SHEET = 0.46;
+
 function centred(view: MapView, x: number, y: number, z: number, bottom: number | null): { x: number; y: number; z: number } {
   const s = view.safe;
   const cx = (s.left + (innerWidth - s.right)) / 2;
@@ -701,8 +707,8 @@ function centred(view: MapView, x: number, y: number, z: number, bottom: number 
 
 /** The largest zoom step up to `max` at which every point fits round (x, y) when `centred` puts it in the middle,
  *  with room for a sign (half its width beside, its board above). Never further out than names show (0.25). */
-function fitZoom(view: MapView, at: { x: number; y: number }, pts: Array<{ x: number; y: number }>, max: number): number {
-  const s = view.safe;
+function fitZoom(view: MapView, at: { x: number; y: number }, pts: Array<{ x: number; y: number }>, max: number, bottom: number | null = null): number {
+  const s = { ...view.safe, bottom: bottom ?? view.safe.bottom };
   const cy = (s.top + (innerHeight - s.bottom)) / 2 + 24;
   const side = (innerWidth - s.right - s.left) / 2 - 100;
   const up = cy - s.top - 40;
