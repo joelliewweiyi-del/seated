@@ -22,7 +22,12 @@ export interface Marker {
 }
 
 const MICHELIN_RED = '#b8322a';
-const michelinMark = (m: Pick<Marker, 'michelin'>) => (!m.michelin ? null : m.michelin === 'bib' ? 'BIB' : '★'.repeat(Number(m.michelin)));
+/** Text on a dimmed sign: dark enough for 4.5:1 on its board (#f1eee8), still lighter than the ink. */
+/** Pins closer than this (screen pixels) merge into one numbered pin; its hit id starts with CLUSTER. */
+const CLUSTER_PX = 14;
+const CLUSTER = 'cluster:';
+export const DIM_INK = '#625d6b';
+const michelinMark = (m: Pick<Marker, 'michelin'>) => (!m.michelin ? null : m.michelin === 'bib' ? 'Bib' : '★'.repeat(Number(m.michelin)));
 
 /** Crisp zooms: at each one the chosen image level is shown at a whole multiple of its pixels. */
 export const ZOOMS = [0.125, 0.25, 0.5, 1, 2, 3, 4];
@@ -648,8 +653,39 @@ export class MapView {
       placed.push(rect);
       drawn.push({ m, x, y, full });
     }
+    // Pins closer than CLUSTER_PX merge into one numbered pin (judge, 19 Nov 2026: pins stacked on each other read as
+    // nameless dots); a tap on it zooms in one step there. The selected and hovered places always keep their own.
+    const groups: Array<{ x: number; y: number; n: number }> = [];
+    const solo = drawn.filter((d) => {
+      if (d.full || d.m.id === this.selected || d.m.id === this.hovered) return true;
+      const g = groups.find((q) => Math.hypot(q.x - d.x, q.y - d.y) < CLUSTER_PX);
+      const twin = !g && drawn.find((o) => o !== d && !o.full && o.m.id !== this.selected && o.m.id !== this.hovered && Math.hypot(o.x - d.x, o.y - d.y) < CLUSTER_PX);
+      if (g) g.n++;
+      else if (twin) groups.push({ x: d.x, y: d.y, n: 1 });
+      else return true;
+      return false;
+    });
+    for (const g of groups) this.drawCluster(ctx, g.x, g.y, g.n);
+    ctx.canvas.dataset.clusters = JSON.stringify(groups.map((g) => [g.x, g.y, g.n])); // read by e2e/map.spec.ts
+    ctx.canvas.dataset.zoom = String(z);
     // Draw back to front: low-ranked dots first, the selected sign last.
-    for (const d of drawn.reverse()) this.drawSign(ctx, d.m, d.x, d.y, d.full, now, W - this.safe.right - 4);
+    for (const d of solo.reverse()) this.drawSign(ctx, d.m, d.x, d.y, d.full, now, W - this.safe.right - 4);
+  }
+
+  /** A numbered pin for places too close to tell apart at this zoom. */
+  private drawCluster(ctx: CanvasRenderingContext2D, x: number, y: number, n: number): void {
+    const ink = '#2b2733';
+    ctx.fillStyle = ink;
+    ctx.fillRect(x - 1, y - 8, 2, 8);
+    pxCircle(ctx, x, y - 13, 10, ink);
+    pxCircle(ctx, x, y - 13, 9, '#fffaf0');
+    ctx.fillStyle = ink;
+    ctx.font = '700 12px "Pixelify Sans", ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(n), x, y - 12);
+    ctx.textAlign = 'start';
+    this.hits.push({ id: `${CLUSTER}${x},${y}`, x: x - 12, y: y - 25, w: 24, h: 26 });
   }
 
   private michelinWidth(ctx: CanvasRenderingContext2D, m: Marker, small = false): number {
@@ -710,7 +746,7 @@ export class MapView {
     pxBox(ctx, left, top, w, h, ink, m.dim ? '#f1eee8' : '#fffaf0');
     // Status stud, name, badge.
     pxCircle(ctx, left + 10, top + h / 2, 4, m.dim ? '#d9d5df' : m.colour);
-    ctx.fillStyle = m.dim ? '#8b8794' : ink;
+    ctx.fillStyle = m.dim ? DIM_INK : ink; // 4.5:1 or more on the dimmed board (#8b8794 was 3.0:1)
     ctx.font = '600 13px "Pixelify Sans", ui-monospace, monospace';
     ctx.textBaseline = 'middle';
     ctx.fillText(name, left + 18, top + h / 2 + 1);
@@ -795,6 +831,10 @@ export class MapView {
       el.style.cursor = this.hovered ? 'pointer' : 'grab';
       if (moved < 6 && e.type === 'pointerup') {
         const id = this.hitAt(e.clientX, e.clientY);
+        if (id?.startsWith(CLUSTER)) {
+          this.zoomBy(1, { x: e.clientX, y: e.clientY });
+          return;
+        }
         this.selected = id;
         this.onSelect(id);
         this.dirty = true;

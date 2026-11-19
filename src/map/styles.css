@@ -540,7 +540,7 @@ a {
   background: #fffaf0;
   box-shadow: inset 0 0 0 1.5px #b8322a;
   font-size: 10px;
-  text-transform: uppercase;
+  /* "Bib", not "BIB": in Pixelify a capital B next to an I reads as 818. */
 }
 .mk-flame {
   width: 10px;
@@ -1075,6 +1075,18 @@ a {
   /* Near me: half the screen (NEAR_SHEET in App.tsx), so your character and the signs round you stay in sight. */
   .side.near {
     max-height: 46%;
+  }
+  /* A card: half the screen too (CARD_SHEET in App.tsx), the place itself in the map above it (Joel, 19 Nov 2026). */
+  .side.has-card {
+    max-height: 50%;
+  }
+  /* In half a screen the Book button stays in reach: the actions stick to the bottom of the scrolling card. */
+  .side.has-card .card .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding: 6px 0;
+    background: var(--panel);
   }
   /* In half a screen the rows come first: no guide line, search, chips or key ("Show all" on the active line goes back). */
   .side.near .lens-line,

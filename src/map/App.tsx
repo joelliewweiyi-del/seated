@@ -389,8 +389,8 @@ export function App() {
       const view = viewRef.current;
       setSelected(id);
       if (p && view) {
-        // On a phone the card will cover up to 62% of the height once it opens, so plan for that.
-        const c = centred(view, p.ax, p.ay, Math.max(view.cam.z, 1), matchMedia('(max-width: 900px)').matches ? innerHeight * 0.62 + 44 : null);
+        // On a phone the card covers up to half the height once it opens (CARD_SHEET), so plan for that.
+        const c = centred(view, p.ax, p.ay, Math.max(view.cam.z, 1), matchMedia('(max-width: 900px)').matches ? innerHeight * CARD_SHEET + 44 : null);
         view.flyTo(c.x, c.y, c.z);
       }
     },
@@ -543,7 +543,7 @@ export function App() {
             onYou={() => (you.account || you.answered ? setDialog('you') : openWelcome('q0'))}
           />
 
-          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
+          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}${sel ? ' has-card' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
               <Card
                 r={sel}
@@ -697,6 +697,8 @@ export function App() {
 /** Near me on a phone: the list opens to this share of the screen, so the map and your character stay in sight
  *  (Joel, 19 Nov 2026: the full list hid both). Keep in step with `.side.near` in styles.css. */
 const NEAR_SHEET = 0.46;
+/** A card on a phone: half the screen (`.side.has-card`), so the place stays in sight above it (Joel, 19 Nov 2026). */
+const CARD_SHEET = 0.5;
 
 function centred(view: MapView, x: number, y: number, z: number, bottom: number | null): { x: number; y: number; z: number } {
   const s = view.safe;

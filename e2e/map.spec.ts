@@ -128,6 +128,13 @@ test('on a phone the map, the day bar and the list sheet all fit, and the chrome
   await page.locator('.rows .row').first().click();
   await expect(page.locator('.card h2')).toBeVisible();
   await expect(page.locator('.card').getByRole('link', { name: /Book|Booking page/ })).toBeInViewport();
+  // Half the screen, so the place stays in sight above the card (Joel, 19 Nov 2026).
+  expect((await page.locator('.side').boundingBox())!.height).toBeLessThanOrEqual(844 * 0.51);
+  // The Book button stays whole in sight in the half card, above the "Scroll for more" bar (judge, 19 Nov 2026).
+  const book = (await page.locator('.card').getByRole('link', { name: /Book|Booking page/ }).boundingBox())!;
+  const more = await page.locator('.more-bar').boundingBox();
+  if (more) expect(book.y + book.height).toBeLessThanOrEqual(more.y);
+  expect(book.y + book.height).toBeLessThanOrEqual(844);
   await settled(page);
   await shot(page, '06-phone-card');
   await page.close();
@@ -528,4 +535,34 @@ test('?art=ours stays in the link while the map rewrites it, and credits 3DBAG a
   await expect(page).toHaveURL(/[?&]r=bacalar/);
   await expect(page).toHaveURL(/[?&]art=ours/); // 18 Nov 2026: the link lost it, a reload showed his art again
   await expect(page.locator('footer.foot')).toContainText('3DBAG');
+});
+
+test('pins too close to tell apart merge into one numbered pin, and a tap on it zooms in there', async ({ page }) => {
+  // Four full restaurants a few metres apart: zoomed far out (names only for free places) they are pins on one spot.
+  await page.route('**/map/data.json', async (route) => {
+    const data = await (await route.fetch()).json();
+    const [a, ...rest] = data.restaurants.slice(0, 4);
+    for (const [i, r] of [a, ...rest].entries()) {
+      r.lat = a.lat + i * 0.00005;
+      r.lng = a.lng;
+      r.d = 'f'.repeat(r.d.length);
+    }
+    route.fulfill({ json: data });
+  });
+  await page.goto('/map/');
+  await settled(page);
+  const canvas = page.locator('canvas');
+  const clusters = async () => JSON.parse((await canvas.getAttribute('data-clusters')) ?? '[]') as Array<[number, number, number]>;
+  const zoom = async () => Number(await canvas.getAttribute('data-zoom'));
+  for (let i = 0; i < 6; i++) await page.locator('.zoom button').nth(1).click();
+  await expect.poll(zoom).toBe(0.125); // the farthest step, settled
+  await expect.poll(async () => (await clusters()).length).toBeGreaterThan(0);
+  const [x, y, n] = (await clusters())[0]!;
+  expect(n).toBeGreaterThanOrEqual(4);
+  const before = await page.evaluate(() => location.search);
+  await page.mouse.click(x, y - 13);
+  // One step in, at the pin, and no restaurant opened.
+  await expect.poll(zoom).toBe(0.25);
+  await expect(page.locator('.card h2')).toHaveCount(0);
+  expect(await page.evaluate(() => location.search)).toBe(before);
 });
