@@ -150,7 +150,7 @@ async function scenario(browser: Browser, art: string, screen: (typeof SCREENS)[
   page.on('pageerror', (e) => add('page error', 'high', e.message));
   page.on('console', (m) => m.type() === 'error' && add('console error', 'medium', m.text()));
   try {
-    await page.goto(`${BASE}${art === 'ours' ? '?art=ours' : ''}`);
+    await page.goto(`${BASE}${art === 'his' ? '?art=sez' : ''}`);
     await settled(page);
     if (state === 'near') {
       // Joel's screen on 18 Nov 2026: location allowed and the Near me filter on.
@@ -172,7 +172,7 @@ async function scenario(browser: Browser, art: string, screen: (typeof SCREENS)[
       for (const key of new Set([...before.keys(), ...after.keys()])) {
         if (before.get(key) !== after.get(key)) add('link after reload', 'high', `?${key} was "${before.get(key)}", after a reload "${after.get(key)}"`);
       }
-      if (art === 'ours' && after.get('art') !== 'ours') add('link after reload', 'high', 'the link lost ?art=ours, so a reload shows the other art');
+      if (art === 'his' && after.get('art') !== 'sez') add('link after reload', 'high', 'the link lost ?art=sez, so a reload shows the other art');
       const again = await page.locator('.card h2, .card h3').first().innerText().catch(() => '');
       if (name && again !== name) add('link after reload', 'high', `the card was "${name}", after a reload "${again || 'gone'}"`);
     }
@@ -193,7 +193,7 @@ async function scenario(browser: Browser, art: string, screen: (typeof SCREENS)[
 function judge(shots: string[], code: Finding[]): Finding[] {
   const prompt = `You judge the public map of Seated (a pixel-art isometric Amsterdam with restaurant signs) as a visitor would.
 Read every screenshot in ${OUT}: ${shots.map((s) => `${s}.png`).join(', ')}.
-Names: <art>-<screen width>-<state>. art "his" is sezlab's city art (the default); "ours" is Seated's own canal-belt drawing (?art=ours).
+Names: <art>-<screen width>-<state>. art "ours" is Seated's own north-up drawing (the default); "his" is sezlab's city art (?art=sez).
 States: start (first view), near (location allowed, standing at Weteringschans, the Near me filter on), card (a restaurant's card open), reload (card open, then the page reloaded).
 The code checks already found: ${JSON.stringify(code.map((f) => `${f.shot}: ${f.what}`))}. Do not repeat them.
 Look for what a visitor would call broken or ugly: signs or your character covering each other, signs standing in fog or on empty ground,

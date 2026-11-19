@@ -9,12 +9,10 @@ import { Avatar, cleanLook } from './avatar';
 import { profileById } from './taste';
 import { picksFor, Trouble, Welcome, YouPanel, type WelcomeStep } from './welcome';
 import { useYou, type You } from './you';
-import { World } from './world';
+import { OUR_ART, World } from './world';
 
 const CONTACT = (import.meta.env.VITE_MAP_CONTACT as string | undefined) ?? '';
 const REFRESH_MS = 3 * 60_000;
-/** ?art=ours: Seated's own canal-belt sample instead of sezlab's art (world.ts); it needs its own credits. */
-const OUR_ART = new URLSearchParams(location.search).get('art') === 'ours';
 const STATUS_RANK: Record<Status, number> = { open: 300, later: 200, full: 100, none: 100, closed: 50, unknown: 0 };
 const ORDER: Status[] = ['open', 'later', 'full', 'none', 'closed', 'unknown'];
 /** Booking pages that take no date from a link: the guest picks the day there (Tebi, Guestplan, Frank). */
@@ -369,7 +367,7 @@ export function App() {
   useEffect(() => {
     if (!data || !day) return;
     const q = new URLSearchParams();
-    if (OUR_ART) q.set('art', 'ours'); // a reload or a shared link keeps the same art
+    if (!OUR_ART) q.set('art', 'sez'); // a reload or a shared link keeps sezlab's art when it was chosen
     if (day !== data.start) q.set('date', day);
     if (selected) q.set('r', selected);
     if (lensId === 'all') q.set('lens', 'all');
@@ -1153,17 +1151,23 @@ function useMore<T extends HTMLElement>(key: unknown): [RefObject<T | null>, boo
 
 /** Share the card's link: the phone's share sheet where there is one, else copy it. */
 async function share(r: MapRestaurant, day: string): Promise<string> {
-  const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(r.id)}&date=${day}`;
+  const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(r.id)}&date=${day}${OUR_ART ? '' : '&art=sez'}`;
   const text = `${r.name}, ${dayLabel(day, { long: true })}`;
-  try {
-    if (navigator.share) {
+  if (navigator.share) {
+    try {
       await navigator.share({ title: r.name, text, url });
       return '';
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return ''; // closed the share sheet: nothing to say
+      // Any other refusal (no share target, not allowed): copy instead (runtime walk, 19 Nov 2026).
     }
+  }
+  try {
     await navigator.clipboard.writeText(url);
     return 'Link copied';
   } catch {
-    return '';
+    // The runtime walk (19 Nov 2026): a refused clipboard left Share doing nothing at all.
+    return 'Copy the address bar';
   }
 }
 
@@ -1443,18 +1447,21 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
               </>
             )}
             <h3>The city</h3>
-            {OUR_ART && (
+            {OUR_ART ? (
               <p>
-                This view (?art=ours) shows Seated's own drawing of the canal belt instead: buildings from the 3DBAG 3D models
-                (TU Delft and 3DGI, CC BY 4.0), façade colours from Gemeente Amsterdam street panoramas (CC BY 4.0), streets and
-                water from OpenStreetMap.
+                The city is Seated's own drawing, north up: buildings from the 3DBAG 3D models (TU Delft and 3DGI, CC BY 4.0), façade
+                colours from Gemeente Amsterdam street panoramas (CC BY 4.0), roofs from the PDOK aerial photo (CC BY 4.0), streets
+                and water from OpenStreetMap. For the hand-tuned drawing by sezlab (north-west up), open{' '}
+                <a href="?art=sez">the map in his art</a>.
+              </p>
+            ) : (
+              <p>
+                The city is drawn by sezlab: <a href="https://sezlab.dev/amsterdam">sezlab.dev/amsterdam</a>, used with his permission.
+                Like his work? <a href="https://github.com/sponsors/sezkus">Sponsor him</a>. His drawing is made from 3DBAG (TU Delft and
+                3DGI), the PDOK aerial photo (Beeldmateriaal Nederland) and OpenStreetMap. Noord is drawn by Seated in the same style, from 3DBAG, PDOK and OpenStreetMap. Restaurants outside the drawn city appear in the list and have a sign standing in the fog.{' '}
+                <a href="?">Seated's own drawing</a> is north up.
               </p>
             )}
-            <p>
-              The city is drawn by sezlab: <a href="https://sezlab.dev/amsterdam">sezlab.dev/amsterdam</a>, used with his permission.
-              Like his work? <a href="https://github.com/sponsors/sezkus">Sponsor him</a>. His drawing is made from 3DBAG (TU Delft and
-              3DGI), the PDOK aerial photo (Beeldmateriaal Nederland) and OpenStreetMap. Noord is drawn by Seated in the same style, from 3DBAG, PDOK and OpenStreetMap. Restaurants outside the drawn city appear in the list and have a sign standing in the fog.
-            </p>
             <h3>“Not bookable yet”</h3>
             <p>
               Many places open their calendar a set number of days ahead. When a day is past the end of a calendar, we say so, and

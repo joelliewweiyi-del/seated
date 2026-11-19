@@ -27,5 +27,7 @@ src/map/public/sez/*
 # One-off open-data map downloads and build measurements
 .cache
 
-# Canal-belt sample of our own art (SEATED_ART=canal npx tsx scripts/map-noord.ts): built locally, deployed by scripts/map-deploy.sh, shown only with ?art=ours
-src/map/public/canal/
+# Our own art, the default map (npx tsx scripts/canal-city.ts): images built locally, deployed by scripts/map-deploy.sh.
+# The manifest is committed, like sez/manifest.json, so a fresh checkout (CI) loads the map without the images.
+src/map/public/canal/*
+!src/map/public/canal/manifest.json

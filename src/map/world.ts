@@ -45,6 +45,10 @@ export interface OursManifest {
 
 const R2 = Math.SQRT1_2;
 
+/** Seated's own art, north up, is the map (Joel, 19 Nov 2026: "i want north to be north. like google maps"). sezlab's
+ *  art (north-west up) only with ?art=sez; an old ?art=ours link still opens ours. */
+export const OUR_ART = typeof location === 'undefined' || new URLSearchParams(location.search).get('art') !== 'sez'; // no location: imported by Node tests
+
 export class World {
   /** World pixels per unit of his projection. */
   readonly scale: number;
@@ -58,7 +62,7 @@ export class World {
     readonly base = './sez/',
     readonly ours?: OursManifest,
     readonly oursBase = './ours/',
-    /** ?art=ours: his art hidden, our canal-belt sample shown instead (scripts/map-noord.ts, SEATED_ART=canal). */
+    /** Our art (the default; not with ?art=sez): his art hidden, ours shown (scripts/canal-city.ts). */
     readonly onlyOurs = false,
   ) {
     this.scale = meta.hi.w / meta.w;
@@ -75,9 +79,9 @@ export class World {
   }
 
   static async load(base = './sez/'): Promise<World> {
+    const onlyOurs = OUR_ART;
     const res = await fetch(`${base}manifest.json`);
     if (!res.ok) throw new Error(`the city map answered ${res.status}`);
-    const onlyOurs = new URLSearchParams(location.search).get('art') === 'ours';
     const oursBase = onlyOurs ? './canal/' : './ours/';
     const extension = await fetch(`${oursBase}manifest.json`);
     if (!extension.ok) throw new Error(`the Noord map answered ${extension.status}${onlyOurs ? ': build the sample with SEATED_ART=canal npx tsx scripts/map-noord.ts' : ''}`);
@@ -87,7 +91,7 @@ export class World {
   /** A point at `metres` above the ground -> world pixels. */
   project(lat: number, lng: number, metres = 0): { x: number; y: number } {
     let { x: rx, y: ry } = wgsToRd(lat, lng);
-    // ?art=ours is drawn north up (scripts/map-noord.ts, TURN): signs and the camera turn with it.
+    // Our art is drawn north up (scripts/map-noord.ts, TURN): signs and the camera turn with it.
     const turn = this.onlyOurs ? (this.ours?.turn ?? 0) : 0;
     if (turn) {
       const { x: px, y: py } = this.ours!.pivot!, c = Math.cos(turn), s = Math.sin(turn);

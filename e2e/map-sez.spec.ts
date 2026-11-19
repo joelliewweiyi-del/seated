@@ -76,7 +76,7 @@ test.beforeEach(async ({ page }) => {
 
 // Spec 7: both footer and About dialog provide the art and sponsorship links.
 test('credits sezlab and links to sponsorship in both locations', async ({ page }) => {
-  await page.goto('/map/');
+  await page.goto('/map/?art=sez'); // his art is opt-in since 19 Nov 2026 (ours, north up, is the default)
   await settled(page);
   const footer = page.locator('footer');
   await expect(footer.locator('a[href="https://sezlab.dev/amsterdam"]')).toBeVisible();

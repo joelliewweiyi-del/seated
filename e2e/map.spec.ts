@@ -315,7 +315,7 @@ test('Noord is drawn at far, mid and near zooms and across the IJ seam, with fog
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const failed: string[] = [];
   page.on('response', r => { if (/\/(ours|sez)\/.*\.png/.test(r.url()) && !r.ok()) failed.push(r.url()); });
-  await page.goto('/map/?r=bacalar');
+  await page.goto('/map/?art=sez&r=bacalar'); // his art with our Noord (ours is the default since 19 Nov 2026)
   await settled(page);
   await expect(page.locator('.card')).not.toContainText('Outside the drawn city');
   await page.keyboard.press('Escape');
@@ -380,7 +380,7 @@ test('restaurants that stood on fog (15 Nov 2026) stand on drawn city, at mid an
   const failed: string[] = [];
   page.on('response', r => { if (/\/(ours|sez)\/.*\.png/.test(r.url()) && !r.ok()) failed.push(r.url()); });
   for (const [id, lat, lng] of [['toet', 52.342644, 4.89258], ['showw', 52.337398, 4.892941], ['hotel-de-goudfazant', 52.384539, 4.928246]] as const) {
-    await page.goto(`/map/?r=${id}`);
+    await page.goto(`/map/?art=sez&r=${id}`);
     await settled(page);
     await expect(page.locator('.card')).not.toContainText('Outside the drawn city');
     await page.keyboard.press('Escape');
@@ -435,7 +435,7 @@ test('far out, the art below a cut-off overview still draws, not fog (Joel, 17 N
     }, 400));
   });
   const settled = async (p: typeof page) => {
-    await p.goto('/map/');
+    await p.goto('/map/?art=sez');
     await expect(p.locator('.list-head h2')).toBeVisible();
     await expect.poll(() => fogShare(p), { timeout: 20_000 }).toBeGreaterThanOrEqual(0);
     return fogShare(p);
@@ -463,7 +463,7 @@ test('a city overview cut short is fetched again past the cache, and fog is buil
     // The first copy is cut short, as a dropped download is; the second is whole.
     await route.fulfill({ response: res, body: asked.length === 1 ? body.subarray(0, Math.floor(body.length * 0.4)) : body });
   });
-  await page.goto('/map/');
+  await page.goto('/map/?art=sez');
   await expect(page.locator('.list-head h2')).toBeVisible();
   await expect.poll(() => asked.length).toBe(2);
   expect(asked[1]).toContain('fresh=');
@@ -525,44 +525,92 @@ test('the map opens on the Seated curated list; Every restaurant shows all and t
   await expect(page.locator('.chip.lens')).toHaveText('Lists');
 });
 
-// Our canal-belt sample is gitignored (built locally, deployed by scripts/map-deploy.sh), so CI has none to show.
-test('?art=ours stays in the link while the map rewrites it, and credits 3DBAG and the panoramas', async ({ page }) => {
-  const { existsSync } = await import('node:fs');
-  test.skip(!existsSync('dist/map/canal/manifest.json'), 'no canal sample in dist/map (SEATED_ART=canal npx tsx scripts/map-noord.ts)');
-  await page.goto('/map/?art=ours');
+// Joel, 19 Nov 2026: "i want north to be north. like google maps". Our art, drawn north up, is the map; sezlab's
+// (north-west up) only with ?art=sez. Its images are gitignored; the committed manifest is enough for the projection.
+test('the map is north up: due north of the Dam stands straight above it, and the credit names 3DBAG', async ({ page }) => {
+  const { readFileSync } = await import('node:fs');
+  const { World } = await import('../src/map/world');
+  const read = (f: string) => JSON.parse(readFileSync(f, 'utf8'));
+  const world = new World(read('src/map/public/sez/manifest.json'), './sez/', read('src/map/public/canal/manifest.json'), './canal/', true);
+  const dam = world.project(52.3731, 4.8926);
+  const north = world.project(52.3831, 4.8926); // about 1.1 km due north
+  const east = world.project(52.3731, 4.9086); // about 1.1 km due east
+  expect(north.y).toBeLessThan(dam.y - 100); // up the screen
+  expect(Math.abs(north.x - dam.x)).toBeLessThan(Math.abs(north.y - dam.y) * 0.05); // straight up, not north-west
+  expect(east.x).toBeGreaterThan(dam.x + 100); // east is to the right
+  expect(Math.abs(east.y - dam.y)).toBeLessThan(Math.abs(east.x - dam.x) * 0.6);
+  await page.goto('/map/');
+  await expect(page.locator('footer.foot')).toContainText('3DBAG');
+  expect(new URL(page.url()).searchParams.get('art')).toBeNull(); // the default needs no parameter
+});
+
+test("?art=sez shows sezlab's art and stays in the link; an old ?art=ours link opens the default", async ({ page }) => {
+  await page.goto('/map/?art=sez');
   await page.getByLabel('Find a restaurant').fill('Bacalar');
   await page.locator('.rows .row').filter({ hasText: 'Bacalar' }).click();
   await expect(page).toHaveURL(/[?&]r=bacalar/);
-  await expect(page).toHaveURL(/[?&]art=ours/); // 18 Nov 2026: the link lost it, a reload showed his art again
+  await expect(page).toHaveURL(/[?&]art=sez/);
+  await expect(page.locator('footer.foot')).toContainText('sezlab');
+  await page.goto('/map/?art=ours');
   await expect(page.locator('footer.foot')).toContainText('3DBAG');
 });
 
 test('pins too close to tell apart merge into one numbered pin, and a tap on it zooms in there', async ({ page }) => {
-  // Four full restaurants a few metres apart: zoomed far out (names only for free places) they are pins on one spot.
+  // Four full restaurants a few metres apart: zoomed far out they are pins on one spot.
   await page.route('**/map/data.json', async (route) => {
     const data = await (await route.fetch()).json();
-    const [a, ...rest] = data.restaurants.slice(0, 4);
-    for (const [i, r] of [a, ...rest].entries()) {
-      r.lat = a.lat + i * 0.00005;
-      r.lng = a.lng;
+    // Every place full, no stars or hot marks: far out none keeps its name, so no sign stands over the pins.
+    for (const r of data.restaurants) {
       r.d = 'f'.repeat(r.d.length);
+      r.michelin = null;
+      r.hot = null;
     }
+    // Four places off the default list (Seated curated): on it, a place keeps its name far out and the name covers the pins.
+    const { readFileSync } = await import('node:fs');
+    const curated = new Set(JSON.parse(readFileSync('data/map-guides.json', 'utf8')).picks.seated as string[]);
+    const off = data.restaurants.filter((r: { id: string }) => !curated.has(r.id)).slice(0, 4);
+    expect(off).toHaveLength(4);
+    for (const [i, r] of off.entries()) {
+      r.lat = 52.3731 + i * 0.00005; // the Dam: mid-screen far out
+      r.lng = 4.8926;
+    }
+    data.restaurants = off; // only these four, so no other sign stands over them
     route.fulfill({ json: data });
   });
-  await page.goto('/map/');
+  await page.goto('/map/?lens=all');
   await settled(page);
-  const canvas = page.locator('canvas');
+  const canvas = page.locator('canvas.map');
   const clusters = async () => JSON.parse((await canvas.getAttribute('data-clusters')) ?? '[]') as Array<[number, number, number]>;
   const zoom = async () => Number(await canvas.getAttribute('data-zoom'));
   for (let i = 0; i < 6; i++) await page.locator('.zoom button').nth(1).click();
   await expect.poll(zoom).toBe(0.125); // the farthest step, settled
   await expect.poll(async () => (await clusters()).length).toBeGreaterThan(0);
   const [x, y, n] = (await clusters())[0]!;
-  expect(n).toBeGreaterThanOrEqual(4);
+  expect(n).toBe(4);
+  await expect(page.locator('canvas.map')).toHaveCount(1);
   const before = await page.evaluate(() => location.search);
   await page.mouse.click(x, y - 13);
   // One step in, at the pin, and no restaurant opened.
   await expect.poll(zoom).toBe(0.25);
   await expect(page.locator('.card h2')).toHaveCount(0);
   expect(await page.evaluate(() => location.search)).toBe(before);
+});
+
+test('Share copies the link, and says what to do when the browser refuses (runtime walk, 19 Nov 2026)', async ({ browser }) => {
+  for (const allowed of [true, false]) {
+    const ctx = await browser.newContext(allowed ? { permissions: ['clipboard-read', 'clipboard-write'] } : {});
+    await ctx.addInitScript((ok) => {
+      localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true }));
+      localStorage.setItem('seated.map.where', JSON.stringify({ asked: true }));
+      if (!ok) Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('denied')) } });
+      // A share function that refuses (as in a headless browser): Share falls back to copying.
+      Object.defineProperty(navigator, 'share', { value: () => Promise.reject(new DOMException('no target', 'NotAllowedError')) });
+    }, allowed);
+    const page = await ctx.newPage();
+    await page.goto('/map/?r=gitane');
+    await page.locator('.card').getByRole('button', { name: 'Share' }).click();
+    await expect(page.locator('.card .actions')).toContainText(allowed ? 'Link copied' : 'Copy the address bar');
+    if (allowed) expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/[?&]r=gitane&date=/);
+    await ctx.close();
+  }
 });

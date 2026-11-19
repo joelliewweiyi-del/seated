@@ -1,0 +1,90 @@
+{
+  "project": "seated-map",
+  "base_url": "https://seated.food",
+  "widths": [
+    1902,
+    1440,
+    1024,
+    390
+  ],
+  "height": 913,
+  "frontend_paths": [
+    "src/map/"
+  ],
+  "signed_in": {
+    "url": "/",
+    "text": "with a table"
+  },
+  "roles": {
+    "visitor": {
+      "who": "anyone: the map has no sign-in",
+      "write": false,
+      "signin": []
+    }
+  },
+  "ready": {
+    "gone_text": [
+      "Loading"
+    ],
+    "settle_ms": 4000,
+    "timeout_s": 60
+  },
+  "error_text": [
+    "the city map answered",
+    "the Noord map answered",
+    "Something went wrong",
+    "Application error"
+  ],
+  "explore_reset_storage": {
+    "seated.map.you": "{\"answers\":{},\"key\":null,\"welcomed\":true}",
+    "seated.map.where": "{\"asked\":true}",
+    "seated.map.hello": "{\"seen\":true}"
+  },
+  "explore_external": "formitable|tebi\\.co|zenchef|sevenrooms|guestplan|etender|tablecheck|meetfrank|google\\.com/maps|sezlab\\.dev|github\\.com/sponsors|3dbag\\.nl|data\\.amsterdam\\.nl|openstreetmap|vercel\\.com|^mailto:",
+  "explore_max": 40,
+  "screens": [
+    {
+      "name": "Start",
+      "url": "/",
+      "explore_in": ".top, .side, .zoom",
+      "checks": [
+        {
+          "label": "19 Nov 2026: our north-up art is the default",
+          "regex": "3DBAG"
+        },
+        {
+          "label": "the list counts free places",
+          "regex": "\\d+ with a table"
+        }
+      ]
+    },
+    {
+      "name": "Card",
+      "url": "/?r=gitane",
+      "explore_in": ".card",
+      "checks": [
+        {
+          "label": "the card opens on its restaurant",
+          "regex": "Gitane"
+        },
+        {
+          "label": "a way to book",
+          "regex": "Book|Booking page"
+        }
+      ]
+    },
+    {
+      "name": "Sezlab",
+      "url": "/?art=sez",
+      "explore": false,
+      "checks": [
+        {
+          "label": "19 Nov 2026: his art only with ?art=sez, credited",
+          "regex": "sezlab"
+        }
+      ]
+    }
+  ],
+  "explore_skip": "^Website$",
+  "explore_skip_why": "Website opens the restaurant's own site, a different domain per restaurant"
+}

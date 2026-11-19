@@ -23,8 +23,8 @@ export interface Marker {
 
 const MICHELIN_RED = '#b8322a';
 /** Text on a dimmed sign: dark enough for 4.5:1 on its board (#f1eee8), still lighter than the ink. */
-/** Pins closer than this (screen pixels) merge into one numbered pin; its hit id starts with CLUSTER. */
-const CLUSTER_PX = 14;
+/** Pins whose boxes come closer than this (screen pixels) merge into one numbered pin; its hit id starts with CLUSTER. */
+const CLUSTER_GAP = 2;
 const CLUSTER = 'cluster:';
 export const DIM_INK = '#625d6b';
 const michelinMark = (m: Pick<Marker, 'michelin'>) => (!m.michelin ? null : m.michelin === 'bib' ? 'Bib' : '★'.repeat(Number(m.michelin)));
@@ -653,23 +653,46 @@ export class MapView {
       placed.push(rect);
       drawn.push({ m, x, y, full });
     }
-    // Pins closer than CLUSTER_PX merge into one numbered pin (judge, 19 Nov 2026: pins stacked on each other read as
-    // nameless dots); a tap on it zooms in one step there. The selected and hovered places always keep their own.
-    const groups: Array<{ x: number; y: number; n: number }> = [];
-    const solo = drawn.filter((d) => {
-      if (d.full || d.m.id === this.selected || d.m.id === this.hovered) return true;
-      const g = groups.find((q) => Math.hypot(q.x - d.x, q.y - d.y) < CLUSTER_PX);
-      const twin = !g && drawn.find((o) => o !== d && !o.full && o.m.id !== this.selected && o.m.id !== this.hovered && Math.hypot(o.x - d.x, o.y - d.y) < CLUSTER_PX);
-      if (g) g.n++;
-      else if (twin) groups.push({ x: d.x, y: d.y, n: 1 });
-      else return true;
-      return false;
-    });
-    for (const g of groups) this.drawCluster(ctx, g.x, g.y, g.n);
-    ctx.canvas.dataset.clusters = JSON.stringify(groups.map((g) => [g.x, g.y, g.n])); // read by e2e/map.spec.ts
+    // Pins whose drawn boxes (stud, plus its MICHELIN tag) touch merge into one numbered pin (judge, 19 Nov 2026: pins
+    // and star tags stacked on each other read as nameless dots); a tap on it zooms in one step there. The selected and
+    // hovered places always keep their own.
+    const box = (d: { m: Marker; x: number; y: number }) => {
+      const tag = d.m.michelin && !d.m.dim ? this.michelinWidth(ctx, d.m, true) + 1 : 0;
+      return { x0: d.x - 7, x1: d.x + 7 + tag, y0: d.y - 23, y1: d.y };
+    };
+    const touch = (a: ReturnType<typeof box>, b: ReturnType<typeof box>) =>
+      a.x0 < b.x1 + CLUSTER_GAP && b.x0 < a.x1 + CLUSTER_GAP && a.y0 < b.y1 + CLUSTER_GAP && b.y0 < a.y1 + CLUSTER_GAP;
+    const loose = drawn.filter((d) => !d.full && d.m.id !== this.selected && d.m.id !== this.hovered);
+    const boxes = new Map(loose.map((d) => [d, box(d)]));
+    // Union-find over touching pairs, so a chain of touching pins becomes one group.
+    const root = loose.map((_, i) => i);
+    const find = (i: number): number => (root[i] === i ? i : (root[i] = find(root[i]!)));
+    for (let i = 0; i < loose.length; i++)
+      for (let j = i + 1; j < loose.length; j++) if (touch(boxes.get(loose[i]!)!, boxes.get(loose[j]!)!)) root[find(i)] = find(j);
+    const byRoot = new Map<number, typeof loose>();
+    loose.forEach((d, i) => byRoot.set(find(i), [...(byRoot.get(find(i)) ?? []), d]));
+    const merged = [...byRoot.values()]
+      .filter((ms) => ms.length > 1)
+      .map((ms) => ({
+        n: ms.length,
+        x: Math.round(ms.reduce((t, d) => t + d.x, 0) / ms.length),
+        y: Math.round(ms.reduce((t, d) => t + d.y, 0) / ms.length),
+        members: ms,
+      }));
+    // A numbered pin under the zoom buttons is not drawn, like a sign under a panel (judge, 19 Nov 2026).
+    const underControls = (g: { x: number; y: number }) =>
+      this.controls.some((c) => g.x - 12 < c.x + c.w + 2 && g.x + 12 > c.x - 2 && g.y - 25 < c.y + c.h + 2 && g.y > c.y - 2);
+    const inGroup = new Set(merged.flatMap((g) => g.members));
+    merged.splice(0, merged.length, ...merged.filter((g) => !underControls(g)));
+    const solo = drawn.filter((d) => !inGroup.has(d));
+    ctx.canvas.dataset.clusters = JSON.stringify(merged.map((g) => [g.x, g.y, g.n])); // read by e2e/map.spec.ts
     ctx.canvas.dataset.zoom = String(z);
-    // Draw back to front: low-ranked dots first, the selected sign last.
-    for (const d of solo.reverse()) this.drawSign(ctx, d.m, d.x, d.y, d.full, now, W - this.safe.right - 4);
+    // Draw back to front: low-ranked dots first, then the numbered pins (over a neighbour's dot, so a tap on one reaches
+    // it), then named signs, the selected sign last.
+    const back = solo.reverse();
+    for (const d of back) if (!d.full) this.drawSign(ctx, d.m, d.x, d.y, false, now, W - this.safe.right - 4);
+    for (const g of merged) this.drawCluster(ctx, g.x, g.y, g.n);
+    for (const d of back) if (d.full) this.drawSign(ctx, d.m, d.x, d.y, true, now, W - this.safe.right - 4);
   }
 
   /** A numbered pin for places too close to tell apart at this zoom. */
