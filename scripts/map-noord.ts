@@ -776,8 +776,10 @@ if (CANAL) {
   for (let k = 0; k < parts.length; k++) partRoof[k] = cut.nearest(own.get(pandOf[k]!) ?? fallback);
   // How far each building's palette colour is from its own photo colour (RGB distance), so a palette change is measured.
   const errors = [...own.values()].map((c) => { const h = cut.palette[cut.nearest(c)]!; return Math.hypot(...c.map((v, j) => v - parseInt(h.slice(1 + j * 2, 3 + j * 2), 16))); }).sort((a, b) => a - b);
-  if (!errors.length) throw new Error('no building got a roof colour from the aerial photo: check the paint mask K and the aerial tiles for this box');
-  console.log(`[canal] roof colour error per building: median ${errors[errors.length >> 1]!.toFixed(1)}, 95th percentile ${errors[Math.floor(errors.length * 0.95)]!.toFixed(1)}, max ${errors.at(-1)!.toFixed(1)}`);
+  // A box with buildings but no roof colour is a broken build; a box with no building cells (open water, polder) is not.
+  if (!errors.length && pandCells.some((c) => c > 0)) throw new Error('no building got a roof colour from the aerial photo: check the paint mask K and the aerial tiles for this box');
+  if (!errors.length) console.log('[canal] no building cells in this box: no roof colours needed');
+  else console.log(`[canal] roof colour error per building: median ${errors[errors.length >> 1]!.toFixed(1)}, 95th percentile ${errors[Math.floor(errors.length * 0.95)]!.toFixed(1)}, max ${errors.at(-1)!.toFixed(1)}`);
   OUTPUT_PALETTE.push(...canalPalette(ROOF_PALETTE));
   // Check image (top down, one pixel per cell): the aerial photo left, each building in its assigned roof colour right.
   {
