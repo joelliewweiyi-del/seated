@@ -32,6 +32,10 @@ const michelinMark = (m: Pick<Marker, 'michelin'>) => (!m.michelin ? null : m.mi
 /** Crisp zooms: at each one the chosen image level is shown at a whole multiple of its pixels. */
 export const ZOOMS = [0.125, 0.25, 0.5, 1, 2, 3, 4];
 const MAX_IMAGES = 48;
+/** Bobbing in whole pixels: the selected sign, and your ring and lift. */
+const bobAt = (now: number) => Math.round(Math.sin(now / 260) * 1.5);
+const ringAt = (now: number) => Math.round((Math.sin(now / 400) + 1) * 2);
+const liftAt = (now: number) => Math.round((Math.sin(now / 300) + 1) * 2);
 /** Outside the art: fog, so the edge reads as "not explored yet" and never as a gap (Joel, 6 Nov 2026). */
 const FOG_TONES = ['#a8a4bc', '#bbb7cb', '#cecbda', '#e3e1ea'];
 /** Screen pixels per fog pixel: chunky like the signs, at every zoom. */
@@ -111,16 +115,26 @@ export function fogEdgeIndex(
   h: number,
   reach = FOG_REACH,
   clear: Array<{ x: number; y: number }> = [],
+  /** A window of a larger grid: its offset (the noise follows the whole grid) and no edge of its own. */
+  at: { x: number; y: number; edge: boolean } = { x: 0, y: 0, edge: true },
 ): Uint8Array {
   const dist = new Uint8Array(w * h).fill(255);
   const queue = new Int32Array(w * h);
   let head = 0;
   let tail = 0;
+  // Seeds: cells without art next to art (the rest are 0 and lead nowhere nearer), and art on the grid's edge.
   for (let i = 0; i < w * h; i++) {
     const x = i % w;
     const y = (i / w) | 0;
-    if (!alpha[i]) dist[i] = 0;
-    else if (x === 0 || y === 0 || x === w - 1 || y === h - 1) dist[i] = 1;
+    if (!alpha[i]) {
+      dist[i] = 0;
+      let nextToArt = false;
+      for (let dy = -1; dy <= 1 && !nextToArt; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < w && ny < h && alpha[ny * w + nx]) { nextToArt = true; break; }
+      }
+      if (!nextToArt) continue;
+    } else if (at.edge && (x === 0 || y === 0 || x === w - 1 || y === h - 1)) dist[i] = 1;
     else continue;
     queue[tail++] = i;
   }
@@ -144,17 +158,22 @@ export function fogEdgeIndex(
     }
   }
   const out = new Uint8Array(w * h);
+  const wy = Float64Array.from({ length: h }, (_, y) => Math.sin((y + at.y) * 0.02) * 2);
+  const wx = Float64Array.from({ length: w }, (_, x) => Math.sin((x + at.x) * 0.013) * 2);
   for (let i = 0; i < w * h; i++) {
-    const x = i % w;
-    const y = (i / w) | 0;
-    const n = 0.5 + 0.25 * Math.sin(x * 0.03 + Math.sin(y * 0.02) * 2) + 0.25 * Math.sin(y * 0.026 + Math.sin(x * 0.013) * 2);
+    if (dist[i] === 0) { out[i] = 1; continue; }
+    if (dist[i] === 255) continue; // deep in the art, beyond the reach: never fog
+    const lx = i % w, ly = (i / w) | 0;
+    const x = lx + at.x;
+    const y = ly + at.y;
+    const n = 0.5 + 0.25 * Math.sin(x * 0.03 + wy[ly]!) + 0.25 * Math.sin(y * 0.026 + wx[lx]!);
     out[i] = dist[i]! <= Math.round(1 + n * (reach - 1)) ? 1 : 0;
   }
   // Around a restaurant, the art it stands on stays visible: only where there is no art at all does fog remain.
   const r = FOG_CLEAR;
   for (const p of clear) {
-    const cx = Math.round(p.x);
-    const cy = Math.round(p.y);
+    const cx = Math.round(p.x) - at.x;
+    const cy = Math.round(p.y) - at.y;
     for (let y = Math.max(0, cy - r); y <= Math.min(h - 1, cy + r); y++) {
       for (let x = Math.max(0, cx - r); x <= Math.min(w - 1, cx + r); x++) {
         if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r && alpha[y * w + x]) out[y * w + x] = 0;
@@ -174,6 +193,77 @@ export function fogAlphaUnion(layers: Array<{ alpha: Uint8Array; w: number; h: n
     if (l.alpha[row * l.w + col]) alpha[(row + l.y - y) * w + col + l.x - x] = 1;
   }
   return { alpha, x, y, w, h };
+}
+
+/** Side of one fog edge tile, in overview pixels. Small, so no tile is a texture a phone cannot hold. */
+export const FOG_TILE = 128;
+
+/** Art as runs per row ([start, end) pairs of overview pixels), from an alpha grid. */
+export function alphaRuns(alpha: Uint8Array, w: number, h: number): number[][] {
+  const rows: number[][] = [];
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      if (!alpha[y * w + x]) continue;
+      const a = x;
+      while (x < w && alpha[y * w + x]) x++;
+      row.push(a, x);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * The fog edge in tiles of FOG_TILE overview pixels, only where it lies over art: fog over no art is the fog already
+ * under everything, so tiles of no art, and tiles of art far from its edge, need none. The same mask as fogEdgeIndex
+ * over the whole grid (test/mapFog.test.ts), built a tile at a time as the view needs it: on a phone the whole-city
+ * mask (11,776 x 5,120 cells) froze the page 8.7 s on load and was a texture too large for its GPU (Joel, 19 Nov 2026:
+ * "laggy on my chrome mobile").
+ */
+export function fogPlan(runs: number[][], w: number, h: number): Uint8Array {
+  const T = FOG_TILE, tw = Math.ceil(w / T), th = Math.ceil(h / T);
+  const art = new Float64Array(tw * th);
+  runs.forEach((row, y) => {
+    const ty = (y / T) | 0;
+    for (let i = 0; i < row.length; i += 2) {
+      const a = row[i]!, b = row[i + 1]!;
+      for (let tx = (a / T) | 0; tx * T < b; tx++) art[ty * tw + tx]! += Math.min(b, (tx + 1) * T) - Math.max(a, tx * T);
+    }
+  });
+  const full = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < tw && ty < th && art[ty * tw + tx] === T * T;
+  const needs = new Uint8Array(tw * th);
+  for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
+    if (!art[ty * tw + tx]) continue;
+    let inside = true;
+    for (let dy = -1; dy <= 1 && inside; dy++) for (let dx = -1; dx <= 1; dx++) if (!full(tx + dx, ty + dy)) { inside = false; break; }
+    if (!inside) needs[ty * tw + tx] = 1;
+  }
+  return needs;
+}
+
+/** One tile of the fog edge (1 = fog over art), or null when none of it lies over art. */
+export function fogEdgeTile(runs: number[][], w: number, h: number, tx: number, ty: number, reach = FOG_REACH, clear: Array<{ x: number; y: number }> = []): Uint8Array | null {
+  const T = FOG_TILE, m = reach + 1;
+  // The tile and a margin as wide as the fog reaches; outside the grid is no art.
+  const x0 = tx * T - m, y0 = ty * T - m, ww = T + 2 * m, wh = T + 2 * m;
+  const alpha = new Uint8Array(ww * wh);
+  for (let y = Math.max(0, y0); y < Math.min(h, y0 + wh); y++) {
+    const row = runs[y]!;
+    for (let i = 0; i < row.length; i += 2) {
+      const a = Math.max(row[i]!, x0), b = Math.min(row[i + 1]!, x0 + ww);
+      if (a < b) alpha.fill(1, (y - y0) * ww + a - x0, (y - y0) * ww + b - x0);
+    }
+  }
+  const near = clear.filter((p) => p.x > x0 - FOG_CLEAR && p.x < x0 + ww + FOG_CLEAR && p.y > y0 - FOG_CLEAR && p.y < y0 + wh + FOG_CLEAR);
+  const fog = fogEdgeIndex(alpha, ww, wh, reach, near, { x: x0, y: y0, edge: false });
+  const mask = new Uint8Array(T * T);
+  let any = false;
+  for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+    const j = (y + m) * ww + x + m;
+    if (fog[j] && alpha[j]) { mask[y * T + x] = 1; any = true; }
+  }
+  return any ? mask : null;
 }
 
 /**
@@ -229,16 +319,22 @@ export class MapView {
   /** Camera centre in world pixels and zoom (CSS pixels per world pixel). */
   cam = { x: 0, y: 0, z: 0.25 };
   target: { x: number; y: number; z: number } | null = null;
-  private fog: CanvasPattern | null = null;
-  /** Where fog covers the art's edge, one pixel per overview pixel (built once the overview has loaded). */
-  private fogMask: HTMLCanvasElement | null = null;
+  /** The fog tile (fogCanvas), and where its repeat starts on screen this frame. */
+  private fog: HTMLCanvasElement | ImageBitmap | null = null;
+  private fogAt = { x: 0, y: 0 };
+  /**
+   * The art as runs per overview row, and which FOG_TILE tiles may have fog over art (fogPlan); tiles are built as the
+   * view reaches them (null: none of it over art). Our art's runs come from its manifest, his from his overview.
+   */
+  private fogMask: { runs: number[][]; w: number; h: number; needs: Uint8Array; tiles: Map<number, HTMLCanvasElement | null> } | null = null;
   /** Restaurants: the fog edge never covers the ground around one. World pixels. */
   private clear: Array<{ x: number; y: number }> = [];
   /** Where the camera may go: his drawing, and every restaurant in the fog around it with some room to spare. */
   private bounds = { x0: 0, y0: 0, x1: 0, y1: 0 };
   private fogScratch: HTMLCanvasElement | null = null;
   private dpr = 1;
-  private overview: Tile;
+  /** His overview; none when only our art is drawn. */
+  private overview: Tile | null = null;
   private oursOverview: Tile | null = null;
   private fogOrigin = { x: 0, y: 0 };
   private tiles = new Map<string, Tile>();
@@ -250,6 +346,8 @@ export class MapView {
   private hits: Array<{ id: string; x: number; y: number; w: number; h: number }> = [];
   private raf = 0;
   private dirty = true;
+  /** The bob offsets last drawn (see loop). */
+  private motion = '';
   private last = performance.now();
   selected: string | null = null;
   hovered: string | null = null;
@@ -273,8 +371,12 @@ export class MapView {
     this.cam = { x: dam.x, y: dam.y, z: 0.5 };
     this.home = { ...this.cam };
     this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.overview = this.loadOverview(world.level(2).url(0, 0));
-    if (world.ours) this.oursOverview = this.load(world.oursLevel(2).url(0, 0));
+    // Only our art: no overview at all. Ours is 11,776 x 5,120 px (240 MB decoded), more than a phone's GPU holds in one
+    // texture; its chunk levels cover every zoom, and the fog edge comes from the manifest's coverage.
+    if (!world.onlyOurs) {
+      this.overview = this.loadOverview(world.level(2).url(0, 0));
+      if (world.ours) this.oursOverview = this.load(world.oursLevel(2).url(0, 0));
+    }
     this.bindInput();
     this.resize();
     new ResizeObserver(() => this.resize()).observe(canvas);
@@ -374,7 +476,7 @@ export class MapView {
 
   /** City images the view still waits for. Tests wait for 0. */
   pending(): number {
-    return this.waiting + (this.overview.ok || this.overview.failed ? 0 : 1) + (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed ? 1 : 0);
+    return this.waiting + (!this.overview || this.overview.ok || this.overview.failed ? 0 : 1) + (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed ? 1 : 0);
   }
 
   // ── frame ────────────────────────────────────────────────────────────────
@@ -405,8 +507,11 @@ export class MapView {
       moving = true;
       this.onCamera(this.cam);
     }
-    const bobbing = (!!this.selected || !!this.you) && !this.reducedMotion;
-    if (this.dirty || moving || bobbing) this.draw(now);
+    // The selected sign and you bob in whole pixels: draw again only when one of them moves a pixel (about 10 times a
+    // second, not 60: a phone redrew the whole city every frame with a card open; Joel, 19 Nov 2026: laggy).
+    const motion = this.reducedMotion ? '' : `${this.selected ? bobAt(now) : ''}|${this.you ? `${ringAt(now)},${liftAt(now)}` : ''}`;
+    if (this.dirty || moving || motion !== this.motion) this.draw(now);
+    this.motion = motion;
     this.dirty = false;
   };
 
@@ -474,27 +579,58 @@ export class MapView {
    * art's edge, clear around every restaurant. Drawn after the art, so the edge reads as cloud, never as a straight
    * cut along a tile (Joel, 8 Nov 2026: "wtf is this" at the gap in his drawing in Oost).
    */
-  private drawFogEdge(toX: (x: number) => number, toY: (y: number) => number): void {
-    if (!this.fog || !this.overview.ok || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
+  private drawFogEdge(toX: (x: number) => number, toY: (y: number) => number, W: number, H: number): void {
+    if (!this.fog) return;
     if (!this.fogMask) {
-      const ext = this.oursOverview?.ok ? this.world.ours?.levels.at(-1) : undefined;
-      // An overview with art missing gives no edge of its own: the manifest's coverage outline stands in (coarser).
-      const ow = Math.round(this.world.width / 8), oh = Math.round(this.world.height / 8);
-      const alpha = this.overview.alpha ?? maskAlpha(this.world.meta.mask, ow, oh, this.world.meta.mask.cell / 8);
-      const layers = [{ alpha, w: ow, h: oh, x: 0, y: 0 }];
-      if (ext) layers.push({ alpha: overviewAlpha(this.oursOverview!.img), w: ext.w, h: ext.h, x: ext.x, y: ext.y });
-      const union = fogAlphaUnion(layers);
-      const fringe = fogEdgeIndex(union.alpha, union.w, union.h, FOG_REACH, this.clear.map(p => ({ x: p.x / 8 - union.x, y: p.y / 8 - union.y })));
-      const mask = document.createElement('canvas');
-      mask.width = union.w; mask.height = union.h;
-      const g = mask.getContext('2d')!, data = g.createImageData(union.w, union.h);
-      fringe.forEach((a, i) => { data.data[i * 4 + 3] = a ? 255 : 0; });
-      g.putImageData(data, 0, 0);
-      this.fogOrigin = { x: union.x * 8, y: union.y * 8 };
-      this.fogMask = mask;
+      let runs: number[][], w: number, h: number;
+      const cov = this.world.ours?.coverage;
+      if (this.world.onlyOurs && cov) {
+        ({ runs, w, h } = cov);
+        this.fogOrigin = { x: cov.x * 8, y: cov.y * 8 };
+      } else {
+        if (!this.overview?.ok || (this.oursOverview && !this.oursOverview.ok && !this.oursOverview.failed)) return;
+        const ext = this.oursOverview?.ok ? this.world.ours?.levels.at(-1) : undefined;
+        // An overview with art missing gives no edge of its own: the manifest's coverage outline stands in (coarser).
+        const ow = Math.round(this.world.width / 8), oh = Math.round(this.world.height / 8);
+        const alpha = this.overview.alpha ?? maskAlpha(this.world.meta.mask, ow, oh, this.world.meta.mask.cell / 8);
+        const layers = [{ alpha, w: ow, h: oh, x: 0, y: 0 }];
+        if (ext) layers.push({ alpha: overviewAlpha(this.oursOverview!.img), w: ext.w, h: ext.h, x: ext.x, y: ext.y });
+        const union = fogAlphaUnion(layers);
+        ({ w, h } = union);
+        runs = alphaRuns(union.alpha, w, h);
+        this.fogOrigin = { x: union.x * 8, y: union.y * 8 };
+      }
+      this.fogMask = { runs, w, h, needs: fogPlan(runs, w, h), tiles: new Map() };
     }
-    const x = toX(this.fogOrigin.x), y = toY(this.fogOrigin.y);
-    const w = this.fogMask.width * 8 * this.cam.z, h = this.fogMask.height * 8 * this.cam.z;
+    const f = this.fogMask, z = this.cam.z, T = FOG_TILE, span = T * 8;
+    const tw = Math.ceil(f.w / T), th = Math.ceil(f.h / T);
+    const tx0 = Math.max(0, Math.floor((this.cam.x - W / 2 / z - this.fogOrigin.x) / span));
+    const ty0 = Math.max(0, Math.floor((this.cam.y - H / 2 / z - this.fogOrigin.y) / span));
+    const tx1 = Math.min(tw - 1, Math.floor((this.cam.x + W / 2 / z - this.fogOrigin.x) / span));
+    const ty1 = Math.min(th - 1, Math.floor((this.cam.y + H / 2 / z - this.fogOrigin.y) / span));
+    const clear = this.clear.map((p) => ({ x: (p.x - this.fogOrigin.x) / 8, y: (p.y - this.fogOrigin.y) / 8 }));
+    const budget = performance.now() + 6; // build a few tiles a frame, never a long freeze
+    const show: Array<[number, number, HTMLCanvasElement]> = [];
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+      const i = ty * tw + tx;
+      if (!f.needs[i]) continue;
+      let c = f.tiles.get(i);
+      if (c === undefined) {
+        if (performance.now() > budget) { this.dirty = true; continue; }
+        const mask = fogEdgeTile(f.runs, f.w, f.h, tx, ty, FOG_REACH, clear);
+        c = null;
+        if (mask) {
+          c = document.createElement('canvas');
+          c.width = c.height = T;
+          const data = new ImageData(T, T);
+          mask.forEach((a, j) => { data.data[j * 4 + 3] = a ? 255 : 0; });
+          c.getContext('2d')!.putImageData(data, 0, 0);
+        }
+        f.tiles.set(i, c);
+      }
+      if (c) show.push([tx, ty, c]);
+    }
+    if (!show.length) return; // no edge of the art in view: nothing to draw
     const { canvas, dpr } = this;
     const sc = (this.fogScratch ??= document.createElement('canvas'));
     if (sc.width !== canvas.width || sc.height !== canvas.height) {
@@ -506,11 +642,25 @@ export class MapView {
     g.globalCompositeOperation = 'source-over';
     g.clearRect(0, 0, sc.width, sc.height);
     g.imageSmoothingEnabled = false;
-    g.drawImage(this.fogMask, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
-    g.globalCompositeOperation = 'source-in';
-    g.fillStyle = this.fog;
-    g.fillRect(0, 0, sc.width / dpr, sc.height / dpr);
+    for (const [tx, ty, c] of show) {
+      // Whole pixels, so neighbouring tiles meet without a seam.
+      const sx = Math.round(toX(this.fogOrigin.x + tx * span)), sy = Math.round(toY(this.fogOrigin.y + ty * span));
+      const ex = Math.round(toX(this.fogOrigin.x + (tx + 1) * span)), ey = Math.round(toY(this.fogOrigin.y + (ty + 1) * span));
+      g.drawImage(c, sx, sy, ex - sx, ey - sy);
+    }
+    g.globalCompositeOperation = 'source-atop'; // fog only where the mask is; each tile leaves the rest as it is
+    this.paintFog(g, W, H);
     this.ctx.drawImage(sc, 0, 0, sc.width / dpr, sc.height / dpr);
+  }
+
+  /**
+   * The fog tile repeated over the screen at FOG_PX per pixel, as a few whole-pixel image copies: a scaled pattern fill
+   * cost 2.5 ms a frame on the Mac's GPU, most of a frame (19 Nov 2026).
+   */
+  private paintFog(g: CanvasRenderingContext2D, W: number, H: number): void {
+    const tile = 256 * FOG_PX;
+    g.imageSmoothingEnabled = false;
+    for (let y = this.fogAt.y; y < H; y += tile) for (let x = this.fogAt.x; x < W; x += tile) g.drawImage(this.fog!, x, y, tile, tile);
   }
 
   private drawLevel(L: 'hi' | 0 | 1, toX: (x: number) => number, toY: (y: number) => number, W: number, H: number, ours = false): number {
@@ -548,20 +698,22 @@ export class MapView {
     ctx.imageSmoothingEnabled = false;
     const z = cam.z;
     // Fog under everything. It moves with the map at half its speed, like a layer further down, in steady pixels.
-    this.fog ??= ctx.createPattern(fogCanvas(), 'repeat');
-    if (this.fog) {
-      const tile = 256 * FOG_PX;
-      const ox = ((((-cam.x * z + W / 2) * 0.5) % tile) + tile) % tile;
-      const oy = ((((-cam.y * z + H / 2) * 0.5) % tile) + tile) % tile;
-      this.fog.setTransform(new DOMMatrix().translate(Math.round(ox), Math.round(oy)).scale(FOG_PX));
-      ctx.fillStyle = this.fog;
-    } else ctx.fillStyle = FOG_TONES[2]!;
-    ctx.fillRect(0, 0, W, H);
+    if (!this.fog) {
+      const c = (this.fog = fogCanvas());
+      // A bitmap stays on the GPU; a small canvas is uploaded again each time it is drawn.
+      void createImageBitmap(c).then((b) => { this.fog = b; this.dirty = true; }, () => {});
+    }
+    const tile = 256 * FOG_PX;
+    this.fogAt = {
+      x: Math.round(((((-cam.x * z + W / 2) * 0.5) % tile) + tile) % tile) - tile,
+      y: Math.round(((((-cam.y * z + H / 2) * 0.5) % tile) + tile) % tile) - tile,
+    };
+    this.paintFog(ctx, W, H);
     const toX = (wx: number) => (wx - cam.x) * z + W / 2;
     const toY = (wy: number) => (wy - cam.y) * z + H / 2;
 
     // The overview underneath his chunks: it shows while chunks load, and alone when far away.
-    if (this.overview.ok && !this.world.onlyOurs) {
+    if (this.overview?.ok) {
       ctx.imageSmoothingEnabled = z < 0.125;
       ctx.drawImage(this.overview.img, Math.round(toX(0)), Math.round(toY(0)), Math.round(this.world.width * z), Math.round(this.world.height * z));
       ctx.imageSmoothingEnabled = false;
@@ -587,9 +739,13 @@ export class MapView {
     let oursWaiting = 0;
     const ext = this.world.ours?.levels.at(-1);
     if (this.oursOverview?.ok && ext) ctx.drawImage(this.oursOverview.img, Math.round(toX(ext.x / ext.k)), Math.round(toY(ext.y / ext.k)), Math.round(ext.w / ext.k * z), Math.round(ext.h / ext.k * z));
-    if (this.world.ours && z >= 0.25) oursWaiting = this.drawLevel(z >= 1 ? 'hi' : z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
+    if (this.world.ours && (z >= 0.25 || this.world.onlyOurs)) {
+      ctx.imageSmoothingEnabled = z < 0.25; // far out (only our art): its 1/4 level, shrunk
+      oursWaiting = this.drawLevel(z >= 1 ? 'hi' : z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
+      ctx.imageSmoothingEnabled = false;
+    }
     this.waiting = waiting + oursWaiting;
-    this.drawFogEdge(toX, toY);
+    this.drawFogEdge(toX, toY, W, H);
     this.drawMarkers(ctx, toX, toY, W, H, now);
     // You go over the signs: a sign never hides where you are.
     if (this.you) this.drawYou(ctx, Math.round(toX(this.you.x)), Math.round(toY(this.you.y)), now);
@@ -598,11 +754,11 @@ export class MapView {
   /** You are here: your character floats over a small ring on the ground, bobbing (still when motion is reduced). */
   private drawYou(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
     const you = this.you!;
-    const ring = this.reducedMotion ? 9 : 8 + Math.round((Math.sin(now / 400) + 1) * 2);
+    const ring = this.reducedMotion ? 9 : 8 + ringAt(now);
     pxCircle(ctx, x, y, ring, '#2b273344');
     pxCircle(ctx, x, y, 4, '#2b2733');
     const k = 2; // 16 cells, 2 screen pixels each
-    const lift = this.reducedMotion ? 0 : Math.round((Math.sin(now / 300) + 1) * 2);
+    const lift = this.reducedMotion ? 0 : liftAt(now);
     const left = x - 8 * k;
     const top = y - 16 * k - 12 - lift;
     // A cream plate like the panels, so a grey silhouette still stands out on the art.
@@ -757,7 +913,7 @@ export class MapView {
     const mw = m.michelin ? this.michelinWidth(ctx, m) + 4 : 0;
     const w = nw + mw + bw + 20;
     const h = 22;
-    const bob = sel && !this.reducedMotion ? Math.round(Math.sin(now / 260) * 1.5) : 0;
+    const bob = sel && !this.reducedMotion ? bobAt(now) : 0;
     const left = Math.round(x - w / 2);
     const top = y - 32 + bob;
     // Post and shadow.

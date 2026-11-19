@@ -57,3 +57,40 @@ it('never lays the fog edge over a restaurant standing on the art (BAK and De Ka
   expect(fog[(at.y - 10) * w + at.x + 10]).toBe(0); // and the ground around it
   expect(fog[at.y * w + 5]).toBe(1); // where there is no art at all, fog stays
 });
+
+// Joel, 19 Nov 2026 ("laggy on my chrome mobile"): the whole-city fog mask froze a phone 8.7 s and was a texture too
+// large for its GPU. It is now built a tile at a time; the tiles must give exactly the whole-grid mask on the art.
+it('the fog edge built tile by tile is the whole-grid fog edge, cell for cell, over the art', async () => {
+  const { fogEdgeIndex, fogPlan, fogEdgeTile, alphaRuns, FOG_TILE: T } = await import('../src/map/render');
+  const w = 700, h = 520;
+  // A blob of art with a bay, a lake inside it and a strip touching the grid's edge.
+  const alpha = new Uint8Array(w * h).map((_, i) => {
+    const x = i % w, y = (i / w) | 0;
+    const blob = (x - 350) ** 2 / 300 ** 2 + (y - 260) ** 2 / 220 ** 2 < 1;
+    const bay = (x - 600) ** 2 + (y - 260) ** 2 < 90 ** 2;
+    const lake = (x - 300) ** 2 + (y - 250) ** 2 < 40 ** 2;
+    return +((blob && !bay && !lake) || y < 30);
+  });
+  const clear = [{ x: 330, y: 205 }, { x: 60, y: 260 }];
+  const whole = fogEdgeIndex(alpha, w, h, 36, clear);
+  const runs = alphaRuns(alpha, w, h);
+  const needs = fogPlan(runs, w, h);
+  const tw = Math.ceil(w / T);
+  const tiled = new Uint8Array(w * h);
+  needs.forEach((n, i) => {
+    if (!n) return;
+    const tx = i % tw, ty = (i / tw) | 0;
+    const m = fogEdgeTile(runs, w, h, tx, ty, 36, clear);
+    if (m) for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+      const gx = tx * T + x, gy = ty * T + y;
+      if (gx < w && gy < h) tiled[gy * w + gx] = m[y * T + x]!;
+    }
+  });
+  let fogOnArt = 0;
+  for (let i = 0; i < w * h; i++) if (alpha[i]) {
+    expect(tiled[i], `cell ${i % w},${(i / w) | 0}`).toBe(whole[i]);
+    fogOnArt += whole[i]!;
+  }
+  expect(fogOnArt).toBeGreaterThan(5000); // the case has an edge to get right
+  expect(needs.reduce((a, b) => a + b, 0)).toBeLessThan(needs.length); // and tiles to skip
+});
