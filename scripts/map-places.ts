@@ -36,7 +36,7 @@ const KIND: Record<string, string> = {
   'restaurant-212': 'fine', 'bistro-de-la-mer': 'bistro', bougainville: 'fine', rijks: 'fine', 'ron-gastrobar': 'fine',
   yamazato: 'japanese', zoldering: 'wine', 'a-fusion': 'brasserie', auberge: 'bistro', 'boon-de-koot': 'bistro',
   'fulu-mandarijn': 'brasserie', 'sea-palace': 'brasserie', 'serre-okura': 'brasserie', 'utage-sake-bar': 'japanese',
-  'wils-bakery-cafe': 'cafe',
+  'wils-bakery-cafe': 'cafe', 'bon-burger': 'brasserie', 'bon-burger-noord': 'brasserie',
 };
 
 /** Addresses read by hand where neither the list nor the website gave one (Nov 2026). */

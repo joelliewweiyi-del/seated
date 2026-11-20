@@ -175,6 +175,22 @@
   "source": "list",
   "roof": 50
  },
+ "bon-burger": {
+  "lat": 52.362974,
+  "lng": 4.862238,
+  "area": "Van Lennepbuurt",
+  "kind": "brasserie",
+  "source": "list",
+  "roof": 4
+ },
+ "bon-burger-noord": {
+  "lat": 52.391554,
+  "lng": 4.904268,
+  "area": "Noordelijke IJ-oevers",
+  "kind": "brasserie",
+  "source": "list",
+  "roof": 7.5
+ },
  "boon-de-koot": {
   "lat": 52.388779,
   "lng": 4.887464,

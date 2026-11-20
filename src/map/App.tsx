@@ -86,6 +86,9 @@ function inLens(lens: Lens | null, r: MapRestaurant): boolean {
 
 const NO_RESTAURANTS: MapRestaurant[] = [];
 
+/** A place that takes no bookings at all (Bon Burger West, 20 Nov 2026): no calendar to read, nothing to book. */
+const walkIn = (r: MapRestaurant) => r.platform === 'walk-in';
+
 function badgeFor(r: MapRestaurant, status: Status, date: string): string {
   switch (status) {
     case 'open':
@@ -101,7 +104,7 @@ function badgeFor(r: MapRestaurant, status: Status, date: string): string {
     case 'closed':
       return 'closed';
     case 'unknown':
-      return r.readable ? 'unknown' : 'their site';
+      return r.readable ? 'unknown' : walkIn(r) ? 'walk in' : 'their site';
   }
   const exhaustive: never = status;
   return exhaustive;
@@ -125,6 +128,7 @@ function stateLine(r: MapRestaurant, status: Status, date: string): string {
         : 'The calendar does not reach this far yet.';
     }
     case 'unknown':
+      if (walkIn(r)) return 'Walk-in only: no bookings, just go.';
       return r.readable ? 'We could not read this calendar for that day.' : `Books through ${r.platform === 'other' ? 'its own site' : r.platform}, which we cannot read. Their site has the answer.`;
   }
   const exhaustive: never = status;
@@ -1300,7 +1304,7 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
             <span className="stud" style={{ background: STATUS_COLOUR[status] }} />
             <div>
               <b>
-                {dayLabel(day, { long: true })}: {STATUS_WORD[status].toLowerCase()}
+                {dayLabel(day, { long: true })}: {walkIn(r) ? 'walk in' : STATUS_WORD[status].toLowerCase()}
               </b>
               <span>{stateLine(r, status, day)}</span>
               {r.readable && <span className="seen">Seen {ago(r.readAt)}: tables can go fast.</span>}
@@ -1344,12 +1348,12 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
             </p>
           )}
           <div className="actions">
-            {book && (
+            {book && !walkIn(r) && (
               <a className={`btn${status === 'open' ? ' primary' : ''}`} href={book} target="_blank" rel="noopener">
                 {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
               </a>
             )}
-            {r.site && r.site !== book && (
+            {r.site && (walkIn(r) || r.site !== book) && (
               <a className="btn" href={r.site} target="_blank" rel="noopener">
                 Website
               </a>
@@ -1391,7 +1395,9 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
             </div>
           )}
           <p className="meta">
-            {r.readable ? `Read from ${r.platform} ${ago(r.readAt)}, for two people.` : `We can't read ${r.platform === 'other' ? 'this booking system' : r.platform} yet.`} Another party size: their booking page shows it. You always book with the restaurant itself.
+            {walkIn(r)
+              ? 'It takes no bookings: you walk in.'
+              : `${r.readable ? `Read from ${r.platform} ${ago(r.readAt)}, for two people.` : `We can't read ${r.platform === 'other' ? 'this booking system' : r.platform} yet.`} Another party size: their booking page shows it. You always book with the restaurant itself.`}
           </p>
           {CONTACT && (
             <p className="meta">

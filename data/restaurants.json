@@ -108,6 +108,24 @@
     "address": "Martelaarsgracht 5, 1012 TN Amsterdam"
   },
   {
+    "id": "bon-burger",
+    "name": "Bon Burger",
+    "platform": "walk-in",
+    "platformUid": null,
+    "website": "https://www.bonburger.nl",
+    "city": "Amsterdam",
+    "address": "Jacob van Lennepkade 334D, 1053 NJ Amsterdam"
+  },
+  {
+    "id": "bon-burger-noord",
+    "name": "Bon Burger Noord",
+    "platform": "thefork",
+    "platformUid": null,
+    "website": "https://bonburgernoord.nl",
+    "city": "Amsterdam",
+    "address": "Chrysantenstraat 8, 1031 HT Amsterdam"
+  },
+  {
     "id": "asian-glories-rotterdam",
     "name": "Asian Glories",
     "platform": "formitable",

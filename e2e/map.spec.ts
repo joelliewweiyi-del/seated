@@ -636,3 +636,23 @@ test('Share copies the link, and says what to do when the browser refuses (runti
     await ctx.close();
   }
 });
+
+test('a walk-in place says walk in: no booking button, its website, no calendar (Bon Burger, 20 Nov 2026)', async ({ page }) => {
+  await page.route('**/map/data.json', async (route) => {
+    const data = await (await route.fetch()).json();
+    const r = data.restaurants[0];
+    Object.assign(r, { platform: 'walk-in', readable: false, d: '?'.repeat(r.d.length), t: {}, book: {}, site: 'https://example.org/', link: 'https://example.org/' });
+    route.fulfill({ json: data });
+  });
+  await page.goto('/map/');
+  const id = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants[0].id);
+  await page.goto(`/map/?r=${id}&lens=all`);
+  const card = page.locator('.card');
+  await expect(card).toContainText('Walk-in only: no bookings, just go.');
+  await expect(card).not.toContainText('unknown');
+  await expect(card).toContainText('It takes no bookings: you walk in.');
+  await expect(card.getByRole('link', { name: /Book|Booking page/ })).toHaveCount(0);
+  await expect(card.getByRole('link', { name: 'Website' })).toHaveAttribute('href', 'https://example.org/');
+  await expect(card.locator('.cal')).toHaveCount(0);
+  await shot(page, '30-walk-in-card');
+});

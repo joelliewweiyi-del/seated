@@ -8,6 +8,7 @@ export const PLATFORM_NAME: Record<string, string> = {
   guestplan: 'Guestplan',
   tablecheck: 'TableCheck',
   thefork: 'TheFork',
+  'walk-in': 'Walk-in only',
   demo: 'Demo',
   other: 'Unknown system',
 };
