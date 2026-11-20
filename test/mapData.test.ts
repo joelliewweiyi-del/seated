@@ -120,6 +120,20 @@ describe('day codes', () => {
     expect(dayCodes(states, days, [0, 1, 2, 3, 4, 5, 6]).codes.join('')).toBe('ocfoll?');
   });
 
+  it("today's closed on a weekday the place opens is no tables online: booking shut for the day (Choux, 20 Nov 2026)", () => {
+    // 2026-11-20 is a Friday. Choux opens Tuesday to Saturday; Guestplan says isOpen false today and next Friday is open.
+    const days = Array.from({ length: 8 }, (_, i) => addDays('2026-11-20', i));
+    const states = new Map<string, DayState>(days.map((d, i) => [d, i === 0 || i === 2 || i === 3 ? 'closed' : 'open']));
+    const fri = [2, 3, 4, 5, 6];
+    expect(dayCodes(states, days, fri).codes.join('')).toBe('nocco' + 'ooo');
+    // A later closed day on an opening weekday stays closed (a holiday), and so does today without known opening days.
+    const nine = [...days, addDays('2026-11-20', 8)];
+    const holiday = new Map<string, DayState>([...states, [days[7]!, 'closed'], [nine[8]!, 'open']]);
+    expect(dayCodes(holiday, nine, fri).codes.join('')).toBe('noccooo' + 'co');
+    expect(dayCodes(states, days).codes[0]).toBe('c');
+    expect(dayCodes(states, days, [0, 1]).codes[0]).toBe('c');
+  });
+
   it('labels none as No tables online instead of Fully booked', () => {
     expect(statusOf('n')).toBe('none');
     expect(STATUS_WORD[statusOf('n')]).toBe('No tables online');

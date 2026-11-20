@@ -165,6 +165,10 @@ export function dayCodes(states: Map<string, DayState>, dates: string[], openDay
       if (codes[i] === 'n') codes[i] = openDays.includes(new Date(`${dates[i]}T12:00:00Z`).getUTCDay()) ? 'f' : 'c';
     }
   }
+  // Today, "closed" often means online booking has shut for the day, not the restaurant (Joel, 20 Nov 2026: Guestplan
+  // said isOpen false for Choux on a Friday it serves). On a weekday it opens, today is "no tables online".
+  const today = new Date(`${dates[0]}T12:00:00Z`).getUTCDay();
+  if (codes[0] === 'c' && openDays?.includes(today)) codes[0] = 'n';
   for (let i = last + 1; i < codes.length; i++) if (codes[i] === 'n' || codes[i] === 'c') codes[i] = 'l';
   return { codes, lastBookable: dates[last]! };
 }
