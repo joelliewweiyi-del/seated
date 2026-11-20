@@ -1156,19 +1156,54 @@ a {
       2px 0 0 0 var(--ink);
     margin: 2px;
   }
-  .side:not(.collapsed) .sheet-toggle {
-    color: var(--ink);
-    background: var(--panel-2);
+  /* One scroll on a phone (Joel, 20 Nov 2026: "scrolling through restaurants is really shitty small"): the guide
+     line, search, chips and key scroll away with the rows; the count and Show map stay on top. */
+  .side:not(.collapsed) .list {
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
-  .side.collapsed .list-head {
-    padding: 2px 4px 2px 12px;
-    border-bottom: 0;
+  .side:not(.collapsed) .list > *,
+  .side:not(.collapsed) .list-head > * {
+    flex-shrink: 0; /* the list scrolls; its parts keep their height */
+  }
+  .side:not(.collapsed) .rows {
+    overflow: visible;
   }
   .list-head {
-    padding: 8px 10px 8px 12px;
+    display: contents;
+  }
+  .head-toggle {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 4px 4px 4px 12px;
+    background: var(--panel);
+  }
+  .side:not(.collapsed) .head-toggle {
+    border-bottom: 2px solid var(--ink);
+  }
+  .list-head > :not(.head-toggle) {
+    margin-left: 12px;
+    margin-right: 10px;
+  }
+  .list-head .lens-line {
+    margin-top: 8px;
+  }
+  .filters {
+    margin-top: 8px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .side .more-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+  }
+  .list-foot {
+    flex: none;
   }
   .list-head .sum {
-    margin: 2px 0 8px;
+    margin: 0 0 2px;
   }
   /* One row of filters that scrolls sideways, under the search. */
   .chips {

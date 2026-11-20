@@ -119,6 +119,20 @@ test('on a phone the map, the day bar and the list sheet all fit, and the chrome
   await expect(page.locator('.dates')).toHaveCount(0);
   await page.locator('.list-head .row').click();
   await expect(page.locator('.rows')).toBeVisible();
+  await expect(page.locator('.sheet-toggle')).toHaveText('Show map');
+  await shot(page, '06a-phone-list');
+  // One scroll (Joel, 20 Nov 2026: the rows got two lines of a phone): search and chips scroll away, the count and
+  // Show map stay on top, and the rows fill the sheet.
+  await page.locator('.list').evaluate((e) => e.scrollBy(0, 400));
+  await expect(page.locator('.list-head .row')).toBeInViewport({ ratio: 1 });
+  await expect(page.locator('.search')).not.toBeInViewport();
+  const shown = await page.locator('.rows li').evaluateAll((els) => {
+    const box = document.querySelector('.list')!.getBoundingClientRect();
+    return els.filter((e) => { const r = e.getBoundingClientRect(); return r.top >= box.top && r.bottom <= box.bottom; }).length;
+  });
+  expect(shown).toBeGreaterThanOrEqual(6);
+  await shot(page, '06a-phone-list-scrolled');
+  await page.locator('.list').evaluate((e) => e.scrollTo(0, 0));
   // The picker fits a phone: one column of lists, nothing wider than the screen.
   await page.locator('.chip.lens').click();
   await expect(page.getByRole('dialog').locator('.choice').first()).toBeInViewport();

@@ -81,7 +81,7 @@ test('on a phone the card sits above the list bar and Show me opens the list', a
   const card = page.locator('.where');
   await expect(card).toBeVisible();
   const box = (await card.boundingBox())!;
-  const bar = (await page.locator('.list-head').boundingBox())!;
+  const bar = (await page.locator('.head-toggle').boundingBox())!;
   expect(box.y + box.height).toBeLessThanOrEqual(bar.y);
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);

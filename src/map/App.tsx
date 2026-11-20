@@ -968,10 +968,12 @@ function List(p: ListProps) {
   const hotOpen = seen.filter((x) => x.r.hot && p.statusOf(x.r) === 'open').length;
   const anyKind = f.stars || f.bib || f.hot || f.fav;
   const active = CHIPS.filter(([k]) => f[k]).map(([, label]) => label);
-  const [scroller, more, check] = useMore<HTMLUListElement>(`${rows.length}${q}${active}${p.lens?.id}`);
+  // On a phone the whole list scrolls as one (search, chips and key go with the rows); elsewhere only the rows do.
+  const narrow = useNarrow();
+  const [scroller, more, check] = useMore<HTMLElement>(`${rows.length}${q}${active}${p.lens?.id}${narrow}${p.collapsed}`);
   let last: Status | null = null;
   return (
-    <section className="px list">
+    <section className="px list" ref={narrow ? scroller : undefined} onScroll={narrow ? check : undefined}>
       <div className="list-head">
         <button className="row head-toggle" onClick={p.onToggle} aria-expanded={!p.collapsed}>
           <span className="stud" style={{ background: STATUS_COLOUR.open }} aria-hidden="true" />
@@ -982,7 +984,7 @@ function List(p: ListProps) {
             {p.me && !p.me.note ? ', nearest first' : ''}
           </p>
           <span className="sheet-toggle" aria-hidden="true">
-            {p.collapsed ? 'List ▴' : 'Map ▾'}
+            {p.collapsed ? 'List ▴' : 'Show map'}
           </span>
         </button>
         {guide && (
@@ -1029,7 +1031,7 @@ function List(p: ListProps) {
         </div>
         {p.me?.note && <p className="note">{p.me.note}</p>}
       </div>
-      <ul className="rows" ref={scroller} onScroll={check}>
+      <ul className="rows" ref={narrow ? undefined : (scroller as RefObject<HTMLUListElement | null>)} onScroll={narrow ? undefined : check}>
         {rows.length === 0 && (
           <li className="empty">
             {f.open ? `Nothing free on ${dayLabel(p.day)}${anyKind ? ' among these' : ''}.` : q ? 'No restaurant matches that.' : 'None of these yet.'}
