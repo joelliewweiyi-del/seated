@@ -1,7 +1,7 @@
 // The welcome: two questions, your profile and your tables; then, if you like, a character to keep them.
 // Also "You" (your character, its key, sign out, delete). Every screen can be left: the map is always one tap away.
 import { useEffect, useRef, useState } from 'react';
-import { Avatar, cleanLook, EXTRAS, HAIR_COLOURS, HAIRS, PARTS, randomLook, SKINS, TOPS, type Look } from './avatar';
+import { Avatar, cleanLook, EXTRAS, HAIR_COLOURS, HAIRS, LOCALS, localOf, PARTS, randomLook, SKINS, TOPS, type Look } from './avatar';
 import { badgeStyle, CURATED, dayLabel, STATUS_COLOUR, STATUS_WORD, type MapRestaurant, type Status } from './data';
 import { KIND_WORD } from './marks';
 import { Host } from './picker';
@@ -199,6 +199,7 @@ export function Character({ you, onDone }: { you: You; onDone: (made: boolean) =
   const [look, setLook] = useState<Look>(() => (you.account ? cleanLook(you.account.avatar) : { ...randomLook(), ...(you.profile?.look ?? {}) }));
   const [name, setName] = useState(you.account?.name ?? '');
   const ok = name.trim().length >= 2;
+  const local = localOf(look);
   const step = (k: keyof Look, by: number, count: number) => setLook((l) => ({ ...l, [k]: (l[k] + by + count) % count }));
   const submit = async () => {
     if (!ok || you.busy) return;
@@ -215,6 +216,16 @@ export function Character({ you, onDone }: { you: You; onDone: (made: boolean) =
       }}
     >
       <h2 id="welcome-title">{editing ? 'Your character' : 'Make your character'}</h2>
+      <div className="label locals-label">Be a local</div>
+      <div className="locals" role="group" aria-label="Be a local">
+        {LOCALS.map((l) => (
+          <button type="button" key={l.name} className="local" aria-pressed={local === l} onClick={() => setLook({ ...l.look })}>
+            <Avatar look={l.look} size={44} title={l.name} />
+            <span>{l.name}</span>
+          </button>
+        ))}
+      </div>
+      <p className="local-line">{local ? <><b>{local.name}.</b> {local.line}</> : 'Or make your own below.'}</p>
       <div className="builder">
         <div className="stage">
           <Avatar look={look} size={112} title="Your character" />

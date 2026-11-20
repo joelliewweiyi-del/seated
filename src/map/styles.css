@@ -1642,6 +1642,48 @@ a {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+/* Ready-made locals (LOCALS in avatar.tsx): one row that scrolls sideways. */
+.locals-label {
+  margin-top: 8px;
+}
+.locals {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 4px 24px 6px 2px;
+  margin-top: 4px;
+  /* Fade the right end: more locals this way. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.local {
+  flex: none;
+  width: 76px;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 6px 2px 5px;
+  background: var(--panel-2);
+  border: 0;
+  cursor: pointer;
+  font: 11px/1.15 var(--text);
+  color: var(--ink);
+  text-align: center;
+}
+.local[aria-pressed='true'] {
+  box-shadow:
+    0 -2px 0 0 var(--primary),
+    0 2px 0 0 var(--primary),
+    -2px 0 0 0 var(--primary),
+    2px 0 0 0 var(--primary);
+  background: #fff;
+}
+.local-line {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  min-height: 1.3em;
+}
 .builder {
   display: flex;
   gap: 16px;

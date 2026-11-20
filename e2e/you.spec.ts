@@ -201,6 +201,26 @@ test('lists: add places from their cards, see the list as a lens, share it in Co
   await maker.context().close();
 });
 
+test('be a local: a ready-made Amsterdam character in one tap, with its line; a change makes it your own', async ({ browser }) => {
+  const page = await visitor(browser);
+  await page.goto('/map/');
+  await answer(page, 'Easy and good', 'A local spot');
+  await welcome(page).getByRole('button', { name: 'Make my character' }).click();
+  const herring = welcome(page).locator('.local', { hasText: 'Herring eater' });
+  await herring.click();
+  await expect(herring).toHaveAttribute('aria-pressed', 'true');
+  await expect(welcome(page).locator('.local-line')).toHaveText('Herring eater. Holds it by the tail. Onions, please.');
+  await shot(page, '19-locals');
+  await welcome(page).getByRole('button', { name: 'Next top' }).click();
+  await expect(herring).toHaveAttribute('aria-pressed', 'false');
+  await expect(welcome(page).locator('.local-line')).toHaveText('Or make your own below.');
+  await welcome(page).locator('.local', { hasText: 'Canal skipper' }).click();
+  await welcome(page).getByLabel('Name on your lists').fill(`Skip ${run}`);
+  await welcome(page).getByRole('button', { name: 'Save my character' }).click();
+  await expect(welcome(page).getByLabel('Your Seated key')).toBeVisible();
+  await page.context().close();
+});
+
 test('on a phone the welcome and the character builder fit the screen', async ({ browser }) => {
   const page = await visitor(browser, { phone: true });
   await page.goto('/map/');
