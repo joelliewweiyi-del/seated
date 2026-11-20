@@ -3,7 +3,7 @@ import { ago, badgeStyle, CURATED, codeOn, dateAt, dayIndex, dayLabel, freeTimes
 import { MapView, ZOOMS, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, bike } from './marks';
-import { Nudge, Picker, WhereCard, type ListChoice } from './picker';
+import { Nudge, Picker, type ListChoice } from './picker';
 import type { SeatedList } from './api';
 import { Avatar, cleanLook } from './avatar';
 import { profileById } from './taste';
@@ -268,14 +268,14 @@ export function App() {
     view.setYou(me && !me.note ? world.project(me.lat, me.lng) : null, you.account ? cleanLook(you.account.avatar) : null);
   }, [placed, day, data, world, filters, favs, query, statusOfR, me, lens, you.account]);
 
-  // Where you are. Asked on the first visit by a card (the browser asks only after a tap there), silently later when
-  // the browser already allows it, and when "Near me" is turned on. Outside Amsterdam (or refused), distances start
-  // at the Dam. The location stays in this page: it is never sent anywhere.
-  const [where, setWhere] = useRemembered<{ asked: boolean }>('seated.map.where', { asked: false });
+  // Where you are. Found on every load, the map flies there (Joel, 20 Nov 2026: "When I load the page I want to be
+  // immediately transported to my location"); the browser asks first if it has to. On load (`quiet`) a refusal or a
+  // place outside Amsterdam changes nothing; with "Near me" distances then start at the Dam. The location stays in
+  // this page: it is never sent anywhere.
   const locate = useCallback(
-    (show: boolean) => {
-      setWhere({ asked: true });
+    (show: boolean, quiet = false) => {
       if (!('geolocation' in navigator)) {
+        if (quiet) return;
         setMe({ ...DAM, note: 'Your browser does not share a location: distances are from the Dam.' });
         return;
       }
@@ -283,6 +283,7 @@ export function App() {
         (pos) => {
           const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           if (metres(here, DAM) > 15_000) {
+            if (quiet) return;
             setMe({ ...DAM, note: 'You seem to be outside Amsterdam: distances are from the Dam.' });
             return;
           }
@@ -307,24 +308,24 @@ export function App() {
             setCollapsed(false);
           }
         },
-        () => setMe({ ...DAM, note: 'Location is off: distances are from the Dam.' }),
+        () => {
+          if (!quiet) setMe({ ...DAM, note: 'Location is off: distances are from the Dam.' });
+        },
         { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
       );
     },
-    [world, placed, setWhere, setFilters],
+    [world, placed, setFilters],
   );
+  // Near me turned on: find you again and fly there, centred above the half-height list on a phone.
   useEffect(() => {
-    if (filters.near && !me) locate(false);
-  }, [filters.near, me, locate]);
-  // Already allowed in this browser: find you without asking again.
+    if (filters.near) locate(true);
+  }, [filters.near]); // eslint-disable-line react-hooks/exhaustive-deps
+  // On load, once the map is placed; a link to a restaurant keeps its place.
+  const placedOnce = placed.length > 0;
   useEffect(() => {
-    if (!world || me || !navigator.permissions) return;
-    navigator.permissions
-      .query({ name: 'geolocation' })
-      .then((p) => p.state === 'granted' && locate(false))
-      .catch(() => {});
-  }, [world]); // eslint-disable-line react-hooks/exhaustive-deps
-  const askWhere = !!data && !!world && !where.asked && !me && 'geolocation' in navigator;
+    if (!world || !placedOnce || me || readUrl().r) return;
+    locate(false, true);
+  }, [world, placedOnce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tell the map which screen areas the panels cover, so no sign hides under them.
   useEffect(() => {
@@ -618,8 +619,7 @@ export function App() {
           </footer>
         </>
       )}
-      {askWhere && !dialog && !sel && (!narrow || collapsed) && <WhereCard onYes={() => locate(true)} onNo={() => setWhere({ asked: true })} />}
-      {nudge && !askWhere && data && !dialog && !sel && (!narrow || collapsed) && (
+      {nudge && data && !dialog && !sel && (!narrow || collapsed) && (
         <Nudge
           onOpen={() => {
             setNudge(false);

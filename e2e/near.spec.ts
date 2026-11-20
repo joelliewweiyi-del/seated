@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
-// Where you are (Joel, 15 Nov 2026): on a first visit the host asks to use your location; yes puts your character on
-// the map where you stand and opens the list nearest first. The browser's own question only follows a tap.
+// Where you are (Joel, 15 Nov 2026; on load since 20 Nov 2026): the map flies to you as it opens, your character stands
+// where you are, and Near me lists what is closest first.
 const shot = (page: Page, name: string) => page.screenshot({ path: `test-results/screens/map-${name}.png` });
 const CHOUX = { latitude: 52.377548, longitude: 4.907157 }; // data/map-places.json (Graham's Kitchen until it left Seated curated, 17 Nov 2026)
 
@@ -32,69 +32,59 @@ const silhouette = (page: Page, above?: number) =>
     return n;
   }, above);
 
-test('a first visit asks for your location; Show me puts you on the map and lists what is closest first', async ({ browser }) => {
+test('on load the map flies to where you are, with no card first; the list keeps its usual order', async ({ browser }) => {
+  // Joel, 20 Nov 2026: "When I load the page I want to be immediately transported to my location".
   const page = await visitor(browser);
+  await page.context().grantPermissions(['geolocation']);
+  // As on an iPhone: the permission reads "prompt" though the browser would allow it, so nothing may wait for "granted".
+  await page.addInitScript(() => {
+    navigator.permissions.query = () => Promise.resolve({ state: 'prompt' } as PermissionStatus);
+  });
   await page.goto('/map/');
-  const card = page.locator('.where');
-  await expect(card).toBeVisible();
-  await expect(card).toContainText('Your location stays on this page');
-  await shot(page, '20-where-card');
-  const before = await silhouette(page);
-  await page.context().grantPermissions(['geolocation']); // what the browser's own question does on "Allow"
-  await card.getByRole('button', { name: 'Show me' }).click();
-  await expect(card).toHaveCount(0);
-  // The list opens nearest first: you stand at Choux.
+  await expect(page.locator('.list-head h2')).toBeVisible();
+  // Your character (no character yet: the grey silhouette) stands where you are, in the middle after the flight.
+  await expect.poll(() => silhouette(page), { timeout: 5000 }).toBeGreaterThan(20);
+  await expect(page.locator('.where')).toHaveCount(0);
+  await expect(page.locator('.list-head .sum')).not.toContainText('nearest first');
+  await shot(page, '21-where-you-are');
+  // Near me lists what is closest first: you stand at Choux.
+  await page.locator('.chip', { hasText: 'Near me' }).click();
   await expect(page.locator('.list-head .sum')).toContainText('nearest first');
   await expect(page.locator('.rows li').first()).toContainText('Choux');
   await expect(page.locator('.rows li').first()).toContainText('1 min by bike');
-  // Your character (no character yet: the grey silhouette) stands where you are, in the middle after the flight.
-  await expect.poll(async () => (await silhouette(page)) - before, { timeout: 5000 }).toBeGreaterThan(20);
-  await shot(page, '21-where-you-are');
-  // Asked once: the card does not come back.
-  await page.reload();
-  await expect(page.locator('.list-head h2')).toBeVisible();
-  await expect(page.locator('.where')).toHaveCount(0);
   await page.context().close();
 });
 
-test('Not now keeps the card away; once the browser allows it, the map finds you without asking', async ({ browser }) => {
-  const page = await visitor(browser);
+test('refused on load changes nothing; Near me then counts from the Dam; a link to a restaurant keeps its card', async ({ browser }) => {
+  const page = await visitor(browser); // no permission: the browser says no
   await page.goto('/map/');
-  await page.locator('.where').getByRole('button', { name: 'Not now' }).click();
-  await expect(page.locator('.where')).toHaveCount(0);
-  await page.reload();
   await expect(page.locator('.list-head h2')).toBeVisible();
-  await expect(page.locator('.where')).toHaveCount(0);
-  // Allowed in this browser (as after an earlier yes): you are placed on load, the list keeps its usual order.
-  const before = await silhouette(page);
+  await expect(page.locator('.note')).toHaveCount(0);
+  expect(await silhouette(page)).toBe(0);
+  await page.locator('.chip', { hasText: 'Near me' }).click();
+  await expect(page.locator('.note')).toContainText('from the Dam');
   await page.context().grantPermissions(['geolocation']);
-  await page.reload();
-  await expect(page.locator('.list-head h2')).toBeVisible();
-  await expect.poll(async () => (await silhouette(page)) - before, { timeout: 5000 }).toBeGreaterThan(20);
-  await expect(page.locator('.list-head .sum')).not.toContainText('nearest first');
+  const id = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.at(-1).id);
+  await page.goto(`/map/?r=${id}`);
+  await expect(page.locator('.card h2')).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(page.locator('.card h2')).toBeVisible();
   await page.context().close();
 });
 
-test('on a phone the card sits above the list bar and Show me opens the list', async ({ browser }) => {
+test('on a phone Near me opens the list half-height, you in the map above it', async ({ browser }) => {
   const page = await visitor(browser, { phone: true });
-  await page.goto('/map/');
-  const card = page.locator('.where');
-  await expect(card).toBeVisible();
-  const box = (await card.boundingBox())!;
-  const bar = (await page.locator('.head-toggle').boundingBox())!;
-  expect(box.y + box.height).toBeLessThanOrEqual(bar.y);
-  expect(box.x).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width).toBeLessThanOrEqual(390);
-  await shot(page, '22-where-phone');
   await page.context().grantPermissions(['geolocation']);
-  await card.getByRole('button', { name: 'Show me' }).click();
+  await page.goto('/map/');
+  await expect.poll(() => silhouette(page), { timeout: 5000 }).toBeGreaterThan(20);
+  await page.locator('.head-toggle').click();
+  await page.locator('.chip', { hasText: 'Near me' }).click();
   await expect(page.locator('.rows li').first()).toContainText('Choux');
   await expect(page.locator('.rows li').first()).toBeInViewport();
   // Half the screen, not all of it: your character stands in the map above the list (Joel, 19 Nov 2026).
   const side = (await page.locator('.side').boundingBox())!;
   expect(side.height).toBeLessThanOrEqual(844 * 0.47);
   // The rows come first: the nearest three show in full, over the search and chips.
-  await shot(page, '23-where-phone-list');
   for (let i = 0; i < 3; i++) await expect(page.locator('.rows li').nth(i)).toBeInViewport({ ratio: 1 });
   await expect.poll(() => silhouette(page, side.y), { timeout: 5000 }).toBeGreaterThan(20);
   await shot(page, '23-where-phone-list');
