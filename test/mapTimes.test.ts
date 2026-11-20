@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { freeTimes } from '../src/map/data';
+import { freeTimes, timeSpan } from '../src/map/data';
 
 describe('free times on the map', () => {
   const r = { t: { '2026-11-05': ['17:00', '17:15', '20:30'], '2026-11-06': ['17:00'] } };
@@ -12,5 +12,11 @@ describe('free times on the map', () => {
 
   it('keeps every time on a later day', () => {
     expect(freeTimes(r, '2026-11-06', now)).toEqual(['17:00']);
+  });
+
+  it('a sign shows first to last free time, never a count that reads as times booked', () => {
+    expect(timeSpan(['20:30', '17:15', '19:00'])).toBe('17:15–20:30');
+    expect(timeSpan(['17:00'])).toBe('17:00');
+    expect(timeSpan([])).toBe('free');
   });
 });

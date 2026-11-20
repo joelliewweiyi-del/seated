@@ -160,6 +160,14 @@ test('picking a free time makes it the one to book: the Book button and its link
   await page.goto(`/map/?r=${id}&date=${day}`);
   const times = page.locator('.card .time');
   await expect(times).toHaveText(['18:00', '20:30']);
+  // The badge on its sign and in the list: first to last free time, never a count ("2 times" read as times booked;
+  // Joel, 20 Nov 2026).
+  await page.goto(`/map/?lens=all&date=${day}`);
+  const span = page.locator('.badge', { hasText: '18:00–20:30' });
+  await span.scrollIntoViewIfNeeded();
+  await expect(span).toBeVisible();
+  await page.screenshot({ path: 'test-results/screens/map-badge-span.png' });
+  await page.goto(`/map/?r=${id}&date=${day}`);
   await expect(times.first()).toHaveAttribute('aria-pressed', 'true'); // the first free time until you pick
   await times.nth(1).click();
   await expect(times.nth(1)).toHaveAttribute('aria-pressed', 'true');

@@ -134,6 +134,13 @@ function amsterdamNow(now: Date): { date: string; time: string } {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
+/** A sign's badge for free times: first to last ("18:00–22:00"), one time alone; a count read as "times booked" (Joel, 20 Nov 2026). */
+export function timeSpan(times: string[]): string {
+  const sorted = [...times].sort();
+  const first = sorted[0], last = sorted[sorted.length - 1];
+  return !first ? 'free' : first === last ? first : `${first}–${last}`;
+}
+
 /** The free times on a day, without today's times that have already gone by (the data can be 15 minutes old). */
 export function freeTimes(r: Pick<MapRestaurant, 't'>, date: string, now = new Date()): string[] {
   const list = r.t[date] ?? [];

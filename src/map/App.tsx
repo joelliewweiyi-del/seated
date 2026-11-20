@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { ago, badgeStyle, CURATED, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, weekday, type MapData, type MapRestaurant, type Status } from './data';
+import { ago, badgeStyle, CURATED, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, timeSpan, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, ZOOMS, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, bike } from './marks';
@@ -88,10 +88,8 @@ const NO_RESTAURANTS: MapRestaurant[] = [];
 
 function badgeFor(r: MapRestaurant, status: Status, date: string): string {
   switch (status) {
-    case 'open': {
-      const n = freeTimes(r, date).length;
-      return n ? `${n} time${n === 1 ? '' : 's'}` : 'free';
-    }
+    case 'open':
+      return timeSpan(freeTimes(r, date));
     case 'later': {
       const o = opensOn(r, date);
       return o ? `opens ${dayLabel(o).slice(4)}` : 'soon';
@@ -1428,7 +1426,7 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
             <h2 id="dlg-title">How this works</h2>
             <p>
               Every sign on this map is a restaurant in Amsterdam, most of them hard to book. Pick a day and the signs show who still
-              has a table for two, and at how many times. The green bar under each day shows how many restaurants have a table then.
+              has a table for two, from the first free time to the last. The green bar under each day shows how many restaurants have a table then.
             </p>
             <h3>Where it comes from</h3>
             <p>
