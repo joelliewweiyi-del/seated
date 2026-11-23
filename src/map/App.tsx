@@ -572,7 +572,6 @@ export function App() {
                 filters={filters}
                 onFilters={setFilters}
                 lens={lens}
-                onLens={setLens}
                 onLists={() => setDialog('lists')}
                 favs={favs}
                 me={filters.near ? me : null}
@@ -926,7 +925,6 @@ interface ListProps {
   onFilters: (f: Filters) => void;
   /** The lens the list is seen through, or null for every restaurant. */
   lens: Lens | null;
-  onLens: (id: string | null) => void;
   /** Opens the list picker. */
   onLists: () => void;
   favs: Set<string>;
@@ -945,6 +943,9 @@ interface ListProps {
 const CHIPS: Array<[keyof Filters, string]> = [
   ['open', 'Free only'],
   ['near', 'Near me'],
+];
+/** Under More: one row fewer in the panel (Joel, 23 Nov 2026: "that whole side panel ui/ux needs a serious pass"). */
+const MORE_CHIPS: Array<[keyof Filters, string]> = [
   ['stars', '★ Stars'],
   ['bib', 'Bib Gourmand'],
   ['hot', 'Hard to get'],
@@ -971,44 +972,56 @@ function List(p: ListProps) {
   const openCount = seen.filter((x) => p.statusOf(x.r) === 'open').length;
   const hotOpen = seen.filter((x) => x.r.hot && p.statusOf(x.r) === 'open').length;
   const anyKind = f.stars || f.bib || f.hot || f.fav;
-  const active = CHIPS.filter(([k]) => f[k]).map(([, label]) => label);
-  // On a phone the whole list scrolls as one (search, chips and key go with the rows); elsewhere only the rows do.
+  const active = [...CHIPS, ...MORE_CHIPS].filter(([k]) => f[k]).map(([, label]) => label);
+  const moreOn = MORE_CHIPS.filter(([k]) => f[k]).length;
+  const [moreOpen, setMoreOpen] = useState(false);
+  // Places we cannot read sort last ("Book on their site"): folded into one line unless a search or Near me is on.
+  const rest = rows.filter((x) => x.s === 'unknown').length;
+  const [restOpen, setRestOpen] = useState(false);
+  const fold = rest > 0 && !p.me && !q && !restOpen;
+  const shown = fold ? rows.filter((x) => x.s !== 'unknown') : rows;
+  // On a phone the whole list scrolls as one (search and chips go with the rows); elsewhere only the rows do.
   const narrow = useNarrow();
-  const [scroller, more, check] = useMore<HTMLElement>(`${rows.length}${q}${active}${p.lens?.id}${narrow}${p.collapsed}`);
+  const [scroller, more, check] = useMore<HTMLElement>(`${shown.length}${q}${active}${p.lens?.id}${narrow}${p.collapsed}${moreOpen}`);
   let last: Status | null = null;
   return (
     <section className="px list" ref={narrow ? scroller : undefined} onScroll={narrow ? check : undefined}>
       <div className="list-head">
-        <button className="row head-toggle" onClick={p.onToggle} aria-expanded={!p.collapsed}>
-          <span className="stud" style={{ background: STATUS_COLOUR.open }} aria-hidden="true" />
-          <h2>{openCount} with a table</h2>
-          <p className="sum">
-            for two, of {guide ? (guide.kind === 'guide' ? `${seen.length} ${guide.title} picks` : `${seen.length} in “${guide.title}”`) : `${p.placed.length} restaurants`}
-            {hotOpen ? `; ${hotOpen} hard to get` : ''}
-            {p.me && !p.me.note ? ', nearest first' : ''}
-          </p>
-          <span className="sheet-toggle" aria-hidden="true">
-            {p.collapsed ? 'List ▴' : 'Show map'}
-          </span>
-        </button>
-        {guide && (
-          <p className="lens-line">
-            {guide.by && (
-              <span className="maker">
-                <Avatar look={cleanLook(guide.by.avatar)} size={18} /> {guide.by.name}
-              </span>
-            )}
-            {guide.line && <span>{guide.line}</span>}{' '}
-            {guide.url && (
-              <a href={guide.url} target="_blank" rel="noopener noreferrer">
-                Their list ↗
-              </a>
-            )}
-            <button className="link" onClick={() => p.onLens('all')}>
-              Every restaurant
+        <div className="list-top">
+          {p.data.guides.length > 0 && (
+            <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists} title="Pick a list">
+              {guide ? guide.title : 'Every restaurant'}
             </button>
-          </p>
-        )}
+          )}
+          <button className="row head-toggle" onClick={p.onToggle} aria-expanded={!p.collapsed}>
+            <span className="stud" style={{ background: STATUS_COLOUR.open }} aria-hidden="true" />
+            <h2>{openCount} free</h2>
+            <span className="sheet-toggle" aria-hidden="true">
+              {p.collapsed ? 'List ▴' : 'Show map'}
+            </span>
+          </button>
+        </div>
+        <p className="sum">
+          for two, of {guide ? (guide.kind === 'guide' ? `${seen.length} ${guide.title} picks` : `${seen.length} in “${guide.title}”`) : `${p.placed.length} restaurants`}
+          {hotOpen ? `; ${hotOpen} hard to get` : ''}
+          {p.me && !p.me.note ? ', nearest first' : ''} · read {ago(p.data.generatedAt)}
+          {guide && (guide.by || guide.url || (guide.kind !== 'guide' && guide.line)) && (
+            <span className="lens-line">
+              {' · '}
+              {guide.kind !== 'guide' && guide.line && <span>{guide.line} </span>}
+              {guide.by && (
+                <span className="maker">
+                  <Avatar look={cleanLook(guide.by.avatar)} size={18} /> {guide.by.name}
+                </span>
+              )}
+              {guide.url && (
+                <a href={guide.url} target="_blank" rel="noopener noreferrer">
+                  Their list ↗
+                </a>
+              )}
+            </span>
+          )}
+        </p>
         {active.length > 0 && (
           <p className="active">
             Only: {active.join(', ')}
@@ -1020,18 +1033,25 @@ function List(p: ListProps) {
         <div className="filters">
           <input className="search" type="search" placeholder="Name, area or food  /" value={p.query} onChange={(e) => p.onQuery(e.target.value)} aria-label="Find a restaurant" />
           <div className="chips" role="group" aria-label="Show">
-            {p.data.guides.length > 0 && (
-              <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists}>
-                {guide ? guide.title : 'Lists'}
-              </button>
-            )}
-            {CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
+            {CHIPS.map(([k, label]) => (
               <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>
                 {label}
-                {k === 'fav' && p.favs.size ? ` ${p.favs.size}` : ''}
               </button>
             ))}
+            <button className="chip more" aria-expanded={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
+              More{moreOn ? ` · ${moreOn}` : ''} {moreOpen ? '▴' : '▾'}
+            </button>
           </div>
+          {moreOpen && (
+            <div className="chips" role="group" aria-label="More filters">
+              {MORE_CHIPS.filter(([k]) => hasMichelin || (k !== 'stars' && k !== 'bib')).map(([k, label]) => (
+                <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>
+                  {label}
+                  {k === 'fav' && p.favs.size ? ` ${p.favs.size}` : ''}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {p.me?.note && <p className="note">{p.me.note}</p>}
       </div>
@@ -1049,13 +1069,13 @@ function List(p: ListProps) {
             )}
           </li>
         )}
-        {rows.map(({ r, s, m }) => {
+        {shown.map(({ r, s, m }) => {
           const head = !p.me && s !== last;
           last = s;
           const next = s !== 'open' && r.readable ? firstFree(r, p.data, p.day) : null;
           return (
             <li key={r.id}>
-              {head && <div className="group label">{GROUP_WORD[s]}</div>}
+              {head && (s === 'unknown' && !q ? <RestFold n={rest} open onToggle={() => setRestOpen(false)} /> : <div className="group label">{GROUP_WORD[s]}</div>)}
               <button className="row" onClick={() => p.onPick(r.id)}>
                 <span className="stud" style={{ background: STATUS_COLOUR[s] }} />
                 <span className="who">
@@ -1077,32 +1097,45 @@ function List(p: ListProps) {
             </li>
           );
         })}
+        {fold && (
+          <li>
+            <RestFold n={rest} open={false} onToggle={() => setRestOpen(true)} />
+          </li>
+        )}
       </ul>
-      {more && <MoreBar />}
-      <div className="list-foot">
-        <span>Calendars read {ago(p.data.generatedAt)}</span>
-        <span className="key">
-          {ORDER.map((st) => (
-            <span key={st}>
-              <i className="swatch" style={badgeStyle(st)} /> {STATUS_WORD[st].toLowerCase()}
-            </span>
-          ))}
-          {hasMichelin && (
-            <>
-              <span>
-                <Marks r={{ michelin: '1' } as MapRestaurant} /> MICHELIN Star
-              </span>
-              <span>
-                <Marks r={{ michelin: 'bib' } as MapRestaurant} /> Bib Gourmand
-              </span>
-            </>
-          )}
-          <span>
-            <Marks r={{ hot: 1 } as MapRestaurant} /> hard to get
-          </span>
-        </span>
-      </div>
+      {more && <div className="more-fade" aria-hidden="true" />}
     </section>
+  );
+}
+
+/** The folded group of places we cannot read, and its header once open. */
+function RestFold({ n, open, onToggle }: { n: number; open: boolean; onToggle: () => void }) {
+  return (
+    <button className="fold label" aria-expanded={open} onClick={onToggle}>
+      {open ? '▾' : '▸'} {GROUP_WORD.unknown} ({n})
+    </button>
+  );
+}
+
+/** What the colours and marks mean: in How this works, out of the list (Joel, 23 Nov 2026). */
+function Key() {
+  return (
+    <span className="key">
+      {ORDER.map((st) => (
+        <span key={st}>
+          <i className="swatch" style={badgeStyle(st)} /> {STATUS_WORD[st].toLowerCase()}
+        </span>
+      ))}
+      <span>
+        <Marks r={{ michelin: '1' } as MapRestaurant} /> MICHELIN Star
+      </span>
+      <span>
+        <Marks r={{ michelin: 'bib' } as MapRestaurant} /> Bib Gourmand
+      </span>
+      <span>
+        <Marks r={{ hot: 1 } as MapRestaurant} /> hard to get
+      </span>
+    </span>
   );
 }
 
@@ -1435,6 +1468,10 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
             <p>
               Every sign on this map is a restaurant in Amsterdam, most of them hard to book. Pick a day and the signs show who still
               has a table for two, from the first free time to the last. The green bar under each day shows how many restaurants have a table then.
+            </p>
+            <h3>Colours and marks</h3>
+            <p>
+              <Key />
             </p>
             <h3>Where it comes from</h3>
             <p>

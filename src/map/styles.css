@@ -436,9 +436,23 @@ a {
   font: 600 17px/1.15 var(--px);
 }
 .list-head .sum {
-  margin: 4px 0 10px;
+  margin: 6px 0 10px;
   color: var(--muted);
   font-size: 13px;
+}
+/* The head: the list you look through, then the count (Joel, 23 Nov 2026: one line, not four). */
+.list-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.list-top .chip.lens {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 62%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
 }
 /* Phones only: says the sheet opens and closes. */
 .sheet-toggle {
@@ -561,40 +575,32 @@ a {
   color: #e0604c;
   font-size: 12px;
 }
-/* The head: a dot, the count, the rest of the sentence below it. */
+/* The count: a dot and "N free", at the right of the head. */
 .head-toggle {
+  flex: 1;
   padding: 0;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  column-gap: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
   align-items: center;
   cursor: default;
-}
-.head-toggle .stud {
-  grid-row: 1;
-}
-.head-toggle h2 {
-  grid-column: 2;
-}
-.head-toggle .sum {
-  grid-column: 1 / -1;
 }
 .list-head .note {
   margin: 8px 0 0;
   font-size: 12px;
   color: var(--ink-2);
 }
-/* The key: each mark and its words stay together; the items wrap as whole units. */
-.list-foot .key {
+/* The key (How this works): each mark and its words stay together; the items wrap as whole units. */
+.key {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 2px 12px;
 }
-.list-foot .key > span {
+.key > span {
   white-space: nowrap;
 }
-.list-foot .key .marks {
+.key .marks {
   margin: 0 3px 0 0;
 }
 .title-row {
@@ -635,16 +641,9 @@ a {
 .empty .btn {
   margin-top: 10px;
 }
-.list-head .lens-line {
-  margin: 8px 0 10px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--ink-2);
-}
 .list-head .lens-line a {
   color: var(--primary);
   font-weight: 600;
-  margin-right: 10px;
   white-space: nowrap;
 }
 .card .guides .link {
@@ -675,21 +674,35 @@ a {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.list-foot .swatch {
+.key .swatch {
   display: inline-block;
   width: 9px;
   height: 9px;
   margin-right: 2px;
   box-shadow: 0 0 0 2px var(--ink);
 }
-.list-foot {
-  padding: 8px 14px;
-  border-top: 2px solid var(--ink);
-  color: var(--muted);
-  font-size: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+/* More rows below: a soft fade over the last row, not a bar of its own (Joel, 23 Nov 2026). */
+.more-fade {
+  flex: none;
+  position: relative;
+  height: 36px;
+  margin-top: -36px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255, 250, 240, 0), var(--panel) 85%);
+}
+/* "Book on their site (4)": the places we cannot read, folded at the end of the list. */
+.fold {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 12px 14px 8px;
+}
+.fold:hover {
+  color: var(--ink);
+  background: var(--panel-2);
 }
 
 .card {
@@ -1089,9 +1102,7 @@ a {
     background: var(--panel);
   }
   /* In half a screen the rows come first: no guide line, search, chips or key ("Show all" on the active line goes back). */
-  .side.near .lens-line,
-  .side.near .filters,
-  .side.near .list-foot {
+  .side.near .filters {
     display: none;
   }
   .foot {
@@ -1120,8 +1131,8 @@ a {
   .filters .chip {
     padding: 11px 12px;
   }
-  .filters .chip.lens {
-    padding-right: 24px; /* room for the arrow: the line above would put it on the text */
+  .list-top .chip.lens {
+    padding-right: 24px; /* room for the arrow: the .chip padding would put it on the text */
   }
   .search {
     padding: 11px 10px;
@@ -1141,8 +1152,6 @@ a {
   }
   .sheet-toggle {
     display: block;
-    grid-column: 3;
-    grid-row: 1;
     padding: 9px 12px 8px;
     font: 600 13px/1 var(--px);
     text-transform: uppercase;
@@ -1162,7 +1171,7 @@ a {
     overflow-y: auto;
     overscroll-behavior: contain;
   }
-  .side:not(.collapsed) .list > *,
+  .side:not(.collapsed) .list > :not(.more-fade),
   .side:not(.collapsed) .list-head > * {
     flex-shrink: 0; /* the list scrolls; its parts keep their height */
   }
@@ -1172,38 +1181,42 @@ a {
   .list-head {
     display: contents;
   }
-  .head-toggle {
+  .list-top {
     position: sticky;
     top: 0;
     z-index: 2;
-    padding: 4px 4px 4px 12px;
+    padding: 4px 4px 4px 10px;
     background: var(--panel);
   }
-  .side:not(.collapsed) .head-toggle {
+  .head-toggle {
+    justify-content: flex-start;
+  }
+  .sheet-toggle {
+    margin-left: auto;
+  }
+  .side:not(.collapsed) .list-top {
     border-bottom: 2px solid var(--ink);
   }
-  .list-head > :not(.head-toggle) {
+  .side.collapsed .list-top .chip.lens {
+    display: none;
+  }
+  .list-head > :not(.list-top) {
     margin-left: 12px;
     margin-right: 10px;
-  }
-  .list-head .lens-line {
-    margin-top: 8px;
   }
   .filters {
     margin-top: 8px;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--ink);
   }
-  .side .more-bar {
+  .side .more-fade {
     position: sticky;
     bottom: 0;
     z-index: 2;
   }
-  .list-foot {
-    flex: none;
-  }
   .list-head .sum {
-    margin: 0 0 2px;
+    margin-top: 8px;
+    margin-bottom: 0;
   }
   /* One row of filters that scrolls sideways, under the search. */
   .chips {
@@ -1229,7 +1242,6 @@ a {
   .side.collapsed .active,
   .side.collapsed .lens-line,
   .side.collapsed .rows,
-  .side.collapsed .list-foot,
   .side.collapsed .filters {
     display: none;
   }
@@ -1258,8 +1270,7 @@ a {
   .strip {
     padding-top: 6px;
   }
-  .side .sum,
-  .list-foot .key {
+  .side .sum {
     display: none;
   }
   .list-head {
@@ -1385,6 +1396,11 @@ a {
 }
 .choice .nm {
   font: 600 16px/1.1 var(--px);
+}
+.choice .line {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
 }
 .choice .by {
   font-size: 12px;

@@ -4,6 +4,13 @@ import { expect, test, type Page } from '@playwright/test';
 const shot = (page: Page, name: string) => page.screenshot({ path: `test-results/screens/map-${name}.png` });
 
 /** Waits until every chunk in view is painted and the camera stands still. */
+/** Rows in the list, counting the places folded under "Book on their site (n)". */
+async function listed(page: Page): Promise<number> {
+  const fold = page.locator('.rows .fold[aria-expanded="false"]');
+  const folded = (await fold.count()) ? Number((await fold.innerText()).match(/\((\d+)\)/)![1]) : 0;
+  return (await page.locator('.rows .nm').count()) + folded;
+}
+
 async function settled(page: Page) {
   await page.waitForFunction(
     () => {
@@ -34,7 +41,7 @@ test('the map opens on today with every readable restaurant and a list of who ha
   await page.goto('/map/');
   await expect(page.getByRole('heading', { name: 'Seated' })).toBeVisible();
   await expect(page.locator('.daypill')).toHaveText(/^\w+day \d{1,2} \w{3}/);
-  await expect(page.locator('.list-head h2')).toHaveText(/^\d+ with a table$/);
+  await expect(page.locator('.list-head h2')).toHaveText(/^\d+ free$/);
   await expect(page.locator('.dates')).toHaveCount(0); // the day strip opens on demand
   await expect(page.getByRole('button', { name: 'Free only' })).toBeVisible();
   await settled(page);
@@ -212,6 +219,8 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   await expect(picker.locator('.choice').nth(0)).toHaveAttribute('aria-pressed', 'true');
   await expect(picker.locator('.choice').nth(1)).toContainText(/\d+ free · 3 picks/);
   await expect(picker.locator('.choice').nth(2)).toContainText(/\d+ free · 1 pick$/);
+  // A guide's own line is in the picker, out of the panel (Joel, 23 Nov 2026: the panel needs a serious pass).
+  await expect(picker.locator('.choice').nth(1)).toContainText('Wide line in our words.');
   await shot(page, '07-lists');
   await picker.locator('.choice').nth(1).click();
   await expect(picker).toBeHidden();
@@ -219,7 +228,7 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   await expect(page.locator('.rows .nm')).toHaveCount(3);
   for (const n of names.slice(0, 3)) await expect(page.locator('.rows .nm', { hasText: n })).toHaveCount(1);
   await expect(page.locator('.list-head .sum')).toContainText('of 3 Wide picks');
-  await expect(page.locator('.lens-line')).toContainText('Wide line in our words.');
+  await expect(page.locator('.list-head')).not.toContainText('Wide line in our words.');
   await expect(page.locator('.lens-line').getByRole('link', { name: /Their list/ })).toHaveAttribute('href', 'https://wide.example/list');
   await expect(page).toHaveURL(/[?&]lens=wide(&|$)/);
   // On the map every sign stays, and only the picks stay bright.
@@ -238,11 +247,12 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   await guides.getByRole('button', { name: 'One' }).click();
   await expect(page.locator('.rows .nm')).toHaveCount(1);
   await expect(page).toHaveURL(/[?&]lens=one(&|$)/);
-  await page.locator('.lens-line').getByRole('button', { name: 'Every restaurant' }).click();
-  await expect(page.locator('.rows .nm')).toHaveCount(names.length);
+  await page.locator('.chip.lens').click();
+  await page.getByRole('dialog').locator('.choice', { hasText: 'Every restaurant' }).click();
+  await expect.poll(() => listed(page)).toBe(names.length);
   await expect(page).toHaveURL(/lens=all/); // every restaurant, kept in the link (no lens = the curated list)
   await page.goto('/map/?lens=nobody');
-  await expect(page.locator('.rows .nm')).toHaveCount(names.length);
+  await expect.poll(() => listed(page)).toBe(names.length);
 });
 
 test('the keyboard reaches the list past the date strip in a few steps, and arrow keys change the day', async ({ page }) => {
@@ -526,11 +536,49 @@ test('badges are readable and "no tables online" never looks like fully booked',
   // Dark violet text on every badge (white on green was 2.8:1).
   const badge = page.locator('.rows .badge').first();
   await expect(badge).toHaveCSS('color', 'rgb(43, 39, 51)');
-  // The legend: "no tables online" is hollow (cream, rose edge); "fully booked" is solid red.
+  // The legend, in How this works: "no tables online" is hollow (cream, rose edge); "fully booked" is solid red.
+  await expect(page.locator('.list .key')).toHaveCount(0);
+  await page.locator('.topbar .about').click();
   const none = page.locator('.key span', { hasText: 'no tables online' }).locator('.swatch');
   const full = page.locator('.key span', { hasText: 'fully booked' }).locator('.swatch');
   await expect(none).toHaveCSS('background-color', 'rgb(255, 250, 240)');
   await expect(full).toHaveCSS('background-color', 'rgb(224, 96, 76)');
+});
+
+// Joel, 23 Nov 2026: "that whole side panel ui/ux needs a serious pass". The list name and count share one line,
+// the rarer filters sit under More, and places we cannot read fold into one line at the end.
+test('the panel: the list and count on one line, rarer filters under More, unreadable places folded', async ({ page }) => {
+  await page.route('**/map/data.json', async (route) => {
+    const data = await (await route.fetch()).json();
+    data.restaurants[0].readable = false;
+    data.restaurants[0].d = data.restaurants[0].d.replace(/./g, '?');
+    data.restaurants[0].g.push('seated');
+    route.fulfill({ json: data });
+  });
+  await page.goto('/map/?lens=all');
+  const top = page.locator('.list-top');
+  await expect(top.locator('.chip.lens')).toHaveText('Every restaurant');
+  await expect(top.locator('h2')).toHaveText(/^\d+ free$/);
+  await expect(page.locator('.list-head .sum')).toContainText('read ');
+  // More opens the second row of filters, and says how many of them are on.
+  await expect(page.locator('.chip', { hasText: 'Hard to get' })).toHaveCount(0);
+  await page.locator('.chip.more').click();
+  await page.locator('.chip', { hasText: 'Hard to get' }).click();
+  await expect(page.locator('.chip.more')).toContainText('More · 1');
+  await page.locator('.chip', { hasText: 'Hard to get' }).click();
+  // The unreadable place is folded: one line with the count, opened with a click.
+  const fold = page.locator('.rows .fold');
+  await expect(fold).toHaveText(/Book on their site \(\d+\)/);
+  const n = Number((await fold.innerText()).match(/\((\d+)\)/)![1]);
+  const rows = await page.locator('.rows .row').count();
+  await fold.click();
+  await expect(page.locator('.rows .row')).toHaveCount(rows + n);
+  await expect(page.locator('.rows .fold')).toHaveAttribute('aria-expanded', 'true');
+  // A search shows every match, folded or not.
+  await page.locator('.rows .fold').click();
+  await page.locator('.search').fill(await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants[0].name));
+  await expect(page.locator('.rows .fold')).toHaveCount(0);
+  await expect(page.locator('.rows .row')).not.toHaveCount(0);
 });
 
 test('the map opens on the Seated curated list; Every restaurant shows all and the link keeps it', async ({ page }) => {
@@ -540,11 +588,12 @@ test('the map opens on the Seated curated list; Every restaurant shows all and t
   await expect(page.locator('.list-head .sum')).toContainText(`of ${curated} Seated curated picks`);
   await expect(page.locator('.chip.lens')).toHaveText('Seated curated');
   expect(new URL(page.url()).search).toBe(''); // the default needs no link
-  await page.locator('.lens-line').getByRole('button', { name: 'Every restaurant' }).click();
+  await page.locator('.chip.lens').click();
+  await page.getByRole('dialog').locator('.choice', { hasText: 'Every restaurant' }).click();
   await expect(page.locator('.list-head .sum')).not.toContainText('Seated curated');
   await expect(page).toHaveURL(/lens=all/);
   await page.reload();
-  await expect(page.locator('.chip.lens')).toHaveText('Lists');
+  await expect(page.locator('.chip.lens')).toHaveText('Every restaurant');
 });
 
 // Joel, 19 Nov 2026: "i want north to be north. like google maps". Our art, drawn north up, is the map; sezlab's

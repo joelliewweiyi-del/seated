@@ -98,12 +98,13 @@ function Choice({ l, current, onPick, extra }: { l: ListChoice; current: string 
   const unit = l.id === 'all' ? (l.picks === 1 ? 'place' : 'places') : l.picks === 1 ? 'pick' : 'picks';
   return (
     <li>
-      <button className="choice" aria-pressed={l.id === current} onClick={() => onPick(l.id)} title={l.line || undefined}>
+      <button className="choice" aria-pressed={l.id === current} onClick={() => onPick(l.id)}>
         <span className="nm">{l.name}</span>
         <span className="by">
           {l.look !== undefined && <Avatar look={l.look ? cleanLook(l.look) : null} size={18} />}
           {l.by}
         </span>
+        {l.line && <span className="line">{l.line}</span>}
         <span className="counts">
           <span className="stud" aria-hidden="true" />
           {l.free} free · {l.picks} {unit}

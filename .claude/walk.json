@@ -13,7 +13,7 @@
   ],
   "signed_in": {
     "url": "/",
-    "text": "with a table"
+    "text": " free"
   },
   "roles": {
     "visitor": {
@@ -54,7 +54,7 @@
         },
         {
           "label": "the list counts free places",
-          "regex": "\\d+ with a table"
+          "regex": "\\d+ free"
         }
       ]
     },

@@ -7,6 +7,13 @@ const shot = (page: Page, name: string) => page.screenshot({ path: `test-results
 const run = Date.now().toString(36);
 let ip = 10;
 
+/** Rows in the list, counting the places folded under "Book on their site (n)". */
+async function listed(page: Page): Promise<number> {
+  const fold = page.locator('.rows .fold[aria-expanded="false"]');
+  const folded = (await fold.count()) ? Number((await fold.innerText()).match(/\((\d+)\)/)![1]) : 0;
+  return (await page.locator('.rows .nm').count()) + folded;
+}
+
 async function visitor(browser: Browser, opts: { phone?: boolean } = {}): Promise<Page> {
   const ctx = await browser.newContext({
     extraHTTPHeaders: { 'x-forwarded-for': `10.0.${run.length}.${ip++}` },
@@ -54,7 +61,7 @@ test('a first visit asks two questions, names a profile, puts free tables first,
   await expect(page.locator('.chip.lens')).toHaveText('For you');
   await expect(page.locator('.lens-line')).toContainText('Natural Wine Wanderer');
   await expect(page).toHaveURL(/[?&]lens=you(&|$)/);
-  await expect(page.locator('.rows .nm')).toHaveCount(12);
+  await expect.poll(() => listed(page)).toBe(12);
   // The answers stay on this device: no welcome again, and the picks come back from the link.
   await page.reload();
   await expect(page.locator('.chip.lens')).toHaveText('For you');
@@ -103,7 +110,7 @@ test('a character: made once with a key, opened on another device with the key t
   await welcome(b).getByRole('button', { name: 'Open my character' }).click();
   // The answers came with the character, so it lands on the profile.
   await expect(welcome(b).getByRole('heading', { name: 'Tasting Menu Chaser' })).toBeVisible();
-  await welcome(b).getByRole('button', { name: 'Close' }).click();
+  await welcome(b).getByRole('button', { name: 'Close', exact: true }).click();
   await expect(b.getByRole('button', { name: `You: Ana ${run}` })).toBeVisible();
 
   // A wrong key says what to do.
