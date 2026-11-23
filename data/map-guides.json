@@ -4,12 +4,12 @@
   "guides": [
     {
       "id": "mara-grimm",
-      "name": "Mara Grimm in Het Parool, 8,5 and up",
-      "short": "Mara Grimm 8,5+",
-      "by": "Mara Grimm, Het Parool",
+      "name": "Amsterdam critics, 8,5 and up",
+      "short": "Amsterdam critics",
+      "by": "Het Parool",
       "url": "https://linktr.ee/MaraGrimm",
       "date": "2026-11-15",
-      "line": "The places Het Parool's restaurant critic scored 8,5 or higher.",
+      "line": "Places Amsterdam's restaurant critics scored 8,5 or higher.",
       "notes": {
         "barracuda": {
           "score": "9",

@@ -383,7 +383,7 @@ describe('guides', () => {
     expect(new Set(file.guides.map((g) => g.id)).size).toBe(file.guides.length);
     for (const g of file.guides) {
       expect(g.short.length, g.id).toBeGreaterThan(0);
-      expect(g.short.length, g.id).toBeLessThanOrEqual(16);
+      expect(g.short.length, g.id).toBeLessThanOrEqual(17); // "Amsterdam critics" fits the picker at 390 px (Joel, 23 Nov 2026)
       expect(g.line.length, g.id).toBeGreaterThan(10);
       expect(g.line.length, g.id).toBeLessThanOrEqual(100);
       expect(g.line.toLowerCase(), g.id).not.toContain(g.name.toLowerCase());
