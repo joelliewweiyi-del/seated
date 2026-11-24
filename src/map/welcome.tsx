@@ -21,7 +21,10 @@ interface WelcomeProps {
 
 /** Your top tables: the restaurants that fit your taste best, a free table today breaking ties. */
 /** Picks come from the curated list only (Joel, 15 Nov 2026: no tourist traps among the suggestions). */
+/** A character with a hand-picked list gets that list, in its order, from every restaurant on the map. */
 export function picksFor(you: You, restaurants: MapRestaurant[], statusOf: (r: MapRestaurant) => Status, n = 12) {
+  const hand = you.profile?.picks;
+  if (hand) return hand.map((id) => restaurants.find((r) => r.id === id)).filter((r): r is MapRestaurant => !!r).slice(0, n);
   const curated = restaurants.filter((r) => r.g.includes(CURATED));
   return suggest(you.taste, curated.length ? curated : restaurants, (r) => statusOf(r) === 'open', n);
 }

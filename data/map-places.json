@@ -1252,6 +1252,14 @@
   "source": "manual",
   "roof": 21
  },
+ "twee-prinsen": {
+  "lat": 52.377914,
+  "lng": 4.886461,
+  "area": "Grachtengordel",
+  "kind": "wine",
+  "source": "osm by name",
+  "roof": 17
+ },
  "utage-sake-bar": {
   "lat": 52.345247,
   "lng": 4.908176,

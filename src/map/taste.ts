@@ -34,10 +34,14 @@ export interface Profile {
   axis: Weights;
   /** How the character looks (see avatar.tsx); a new person of this profile starts with it. */
   look: Look;
+  /** Where this character really goes, picked by hand (restaurant ids, best first). Replaces the ranking by axis. */
+  picks?: string[];
 }
 
 export const PROFILES: Profile[] = [
-  { id: 'fashion-baddie', scene: 'fashion', name: 'Fashion Baddie', line: 'Natural wine, a tiny room, an outfit worth the walk.', axis: { wine: 3, bistro: 1.5, japanese: 1, hot: 0.5, fine: -1, brasserie: -1.5, pizza: -1, destination: -2 }, look: { skin: 4, hair: 1, hairColour: 0, top: 5, extra: 4 } },
+  { id: 'fashion-baddie', scene: 'fashion', name: 'Fashion Baddie', line: 'Natural wine, a tiny room, an outfit worth the walk.', axis: { wine: 3, bistro: 1.5, japanese: 1, hot: 0.5, fine: -1, brasserie: -1.5, pizza: -1, destination: -2 }, look: { skin: 4, hair: 1, hairColour: 0, top: 5, extra: 4 },
+    // Joel, 24 Nov 2026: "She goes to Twee Prinsen or Kamer"; the rest from press on the in-crowd (Sheerluxe, Your Little Black Book, Star Wine List).
+    picks: ['kamer-bar', 'twee-prinsen', 'europa', 'calisto', 'cafe-binnenvisser', 'gitane', 'bar-centraal', 'dame-aan-de-kade', 'roux', 'bottleshop', 'weinlokal-stern'] },
   { id: 'vintage-hunter', scene: 'fashion', name: 'Vintage Hunter', line: 'A second-hand coat and first names with the waiter.', axis: { cafe: 2, bistro: 1.5, bib: 1, hot: -1, guides: -0.5 }, look: { skin: 1, hair: 3, hairColour: 4, top: 2, extra: 2 } },
   { id: 'noord-creative', scene: 'creative', name: 'Noord Creative', line: 'Studio in a shipping container, dinner where it is loud.', axis: { pizza: 2, cafe: 1.5, brasserie: 1.5, wine: 1, fine: -1 }, look: { skin: 4, hair: 3, hairColour: 0, top: 7, extra: 9 } },
   { id: 'gallery-hopper', scene: 'creative', name: 'Gallery Hopper', line: 'Opening at six, dinner at nine, opinions all night.', axis: { japanese: 2, wine: 1.5, bistro: 1, guides: 1 }, look: { skin: 0, hair: 2, hairColour: 5, top: 4, extra: 11 } },

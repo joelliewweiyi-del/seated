@@ -62,7 +62,7 @@ test('a first visit: choose your character, a scene then a character, and the ma
   // The You button wears the character's face.
   await expect(page.locator('.you-btn svg')).not.toHaveClass(/no-character/);
   await expect(page).toHaveURL(/[?&]lens=you(&|$)/);
-  await expect.poll(() => listed(page)).toBe(12);
+  await expect.poll(() => listed(page)).toBe(11); // her hand-picked list (taste.ts)
   // The answers stay on this device: no welcome again, and the picks come back from the link.
   await page.reload();
   await expect(page.locator('.chip.lens')).toHaveText('Fashion Baddie');

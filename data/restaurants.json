@@ -3183,6 +3183,15 @@
     "address": "Jan Pieter Heijestraat 143, 1054 MG Amsterdam"
   },
   {
+    "id": "twee-prinsen",
+    "name": "Café Twee Prinsen",
+    "platform": "walk-in",
+    "platformUid": null,
+    "website": "https://tweeprinsen.nl",
+    "city": "Amsterdam",
+    "address": "Prinsenstraat 27, Amsterdam"
+  },
+  {
     "id": "nk-thai-noodles",
     "name": "NK Thai Noodles",
     "platform": "other",

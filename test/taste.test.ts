@@ -1,5 +1,6 @@
 // Taste: you pick a character, lists pull the taste, and the profile ranks restaurants. The cases encode what each
 // character means, so a change to a weight that breaks the meaning fails here.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PROFILES, SCENES, fit, listsFor, profileFor, suggest, tasteOf } from '../src/map/taste';
 
@@ -21,6 +22,19 @@ describe('characters', () => {
 
   it('a taste made of only lists can land on every character', () => {
     for (const p of PROFILES) expect(profileFor(p.axis).id).toBe(p.id);
+  });
+
+  it('a hand-picked list names only restaurants that are on the map and not opted out', () => {
+    const known = new Set((JSON.parse(readFileSync('data/restaurants.json', 'utf8')) as Array<{ id: string }>).map((r) => r.id));
+    const placed = JSON.parse(readFileSync('data/map-places.json', 'utf8')) as Record<string, unknown>;
+    const out = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8')) as Array<{ id: string }>).map((r) => r.id));
+    for (const p of PROFILES)
+      for (const id of p.picks ?? []) {
+        expect(known.has(id), `${p.name}: ${id} is not in data/restaurants.json`).toBe(true);
+        expect(id in placed, `${p.name}: ${id} has no place in data/map-places.json`).toBe(true);
+        expect(out.has(id), `${p.name}: ${id} is opted out`).toBe(false);
+      }
+    expect(PROFILES.find((p) => p.id === 'fashion-baddie')!.picks!.slice(0, 2)).toEqual(['kamer-bar', 'twee-prinsen']);
   });
 
   it("a person's lists pull a listless profile toward what is in them", () => {

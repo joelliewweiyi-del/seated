@@ -23,7 +23,7 @@ const G = (genz, mill) => (MILL ? mill : genz);
 /** STYLE=real: looks like a screen recording someone posted (Joel, 24 Nov 2026: "reads too much like a script", "not just
  * text but how it's shown"; then "POV is too small. Too much going on"; then the storyboard "choose your character,
  * Fashion, Fashion Baddie, show all her places"): a status bar over the page, taps, one hook line and one reaction.
- * Phone only; HERO must be one of the Fashion Baddie's places (weinlokal-stern). The bar is written as $F/bar-top.png; encode with
+ * Phone only; HERO must be one of the Fashion Baddie's places (kamer-bar, with DAY=2026-12-04). The bar is written as $F/bar-top.png; encode with
  * -i frames/%05d.png -i bar-top.png -filter_complex "[0]scale=1080:1848:flags=lanczos[v];[1][v]vstack=2". */
 const REAL = PHONE && process.env.STYLE === 'real';
 const BAR_TOP = 24; // CSS px of the phone's status bar
@@ -58,8 +58,9 @@ await page.route('**/map-api/**', (r) => r.abort());
 const today0 = new Date();
 const friAdd = (5 - today0.getDay() + 7) % 7;
 const friDay = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() + friAdd);
-const FRI = `${friDay.getFullYear()}-${String(friDay.getMonth() + 1).padStart(2, '0')}-${String(friDay.getDate()).padStart(2, '0')}`;
-await page.goto(`${BASE}/map/?lens=seated${friAdd ? `&date=${FRI}` : ''}`);
+// DAY=YYYY-MM-DD films another day (Kamer: full on 27 Nov, free on Friday 4 Dec).
+const FRI = process.env.DAY ?? `${friDay.getFullYear()}-${String(friDay.getMonth() + 1).padStart(2, '0')}-${String(friDay.getDate()).padStart(2, '0')}`;
+await page.goto(`${BASE}/map/?lens=seated${friAdd || process.env.DAY ? `&date=${FRI}` : ''}`);
 // The map starts only as the clock runs: step it until the signs are in and every image is loaded.
 for (let i = 0; ; i++) {
   const ok = await page.evaluate(() => { window.__film.step(1000 / 60); const v = window.seatedMap; return !!v && v.markers?.length > 0 && v.waiting === 0; });
@@ -166,7 +167,7 @@ const mid = await at('kaagman-kortekaas'); // by the Dam: the middle of the cana
 if (!hero || !mid) throw new Error(`no sign for ${HERO} or kaagman-kortekaas in the snapshot: pick another HERO`);
 
 // The coming Friday (today on a Friday), its index in the snapshot, the free count and the hero's state that day.
-const fri = await page.evaluate(() => {
+const fri = process.env.DAY ? { add: 1, date: FRI } : await page.evaluate(() => {
   const now = new Date();
   const add = (5 - now.getDay() + 7) % 7;
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + add);
