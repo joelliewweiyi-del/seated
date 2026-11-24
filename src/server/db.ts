@@ -107,8 +107,10 @@ export interface Settings {
 export interface DayStateRow {
   date: string;
   state: DayState;
-  /** Free times, read only for open days in the next few days. Null = not read. */
+  /** Free times of an open day. Null = not read. */
   times: string[] | null;
+  /** When the times were read; a pass reads only some far days and carries the rest over (census.ts). */
+  timesAt?: string | null;
 }
 
 export interface RestaurantRow extends Restaurant {
@@ -299,6 +301,7 @@ export class Store {
     this.addColumnIfMissing('bookings', 'source', "TEXT NOT NULL DEFAULT 'seated'");
     // Who made the watch: null = the user, 'list' = a list on seated.food (myLists.ts), which may also remove it.
     this.addColumnIfMissing('watches', 'source', 'TEXT');
+    this.addColumnIfMissing('day_states', 'times_at', 'TEXT');
   }
 
   // ── restaurants ──────────────────────────────────────────────────────────
@@ -525,22 +528,26 @@ export class Store {
    */
   saveDayStates(restaurantId: string, partySize: number, readAt: string, rows: DayStateRow[], from: string): void {
     const stmt = this.db.prepare(
-      `INSERT INTO day_states (restaurant_id, party_size, date, state, times, read_at) VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT(restaurant_id, party_size, date) DO UPDATE SET state = excluded.state, times = excluded.times, read_at = excluded.read_at`,
+      `INSERT INTO day_states (restaurant_id, party_size, date, state, times, read_at, times_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(restaurant_id, party_size, date) DO UPDATE SET state = excluded.state, times = excluded.times, read_at = excluded.read_at, times_at = excluded.times_at`,
     );
     this.db.exec('BEGIN');
     this.db.prepare('DELETE FROM day_states WHERE restaurant_id = ? AND party_size = ? AND date >= ?').run(restaurantId, partySize, from);
-    for (const r of rows) stmt.run(restaurantId, partySize, r.date, r.state, r.times ? r.times.join(',') : null, readAt);
+    for (const r of rows) stmt.run(restaurantId, partySize, r.date, r.state, r.times ? r.times.join(',') : null, readAt, r.times ? (r.timesAt ?? readAt) : null);
     this.db.exec('COMMIT');
   }
 
-  /** Days from `from` on, for one party size. */
-  dayStates(partySize: number, from: string): Array<DayStateRow & { restaurantId: string; readAt: string }> {
-    return (this.db.prepare('SELECT * FROM day_states WHERE party_size = ? AND date >= ? ORDER BY date').all(partySize, from) as Row[]).map((r) => ({
+  /** Days from `from` on, for one party size (one restaurant when `restaurantId` is given). */
+  dayStates(partySize: number, from: string, restaurantId?: string): Array<DayStateRow & { restaurantId: string; readAt: string }> {
+    const rows = restaurantId
+      ? this.db.prepare('SELECT * FROM day_states WHERE party_size = ? AND date >= ? AND restaurant_id = ? ORDER BY date').all(partySize, from, restaurantId)
+      : this.db.prepare('SELECT * FROM day_states WHERE party_size = ? AND date >= ? ORDER BY date').all(partySize, from);
+    return (rows as Row[]).map((r) => ({
       restaurantId: r.restaurant_id as string,
       date: r.date as string,
       state: r.state as DayStateRow['state'],
       times: r.times ? (r.times as string).split(',') : null,
+      timesAt: (r.times_at as string | null) ?? null,
       readAt: r.read_at as string,
     }));
   }

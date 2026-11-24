@@ -67,7 +67,7 @@ export interface MapRestaurant {
   readable: boolean;
   /** Day codes from `start`, one per day. */
   d: string;
-  /** Free times for some open days. */
+  /** Free times of open days, read within the last 3 hours (TIMES_MAX_AGE_MS). */
   t: Record<string, string[]>;
   /** Booking link per open day, pre-filled where the system allows. */
   book: Record<string, string>;
@@ -178,6 +178,8 @@ export function dayCodes(states: Map<string, DayState>, dates: string[], openDay
  * from 10 to 15 Nov 2026) must not leave days-old free tables on the map. The radar's own open tables still count.
  */
 export const STALE_MS = 6 * 3600_000;
+/** Free times older than this are not shown; far days are read again within about 2 hours (TIMES_FAR_PER_PASS). */
+export const TIMES_MAX_AGE_MS = 3 * 3600_000;
 
 const readDay = (at: string | null | undefined) => (at ? localDate(new Date(at)) : null);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
@@ -200,7 +202,10 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
   const byRestaurant = new Map<string, Map<string, { state: DayState; times: string[] | null }>>();
   for (const row of store.dayStates(CENSUS_PARTY, start)) {
     const m = byRestaurant.get(row.restaurantId) ?? new Map();
-    m.set(row.date, { state: row.state, times: row.times });
+    // Times read more than TIMES_MAX_AGE_MS ago are not shown: the census reads far days in turns (census.ts).
+    const at = row.timesAt ?? row.readAt;
+    const fresh = now.getTime() - Date.parse(at) <= TIMES_MAX_AGE_MS;
+    m.set(row.date, { state: row.state, times: fresh ? row.times : null });
     byRestaurant.set(row.restaurantId, m);
   }
   // The radar's open tables for a party of the same size are fresher than the census: they win.

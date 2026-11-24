@@ -163,10 +163,19 @@ describe('census and map data', () => {
     expect(s.calls.filter((c) => c.startsWith('calendar')).sort()).toEqual(['calendar bistro-a', 'calendar wine-b']);
   });
 
-  it('reads free times only for open days in the next three days', async () => {
-    const s = setup({ 'bistro-a': { [TODAY]: 'open', [addDays(TODAY, 2)]: 'open', [addDays(TODAY, 3)]: 'open' } });
+  it('reads free times for open days only, later ones too (Joel, 24 Nov 2026: times for every restaurant)', async () => {
+    const s = setup({ 'bistro-a': { [TODAY]: 'open', [addDays(TODAY, 1)]: 'full', [addDays(TODAY, 2)]: 'open', [addDays(TODAY, 30)]: 'open' } });
     await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });
-    expect(s.calls.filter((c) => c.startsWith('slots'))).toEqual([`slots bistro-a ${TODAY}`, `slots bistro-a ${addDays(TODAY, 2)}`]);
+    expect(s.calls.filter((c) => c.startsWith('slots'))).toEqual([`slots bistro-a ${TODAY}`, `slots bistro-a ${addDays(TODAY, 2)}`, `slots bistro-a ${addDays(TODAY, 30)}`]);
+  });
+
+  it('keeps far times between passes and hides times over 3 hours old', async () => {
+    const s = setup({ 'bistro-a': { [TODAY]: 'open', [addDays(TODAY, 30)]: 'open' } });
+    await runCensus({ store: s.store, platforms: s.platforms, optOut: new Set(), now: () => NOW });
+    const day = addDays(TODAY, 30);
+    const at = (h: number) => new Date(NOW.getTime() + h * 3600_000);
+    expect(buildMapData({ store: s.store, platforms: s.platforms, places: s.places, optOut: new Set(), now: at(1) }).restaurants.find((x) => x.id === 'bistro-a')!.t[day]).toBeTruthy();
+    expect(buildMapData({ store: s.store, platforms: s.platforms, places: s.places, optOut: new Set(), now: at(3.5) }).restaurants.find((x) => x.id === 'bistro-a')!.t[day]).toBeUndefined();
   });
 
   it('keeps the last answer when a read fails, so one blip does not empty the map', async () => {
