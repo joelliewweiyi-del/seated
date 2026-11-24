@@ -68,7 +68,9 @@ export class World {
     this.scale = meta.hi.w / meta.w;
     if (ours) {
       const p = ours.projection;
-      if (ours.sezVersion !== String(meta.version) || p.X0 !== meta.X0 || p.Y0 !== meta.Y0 || p.x !== meta.x || p.y !== meta.y || (p.scale !== this.scale / 2 && p.scale !== this.scale) || p.VZ !== meta.VZ) {
+      // His version matters only where his art shows (?art=sez, our Noord fills his gaps). Our own city art hides his,
+      // so only the projection must match: a new version of his art froze the default map (24 Nov 2026, deploy).
+      if ((!onlyOurs && ours.sezVersion !== String(meta.version)) || p.X0 !== meta.X0 || p.Y0 !== meta.Y0 || p.x !== meta.x || p.y !== meta.y || (p.scale !== this.scale / 2 && p.scale !== this.scale) || p.VZ !== meta.VZ) {
         throw new Error('Rebuild Noord for this version of the city art: npx tsx scripts/map-noord.ts');
       }
     }

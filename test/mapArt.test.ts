@@ -87,3 +87,20 @@ describe('map dates', () => {
     expect(dayLabel('2027-01-01', { long: true })).toBe('Friday 1 Jan');
   });
 });
+
+describe('art versions', () => {
+  // 24 Nov 2026: the deploy synced a new version of his art and the default map (our own art) refused to load.
+  const canal = JSON.parse(readFileSync('src/map/public/canal/manifest.json', 'utf8'));
+  const ours = JSON.parse(readFileSync('src/map/public/ours/manifest.json', 'utf8'));
+  const newer = { ...manifest, version: 'newer-than-both' } as unknown as SezManifest;
+
+  it('our own city art loads with any version of his art, as long as the projection matches', () => {
+    expect(() => new World(newer, './sez/', canal, './canal/', true)).not.toThrow();
+    const moved = { ...canal, projection: { ...canal.projection, X0: canal.projection.X0 + 1 } };
+    expect(() => new World(newer, './sez/', moved, './canal/', true)).toThrow(/Rebuild/);
+  });
+
+  it('our Noord fill over his art still needs the very version it was cut for', () => {
+    expect(() => new World(newer, './sez/', ours, './ours/', false)).toThrow(/Rebuild Noord/);
+  });
+});
