@@ -156,7 +156,7 @@ export function App() {
   // Once per device, a few seconds in, the host points at the lists (and goes again after 20 s).
   const [hello, setHello] = useRemembered<{ seen: boolean }>('seated.map.hello', { seen: false });
   const [nudge, setNudge] = useState(false);
-  const [welcomeAt, setWelcomeAt] = useState<WelcomeStep>('q0');
+  const [welcomeAt, setWelcomeAt] = useState<WelcomeStep>('scene');
   const openWelcome = (step: WelcomeStep) => {
     setWelcomeAt(step);
     setDialog('welcome');
@@ -230,7 +230,7 @@ export function App() {
     const g = data.guides.find((x) => x.id === lensId);
     if (g) return { id: g.id, kind: 'guide', title: g.short, line: g.line, url: g.url, by: null, ids: new Set(data.restaurants.filter((r) => r.g.includes(g.id)).map((r) => r.id)) };
     if (lensId === 'you')
-      return you.profile ? { id: 'you', kind: 'you', title: 'For you', line: `Your picks as a ${you.profile.name}.`, url: null, by: null, ids: new Set(picks.map((r) => r.id)) } : null;
+      return you.profile ? { id: 'you', kind: 'you', title: you.profile.name, line: `Your picks as a ${you.profile.name}.`, url: null, by: null, ids: new Set(picks.map((r) => r.id)) } : null;
     if (listId) {
       const own = you.lists.find((l) => l.id === listId);
       const l = own ?? you.community?.find((x) => x.id === listId) ?? you.opened[listId];
@@ -261,6 +261,7 @@ export function App() {
         hollow: s === 'none',
         rank: STATUS_RANK[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0) + (lens && inLens(lens, p.r) ? 400 : 0),
         dim: (filters.open && s !== 'open') || !match || !inLens(lens, p.r),
+        pin: !inLens(lens, p.r),
       });
     }
     view.setMarkers(markers);
@@ -411,6 +412,29 @@ export function App() {
     view.setHome(c.x, c.y, c.z);
   });
 
+  // A character picked in the welcome shows its places (Joel, 24 Nov 2026: "show all the Fashion Baddie places"): on a
+  // phone as a half-height list of rows, and the map above it centred on the most of them; only the lens keeps its names.
+  const frameLens = useRef(false);
+  // On a phone the picks open as a half-height list of rows (as with Near me) until the list is toggled or the lens changes.
+  const [rowsFor, setRowsFor] = useState<string | null>(null);
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!frameLens.current || !view || !lens) return;
+    frameLens.current = false;
+    const pts = placed.filter((p) => p.onMap && lens.ids.has(p.r.id)).map((p) => ({ x: p.ax, y: p.ay }));
+    if (!pts.length) return;
+    // Centred on the biggest group of its places that shows with names (zoom 0.25), in the map above the list.
+    const sheet = innerWidth <= 900 ? Math.round(innerHeight * NEAR_SHEET) + 36 : null;
+    const s = view.safe;
+    const wx = (innerWidth - s.left - s.right) / 2 / 0.25 - 256;
+    const wy = (innerHeight - s.top - (sheet ?? s.bottom)) / 2 / 0.25 - 128;
+    const near = (a: { x: number; y: number }) => pts.filter((p) => Math.abs(p.x - a.x) <= wx && Math.abs(p.y - a.y) <= wy);
+    const group = pts.map(near).sort((a, b) => b.length - a.length)[0]!;
+    const mean = (v: number[]) => v.reduce((t, x) => t + x, 0) / v.length;
+    const c = centred(view, mean(group.map((p) => p.x)), mean(group.map((p) => p.y)), 0.25, sheet);
+    view.flyTo(c.x, c.y, c.z);
+  }, [lens, placed]);
+
   // Open the restaurant from the link once everything is in place.
   const opened = useRef(false);
   useEffect(() => {
@@ -427,7 +451,7 @@ export function App() {
     if (greeted.current || !data || !day) return;
     greeted.current = true;
     const u = arrived.current;
-    if (!you.welcomed && !you.key && !u.r && !u.lens) openWelcome('q0');
+    if (!you.welcomed && !you.key && !u.r && !u.lens) openWelcome('scene');
   }, [data, day]); // eslint-disable-line react-hooks/exhaustive-deps
   // Community lists load when the picker opens.
   useEffect(() => {
@@ -541,10 +565,10 @@ export function App() {
             onPick={setDate}
             onAbout={() => setDialog('about')}
             you={you}
-            onYou={() => (you.account || you.answered ? setDialog('you') : openWelcome('q0'))}
+            onYou={() => (you.account || you.answered ? setDialog('you') : openWelcome('scene'))}
           />
 
-          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}${sel ? ' has-card' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
+          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}${rowsFor === lensId && !filters.near && !sel ? ' near rows' : ''}${sel ? ' has-card' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
               <Card
                 r={sel}
@@ -577,7 +601,10 @@ export function App() {
                 me={filters.near ? me : null}
                 query={query}
                 collapsed={collapsed}
-                onToggle={() => setCollapsed((c) => !c)}
+                onToggle={() => {
+                  setRowsFor(null);
+                  setCollapsed((c) => !c);
+                }}
                 onQuery={setQuery}
                 onPick={focus}
                 onDay={setDate}
@@ -622,7 +649,7 @@ export function App() {
         <Nudge
           onOpen={() => {
             setNudge(false);
-            openWelcome('q0');
+            openWelcome('scene');
           }}
           onClose={() => setNudge(false)}
         />
@@ -660,18 +687,14 @@ export function App() {
         <Welcome
           key={welcomeAt}
           you={you}
-          restaurants={data.restaurants}
-          day={day}
-          statusOf={statusOfR}
           start={welcomeAt}
           onLens={(id) => {
+            frameLens.current = true;
+            setRowsFor(id);
+            setCollapsed(false);
             setLens(id);
             setSelected(null);
             setDialog(null);
-          }}
-          onPick={(id) => {
-            setDialog(null);
-            focus(id);
           }}
           onClose={() => setDialog(null)}
         />
@@ -841,7 +864,7 @@ function TopBar({ data, day, onPick, onAbout, you, onYou }: { data: MapData; day
           <span className="sr">How it works</span>
         </button>
         <button className="you-btn" onClick={onYou} aria-label={you.account ? `You: ${you.account.name}` : 'You'} title={you.account ? you.account.name : 'You'}>
-          <Avatar look={you.account ? cleanLook(you.account.avatar) : null} size={28} />
+          <Avatar look={you.account ? cleanLook(you.account.avatar) : (you.profile?.look ?? null)} size={28} />
         </button>
       </div>
       {open && (
@@ -1086,6 +1109,7 @@ function List(p: ListProps) {
                   <Marks r={r} />
                   <span className="ar">
                     {p.me ? `${bike(m)} · ` : ''}
+                    {KIND_WORD[r.kind] ? `${KIND_WORD[r.kind]} · ` : ''}
                     {r.area}
                     {next ? ` · free ${dayLabel(next).slice(0, 10)}` : ''}
                   </span>
@@ -1544,7 +1568,7 @@ function Dialog({ kind, onKind, onClose }: { kind: 'about' | 'restaurants'; onKi
             <p>You always book on the restaurant's own page. We never hold, sell or book tables. This page sets no cookies; it counts visits without them (Vercel Web Analytics).</p>
             <h3>Your character</h3>
             <p>
-              Answers to the two questions stay on this device. If you make a character, we keep its name, its look, your two answers and
+              The character you choose stays on this device. If you make a character with a name, we keep its name, its look, your choice and
               your lists, tied to a key only you hold: no email, no password, no tracking. Lists you share in Community show your character's
               name. Delete your character any time under You (top right); its lists go with it.
             </p>

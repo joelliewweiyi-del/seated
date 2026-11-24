@@ -1,25 +1,21 @@
-// The welcome: two questions, your profile and your tables; then, if you like, a character to keep them.
+// The welcome: choose your character (a scene, then a character in it) and the map shows its places.
+// A character with a name and a key keeps your lists; that is made later, from You or a list.
 // Also "You" (your character, its key, sign out, delete). Every screen can be left: the map is always one tap away.
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, cleanLook, EXTRAS, HAIR_COLOURS, HAIRS, LOCALS, localOf, PARTS, randomLook, SKINS, TOPS, type Look } from './avatar';
-import { badgeStyle, CURATED, dayLabel, STATUS_COLOUR, STATUS_WORD, type MapRestaurant, type Status } from './data';
-import { KIND_WORD } from './marks';
+import { CURATED, type MapRestaurant, type Status } from './data';
 import { Host } from './picker';
-import { QUESTIONS, suggest, type Answers } from './taste';
+import { PROFILES, SCENES, suggest } from './taste';
 import type { Account } from './api';
 import type { You } from './you';
 
-export type WelcomeStep = 'q0' | 'q1' | 'result' | 'character' | 'key' | 'restore';
+export type WelcomeStep = 'scene' | `scene:${string}` | 'character' | 'key' | 'restore';
 
 interface WelcomeProps {
   you: You;
-  restaurants: MapRestaurant[];
-  day: string;
-  statusOf: (r: MapRestaurant) => Status;
   start: WelcomeStep;
   /** Show the map through a lens ('you', a guide or a list) and close. */
   onLens: (id: string) => void;
-  onPick: (id: string) => void;
   onClose: () => void;
 }
 
@@ -36,151 +32,96 @@ function useFocus<T extends HTMLElement>(dep: unknown) {
   return ref;
 }
 
-export function Welcome({ you, restaurants, day, statusOf, start, onLens, onPick, onClose }: WelcomeProps) {
+export function Welcome({ you, start, onLens, onClose }: WelcomeProps) {
   const [step, setStep] = useState<WelcomeStep>(start);
-  const [answers, setAnswers] = useState<Answers>(you.answers);
   const ref = useFocus<HTMLDivElement>(step);
   const close = () => {
     you.setWelcomed();
     onClose();
   };
-  const choose = (q: 0 | 1, id: string) => {
-    const next = { ...answers, [QUESTIONS[q]!.id]: id };
-    setAnswers(next);
-    if (q === 0) setStep('q1');
-    else {
-      you.answer(next);
-      setStep('result');
-    }
-  };
+  const scene = step.startsWith('scene:') ? step.slice(6) : null;
   return (
     <div className="scrim welcome-scrim" onClick={close}>
       <div ref={ref} tabIndex={-1} className="px dialog welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" onClick={(e) => e.stopPropagation()}>
-        {(step === 'q0' || step === 'q1') && (
-          <Question
-            n={step === 'q0' ? 0 : 1}
-            picked={answers[QUESTIONS[step === 'q0' ? 0 : 1]!.id]}
-            onChoose={(id) => choose(step === 'q0' ? 0 : 1, id)}
-            onBack={step === 'q1' ? () => setStep('q0') : null}
-            onRestore={() => setStep('restore')}
-            hasKey={!!you.account}
+        {step === 'scene' && <Scenes onScene={(id) => setStep(`scene:${id}`)} onRestore={() => setStep('restore')} hasKey={!!you.account} />}
+        {scene && (
+          <Characters
+            scene={scene}
+            picked={you.answers.type}
+            onPick={(id) => {
+              you.answer({ type: id });
+              onLens('you');
+            }}
+            onBack={() => setStep('scene')}
           />
         )}
-        {step === 'result' && <Result you={you} restaurants={restaurants} day={day} statusOf={statusOf} onLens={onLens} onPick={onPick} onCharacter={() => setStep('character')} />}
         {step === 'character' && <Character you={you} onDone={(made) => (made ? setStep('key') : close())} />}
         {step === 'key' && <KeyShown you={you} onDone={close} />}
-        {step === 'restore' && (
-          <Restore
-            you={you}
-            onDone={(a) => {
-              if (a.answers?.night && a.answers?.win) {
-                setAnswers(a.answers);
-                setStep('result');
-              } else setStep('q0');
-            }}
-            onBack={() => setStep('q0')}
-          />
-        )}
+        {step === 'restore' && <Restore you={you} onDone={(a) => (a.answers?.type ? onLens('you') : setStep('scene'))} onBack={() => setStep('scene')} />}
         {step !== 'key' && (
-        <div className="welcome-foot">
-          <button className="link" onClick={close}>
-            {step === 'q0' || step === 'q1' ? 'Skip, show me the map' : 'Close'}
-          </button>
-        </div>
+          <div className="welcome-foot">
+            <button className="link" onClick={close}>
+              {step === 'scene' || scene ? 'Skip, show me the map' : 'Close'}
+            </button>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function Question({ n, picked, onChoose, onBack, onRestore, hasKey }: { n: 0 | 1; picked?: string; onChoose: (id: string) => void; onBack: (() => void) | null; onRestore: () => void; hasKey: boolean }) {
-  const q = QUESTIONS[n]!;
+/** Step one: your scene. Each tile shows the characters in it. */
+function Scenes({ onScene, onRestore, hasKey }: { onScene: (id: string) => void; onRestore: () => void; hasKey: boolean }) {
   return (
     <>
-      <div className="hello">
-        <Host />
-        <div className="bubble">
-          <p className="step-count">{n + 1} of 2</p>
-          <h2 id="welcome-title">{q.ask}</h2>
-          {n === 0 && <p>Two questions, and I'll find your tables.</p>}
-        </div>
-      </div>
-      <ul className="answers" aria-label={q.ask}>
-        {q.choices.map((c) => (
-          <li key={c.id}>
-            <button className="choice answer" aria-pressed={picked === c.id} onClick={() => onChoose(c.id)}>
-              <span className="nm">{c.label}</span>
-              <span className="by">{c.sub}</span>
+      <h2 id="welcome-title" className="welcome-title">Choose your character</h2>
+      <ul className="scenes">
+        {SCENES.map((sc) => (
+          <li key={sc.id}>
+            <button className="choice scene" onClick={() => onScene(sc.id)}>
+              <span className="faces" aria-hidden="true">
+                {PROFILES.filter((p) => p.scene === sc.id).map((p) => (
+                  <Avatar key={p.id} look={p.look} size={40} />
+                ))}
+              </span>
+              <span className="nm">{sc.name}</span>
             </button>
           </li>
         ))}
       </ul>
-      <p className="welcome-links">
-        {onBack && (
-          <button className="link" onClick={onBack}>
-            ‹ Back
-          </button>
-        )}
-        {!hasKey && n === 0 && (
+      {!hasKey && (
+        <p className="welcome-links">
           <button className="link" onClick={onRestore}>
             Have an account? Use your key
           </button>
-        )}
-      </p>
+        </p>
+      )}
     </>
   );
 }
 
-function Result({ you, restaurants, day, statusOf, onLens, onPick, onCharacter }: Omit<WelcomeProps, 'start' | 'onClose'> & { onCharacter: () => void }) {
-  const p = you.profile;
-  // Of your twelve best fits, the ones with a table come first: a list of full rooms is no answer.
-  const top = picksFor(you, restaurants, statusOf, 12)
-    .map((r, i) => ({ r, i, free: statusOf(r) === 'open' }))
-    .sort((a, b) => Number(b.free) - Number(a.free) || a.i - b.i)
-    .slice(0, 5)
-    .map((x) => x.r);
-  if (!p) return null;
+/** Step two: a character in that scene. Picking one shows its places on the map. */
+function Characters({ scene, picked, onPick, onBack }: { scene: string; picked?: string; onPick: (id: string) => void; onBack: () => void }) {
+  const sc = SCENES.find((x) => x.id === scene);
   return (
     <>
-      <div className="hello result-head">
-        <Avatar look={you.account ? cleanLook(you.account.avatar) : { ...randomLook(() => 0.3), ...p.look }} size={64} />
-        <div className="bubble">
-          <p className="step-count">You're a</p>
-          <h2 id="welcome-title">{p.name}</h2>
-          <p>{p.line}</p>
-        </div>
-      </div>
-      <h3>Your tables for {dayLabel(day)}</h3>
-      <ul className="picks">
-        {top.map((r) => {
-          const s = statusOf(r);
-          return (
-            <li key={r.id}>
-              <button className="pick-row" onClick={() => onPick(r.id)}>
-                <span className="stud" style={{ background: STATUS_COLOUR[s] }} aria-hidden="true" />
-                <span className="nm">{r.name}</span>
-                <span className="by">
-                  {KIND_WORD[r.kind] ?? 'Restaurant'} · {r.area}
-                </span>
-                <span className="badge" style={badgeStyle(s)}>
-                  {STATUS_WORD[s]}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="result-actions">
-        <button className="btn primary" onClick={() => onLens('you')}>
-          Show my picks on the map
+      <p className="welcome-links">
+        <button className="link" onClick={onBack}>
+          ‹ {sc?.name ?? 'Back'}
         </button>
-        {!you.account && (
-          <button className="btn" onClick={onCharacter}>
-            Make my character
-          </button>
-        )}
-      </div>
-      {!you.account && <p className="meta">A character keeps your picks and lists on any device. No email, no password.</p>}
+      </p>
+      <h2 id="welcome-title" className="welcome-title">Who are you?</h2>
+      <ul className="characters">
+        {PROFILES.filter((p) => p.scene === scene).map((p) => (
+          <li key={p.id}>
+            <button className="choice archetype" aria-pressed={picked === p.id} onClick={() => onPick(p.id)}>
+              <Avatar look={p.look} size={72} />
+              <span className="nm">{p.name}</span>
+              <span className="by">{p.line}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }
@@ -327,7 +268,7 @@ function Restore({ you, onDone, onBack }: { you: You; onDone: (a: Account) => vo
           {you.busy ? 'Opening…' : 'Open my character'}
         </button>
         <button type="button" className="link" onClick={onBack}>
-          ‹ Back to the questions
+          ‹ Back
         </button>
       </div>
     </form>
@@ -356,7 +297,7 @@ export function YouPanel({ you, onWelcome, onLens, onClose }: { you: You; onWelc
           <Avatar look={a ? cleanLook(a.avatar) : null} size={64} />
           <div className="bubble">
             <h2 id="you-title">{a ? a.name : 'You'}</h2>
-            <p>{you.profile ? `${you.profile.name}. ${you.profile.line}` : 'Answer two questions and the map finds your tables.'}</p>
+            <p>{you.profile ? `${you.profile.name}. ${you.profile.line}` : 'Choose your character and the map finds your tables.'}</p>
           </div>
         </div>
         {you.problem && <Trouble you={you} />}
@@ -366,8 +307,8 @@ export function YouPanel({ you, onWelcome, onLens, onClose }: { you: You; onWelc
               Show my picks
             </button>
           )}
-          <button className="btn" onClick={() => onWelcome('q0')}>
-            {you.answered ? 'Retake the two questions' : 'Answer two questions'}
+          <button className="btn" onClick={() => onWelcome('scene')}>
+            {you.answered ? 'Choose another character' : 'Choose your character'}
           </button>
           {a ? (
             <button className="btn" onClick={() => onWelcome('character')}>

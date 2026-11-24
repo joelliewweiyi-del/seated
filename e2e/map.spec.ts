@@ -29,7 +29,7 @@ test.beforeEach(({ page }) =>
       localStorage.setItem('seated.map.hello', JSON.stringify({ seen: true }));
       // The location card (e2e/near.spec.ts) would sit over the map.
       localStorage.setItem('seated.map.where', JSON.stringify({ asked: true }));
-      // The welcome (two questions) opens on a first visit; e2e/you.spec.ts covers it.
+      // The welcome (choose your character) opens on a first visit; e2e/you.spec.ts covers it.
       if (!localStorage.getItem('seated.map.you')) localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true }));
     } catch {
       /* no storage: the nudge test covers it */
@@ -313,7 +313,7 @@ test('the picker takes a missing restaurant to a mail addressed to us, and only 
   await shot(page, '09-lists-missing');
 });
 
-test('once per device, a visitor who came by a link gets a nudge from the host a few seconds in, and Show me opens the two questions', async ({ browser }) => {
+test('once per device, a visitor who came by a link gets a nudge from the host a few seconds in, and Show me opens the characters', async ({ browser }) => {
   const page = await browser.newPage(); // no beforeEach here: a device that has never seen the nudge
   await page.addInitScript(() => localStorage.setItem('seated.map.where', JSON.stringify({ asked: true })));
   await page.clock.install();
@@ -330,7 +330,7 @@ test('once per device, a visitor who came by a link gets a nudge from the host a
   await expect(nudge).toHaveCSS('opacity', '1');
   await shot(page, '10-nudge');
   await nudge.getByRole('button', { name: 'Show me' }).click();
-  await expect(page.getByRole('dialog').getByRole('heading', { name: "What's the night?" })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Choose your character' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
   // Seen once, never again on this device.

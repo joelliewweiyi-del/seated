@@ -1,65 +1,50 @@
-// Taste: two questions put a visitor in one of six profiles, and the profile ranks the restaurants for them.
+// Taste: a visitor picks a character (a scene, then a profile in it), and the profile ranks the restaurants for them.
 // Everything here is plain arithmetic on what the map already knows about a restaurant (its kind of room, MICHELIN,
 // "hard to get", how many guides pick it). The restaurants in a person's own lists pull the profile toward them.
+import type { Look } from './avatar';
 import type { MapRestaurant } from './data';
 
 export type Feature = 'fine' | 'stars' | 'bib' | 'wine' | 'japanese' | 'bistro' | 'cafe' | 'brasserie' | 'pizza' | 'destination' | 'hot' | 'guides';
 export type Weights = Partial<Record<Feature, number>>;
 
-export interface Choice {
+/** A scene: where you spend your days. Each holds a few characters (Joel, 24 Nov 2026: "choose your character, Fashion, Fashion Baddie"). */
+export interface Scene {
   id: string;
-  label: string;
+  name: string;
   sub: string;
-  weights: Weights;
 }
-export interface Question {
-  id: 'night' | 'win';
-  ask: string;
-  choices: Choice[];
-}
-
-export const QUESTIONS: Question[] = [
-  {
-    id: 'night',
-    ask: "What's the night?",
-    choices: [
-      { id: 'date', label: 'Date night', sub: 'Two of you, a good table', weights: { wine: 1.5, japanese: 1.5, bistro: 1, hot: 1, fine: 0.5 } },
-      { id: 'friends', label: 'Out with friends', sub: 'Loud, shared, long', weights: { brasserie: 3, pizza: 2, cafe: 1, bistro: 0.5 } },
-      { id: 'special', label: 'Something special', sub: 'A birthday, a deal, a reason', weights: { fine: 2.5, stars: 2, destination: 2, hot: 0.5 } },
-      { id: 'easy', label: 'Easy and good', sub: 'Tonight, no fuss', weights: { bib: 2, cafe: 1.5, pizza: 1, bistro: 1, hot: -1 } },
-    ],
-  },
-  {
-    id: 'win',
-    ask: 'What makes it a great dinner?',
-    choices: [
-      { id: 'chef', label: "The chef's menu", sub: 'Let the kitchen decide', weights: { fine: 2, stars: 2, japanese: 1 } },
-      { id: 'wine', label: 'Natural wine, small plates', sub: 'Order a bit of everything', weights: { wine: 3, bistro: 1 } },
-      { id: 'buzz', label: 'The table everyone wants', sub: 'The place people talk about', weights: { hot: 2.5, guides: 2 } },
-      { id: 'local', label: 'A local spot, no hype', sub: 'Where the neighbours go', weights: { bib: 1.5, bistro: 1.5, cafe: 1, hot: -1.5, guides: -1 } },
-    ],
-  },
+export const SCENES: Scene[] = [
+  { id: 'fashion', name: 'Fashion', sub: 'Showrooms, shoots, after-parties' },
+  { id: 'creative', name: 'Creative', sub: 'Studios, galleries, Noord' },
+  { id: 'money', name: 'Money', sub: 'Zuidas, deals, a card on the table' },
+  { id: 'food', name: 'Food', sub: 'You plan your week around dinner' },
 ];
 
-export type Answers = Partial<Record<Question['id'], string>>;
+/** What you picked: the id of your character (a profile). */
+export interface Answers {
+  type?: string;
+}
 
 export interface Profile {
   id: string;
+  scene: Scene['id'];
   name: string;
   line: string;
-  /** What this profile is about, as feature weights. A person gets the profile whose axis their taste points along. */
+  /** What this character eats, as feature weights: it ranks the restaurants. */
   axis: Weights;
-  /** The character a new person of this profile starts with (see avatar.tsx). */
-  look: { top: number; extra: number };
+  /** How the character looks (see avatar.tsx); a new person of this profile starts with it. */
+  look: Look;
 }
 
 export const PROFILES: Profile[] = [
-  { id: 'tasting-chaser', name: 'Tasting Menu Chaser', line: 'You save up for the long menu, and you remember every course.', axis: { fine: 2, stars: 2, destination: 1 }, look: { top: 0, extra: 3 } },
-  { id: 'wine-wanderer', name: 'Natural Wine Wanderer', line: 'A short menu, a skin-contact bottle and a room with candles.', axis: { wine: 3, bistro: 0.5, japanese: 0.5 }, look: { top: 4, extra: 2 } },
-  { id: 'hot-hunter', name: 'Hot Table Hunter', line: 'If everyone talks about it, you have already been.', axis: { hot: 3, guides: 2 }, look: { top: 2, extra: 4 } },
-  { id: 'date-planner', name: 'Date Night Planner', line: 'Two seats, good light, and a place that makes you look clever.', axis: { wine: 1, japanese: 1.5, bistro: 1, hot: 1, fine: 0.5 }, look: { top: 5, extra: 5 } },
-  { id: 'table-host', name: 'Big Table Host', line: 'You book for eight and order for the table.', axis: { brasserie: 2, pizza: 1.5, cafe: 0.5, bistro: 0.5 }, look: { top: 1, extra: 0 } },
-  { id: 'local-regular', name: 'Neighbourhood Regular', line: 'The bistro round the corner, where they know your order.', axis: { bib: 2, bistro: 1, cafe: 1, pizza: 1, hot: -1, guides: -0.5 }, look: { top: 3, extra: 1 } },
+  { id: 'fashion-baddie', scene: 'fashion', name: 'Fashion Baddie', line: 'Natural wine, a tiny room, an outfit worth the walk.', axis: { wine: 3, bistro: 1.5, japanese: 1, hot: 0.5, fine: -1, brasserie: -1.5, pizza: -1, destination: -2 }, look: { skin: 4, hair: 1, hairColour: 0, top: 5, extra: 4 } },
+  { id: 'vintage-hunter', scene: 'fashion', name: 'Vintage Hunter', line: 'A second-hand coat and first names with the waiter.', axis: { cafe: 2, bistro: 1.5, bib: 1, hot: -1, guides: -0.5 }, look: { skin: 1, hair: 3, hairColour: 4, top: 2, extra: 2 } },
+  { id: 'noord-creative', scene: 'creative', name: 'Noord Creative', line: 'Studio in a shipping container, dinner where it is loud.', axis: { pizza: 2, cafe: 1.5, brasserie: 1.5, wine: 1, fine: -1 }, look: { skin: 4, hair: 3, hairColour: 0, top: 7, extra: 9 } },
+  { id: 'gallery-hopper', scene: 'creative', name: 'Gallery Hopper', line: 'Opening at six, dinner at nine, opinions all night.', axis: { japanese: 2, wine: 1.5, bistro: 1, guides: 1 }, look: { skin: 0, hair: 2, hairColour: 5, top: 4, extra: 11 } },
+  { id: 'founder', scene: 'money', name: 'Startup Founder', line: 'Raised last week. Books the place everyone talks about.', axis: { hot: 3, guides: 2 }, look: { skin: 2, hair: 0, hairColour: 1, top: 0, extra: 1 } },
+  { id: 'zuidas-suit', scene: 'money', name: 'Zuidas Suit', line: 'Lunch is a meeting. Dinner is the long menu.', axis: { brasserie: 2.5, fine: 1.5, stars: 1, hot: 0.5 }, look: { skin: 1, hair: 0, hairColour: 1, top: 7, extra: 14 } },
+  { id: 'tasting-chaser', scene: 'food', name: 'Tasting Menu Chaser', line: 'You save up for the long menu and remember every course.', axis: { fine: 2, stars: 2, destination: 1 }, look: { skin: 3, hair: 2, hairColour: 0, top: 1, extra: 3 } },
+  { id: 'local-regular', scene: 'food', name: 'Neighbourhood Regular', line: 'The bistro round the corner, where they know your order.', axis: { bib: 2, bistro: 1, cafe: 1, pizza: 1, hot: -1, guides: -0.5 }, look: { skin: 2, hair: 4, hairColour: 0, top: 3, extra: 13 } },
 ];
 
 export const profileById = (id: string | null | undefined) => PROFILES.find((p) => p.id === id) ?? null;
@@ -90,17 +75,13 @@ function add(into: Weights, w: Weights, k = 1): Weights {
   return into;
 }
 
-/** A person's taste: their two answers, pulled toward the restaurants in their own lists. */
+/** A person's taste: their character, pulled toward the restaurants in their own lists. */
 export function tasteOf(answers: Answers, listed: Fit[] = []): Weights {
-  const w: Weights = {};
-  for (const q of QUESTIONS) {
-    const c = q.choices.find((x) => x.id === answers[q.id]);
-    if (c) add(w, c.weights);
-  }
+  const w: Weights = add({}, profileById(answers.type)?.axis ?? {});
   if (listed.length) {
     const mean: Weights = {};
     for (const r of listed) add(mean, features(r), 1 / listed.length);
-    // A list says more than two taps: from five restaurants on it outweighs both answers together.
+    // A list says more than two taps: from five restaurants on it outweighs the character.
     add(w, mean, (8 * Math.min(listed.length, 5)) / 5);
   }
   return w;

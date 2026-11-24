@@ -19,6 +19,8 @@ export interface Marker {
   /** MICHELIN: '1' to '3' stars, or 'bib'. Drawn as its own red mark, on the sign and on the pin. */
   michelin?: string | null;
   dim: boolean;
+  /** Outside the lens: a dot only, never a name, unless selected or hovered (Joel, 24 Nov 2026: "too much going on"). */
+  pin?: boolean;
 }
 
 const MICHELIN_RED = '#b8322a';
@@ -798,7 +800,7 @@ export class MapView {
       const y = this.snap(toY(m.ay));
       if (x < -120 || y < -60 || x > W + 120 || y > H + 60) continue;
       // Names from the city view in; zoomed further out only free places keep theirs. Crowded names shrink to pins.
-      const showName = z >= 0.25 || m.id === this.selected || m.id === this.hovered || (z >= 0.125 && m.rank >= 300);
+      const showName = m.id === this.selected || m.id === this.hovered || (!m.pin && (z >= 0.25 || (z >= 0.125 && m.rank >= 300)));
       const full = showName;
       ctx.font = '600 13px "Pixelify Sans", ui-monospace, monospace';
       const label = full ? `${m.name} ${michelinMark(m) ?? ''}  ${m.badge}` : m.badge;

@@ -1101,8 +1101,10 @@ a {
     padding: 6px 0;
     background: var(--panel);
   }
-  /* In half a screen the rows come first: no guide line, search, chips or key ("Show all" on the active line goes back). */
-  .side.near .filters {
+  /* In half a screen the rows come first: no guide line, search, chips or key ("Show all" on the active line goes back).
+     A character's picks (rows) drop the sum line too. */
+  .side.near .filters,
+  .side.rows .sum {
     display: none;
   }
   .foot {
@@ -1520,35 +1522,63 @@ a {
   }
 }
 
-/* The welcome, You and lists: two questions, a profile, a character. */
+/* The welcome, You and lists: choose your character, a character with a key. */
 .welcome {
   width: min(560px, 100%);
 }
 .welcome-scrim {
   z-index: 12;
 }
-.step-count {
-  margin: 0 0 2px;
-  font: 600 11px/1 var(--px);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--primary);
+/* Choose your character: big tiles, one thing per screen (Joel, 24 Nov 2026: "too much going on"). */
+.welcome-title {
+  margin: 4px 0 16px !important;
+  font-size: 28px !important;
+  text-align: center;
 }
-.answers {
+.scenes,
+.characters {
   list-style: none;
   margin: 0;
-  padding: 2px;
+  padding: 2px 2px 6px;
   display: grid;
+  gap: 14px;
+}
+.scenes {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
 }
-.choice.answer {
-  padding: 14px 12px 12px;
-  min-height: 74px;
+.choice.scene {
+  justify-items: center;
   align-content: center;
+  gap: 10px;
+  min-height: 124px;
+  padding: 14px 8px 12px;
 }
-.choice.answer .nm {
-  font-size: 17px;
+.choice.scene .faces {
+  display: flex;
+  gap: 4px;
+}
+.choice.scene .nm {
+  font-size: 22px;
+}
+.choice.archetype {
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+}
+.choice.archetype .avatar {
+  grid-row: span 2;
+}
+.choice.archetype .nm {
+  font-size: 22px;
+  align-self: end;
+}
+.choice.archetype .by {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-2);
+  align-self: start;
 }
 .welcome-links,
 .result-actions,
@@ -1575,9 +1605,6 @@ a {
   padding-top: 10px;
   border-top: 2px dashed var(--line);
   text-align: center;
-}
-.result-head .avatar {
-  flex: none;
 }
 .picks {
   list-style: none;
@@ -1877,13 +1904,6 @@ a {
   font-size: 14px;
 }
 @media (max-width: 420px) {
-  .answers {
-    grid-template-columns: 1fr;
-  }
-  .choice.answer {
-    min-height: 0;
-    padding: 10px 12px;
-  }
   .builder {
     flex-direction: column;
     align-items: stretch;

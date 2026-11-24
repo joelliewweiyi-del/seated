@@ -1,7 +1,7 @@
-// Taste: two answers pick a profile, lists pull it, and the profile ranks restaurants. The cases encode what each
-// answer means, so a change to a weight that breaks the meaning fails here.
+// Taste: you pick a character, lists pull the taste, and the profile ranks restaurants. The cases encode what each
+// character means, so a change to a weight that breaks the meaning fails here.
 import { describe, expect, it } from 'vitest';
-import { PROFILES, QUESTIONS, fit, listsFor, profileFor, suggest, tasteOf, type Answers } from '../src/map/taste';
+import { PROFILES, SCENES, fit, listsFor, profileFor, suggest, tasteOf } from '../src/map/taste';
 
 const r = (id: string, kind: string, extra: { michelin?: '1' | '2' | '3' | 'bib' | null; hot?: number | null; g?: string[] } = {}) => ({
   id,
@@ -11,47 +11,47 @@ const r = (id: string, kind: string, extra: { michelin?: '1' | '2' | '3' | 'bib'
   hot: extra.hot ?? null,
   g: extra.g ?? [],
 });
-const of = (night: string, win: string) => profileFor(tasteOf({ night, win } as Answers)).id;
+const as = (type: string) => tasteOf({ type });
 
-describe('profiles from two answers', () => {
-  it('each answer pair lands where its words point', () => {
-    expect(of('special', 'chef')).toBe('tasting-chaser');
-    expect(of('date', 'wine')).toBe('wine-wanderer');
-    expect(of('date', 'buzz')).toBe('hot-hunter');
-    expect(of('date', 'chef')).toBe('date-planner');
-    expect(of('easy', 'local')).toBe('local-regular');
-    expect(of('friends', 'buzz')).toBe('table-host');
+describe('characters', () => {
+  it('every scene holds two or more characters, and every character sits in a scene', () => {
+    for (const sc of SCENES) expect(PROFILES.filter((p) => p.scene === sc.id).length).toBeGreaterThanOrEqual(2);
+    for (const p of PROFILES) expect(SCENES.map((s) => s.id)).toContain(p.scene);
   });
 
-  it('every profile is reachable from some pair of answers', () => {
-    const reached = new Set<string>();
-    for (const a of QUESTIONS[0]!.choices) for (const b of QUESTIONS[1]!.choices) reached.add(of(a.id, b.id));
-    expect([...reached].sort()).toEqual(PROFILES.map((p) => p.id).sort());
+  it('a taste made of only lists can land on every character', () => {
+    for (const p of PROFILES) expect(profileFor(p.axis).id).toBe(p.id);
   });
 
-  it("a person's lists pull the profile toward what is in them", () => {
+  it("a person's lists pull a listless profile toward what is in them", () => {
     const starred = ['a', 'b', 'c', 'd', 'e'].map((id) => r(id, 'fine', { michelin: '2' }));
-    expect(profileFor(tasteOf({ night: 'easy', win: 'local' })).id).toBe('local-regular');
-    expect(profileFor(tasteOf({ night: 'easy', win: 'local' }, starred)).id).toBe('tasting-chaser');
-    // One restaurant is not enough to overturn both answers.
-    expect(profileFor(tasteOf({ night: 'easy', win: 'local' }, starred.slice(0, 1))).id).toBe('local-regular');
+    expect(profileFor(tasteOf({}, starred)).id).toBe('tasting-chaser');
   });
 });
 
 describe('suggestions', () => {
   const rs = [r('star', 'fine', { michelin: '2' }), r('corner', 'bistro', { michelin: 'bib' }), r('buzz', 'bistro', { hot: 3, g: ['x', 'y'] }), r('wine', 'wine')];
 
-  it("the chef's menu puts the starred kitchen first; no hype puts the hot table last", () => {
-    expect(suggest(tasteOf({ night: 'special', win: 'chef' }), rs, () => false, 4)[0]!.id).toBe('star');
-    const local = suggest(tasteOf({ night: 'easy', win: 'local' }), rs, () => false, 4);
+  it('the tasting chaser and the Zuidas suit get the starred kitchen first; the regular gets the corner bistro first and the hot table last', () => {
+    expect(suggest(as('tasting-chaser'), rs, () => false, 4)[0]!.id).toBe('star');
+    expect(suggest(as('zuidas-suit'), rs, () => false, 4)[0]!.id).toBe('star');
+    const local = suggest(as('local-regular'), rs, () => false, 4);
     expect(local[0]!.id).toBe('corner');
     expect(local.at(-1)!.id).toBe('buzz');
-    expect(fit(tasteOf({ night: 'date', win: 'wine' }), rs[3]!)).toBeGreaterThan(fit(tasteOf({ night: 'date', win: 'wine' }), rs[0]!));
+    expect(suggest(as('founder'), rs, () => false, 4)[0]!.id).toBe('buzz');
+  });
+
+  it('the Fashion Baddie gets the small wine bar first and the starred kitchen and the brasserie last', () => {
+    const more = [...rs, r('brasserie', 'brasserie')];
+    const order = suggest(as('fashion-baddie'), more, () => false, 5).map((x) => x.id);
+    expect(order[0]).toBe('wine');
+    expect(order.slice(-2).sort()).toEqual(['brasserie', 'star']);
+    expect(fit(as('fashion-baddie'), rs[3]!)).toBeGreaterThan(fit(as('fashion-baddie'), rs[0]!));
   });
 
   it('a free table breaks a tie', () => {
     const twins = [r('a-closed', 'wine'), r('b-free', 'wine')];
-    expect(suggest(tasteOf({ win: 'wine' }), twins, (x) => x.id === 'b-free', 2).map((x) => x.id)).toEqual(['b-free', 'a-closed']);
+    expect(suggest(as('fashion-baddie'), twins, (x) => x.id === 'b-free', 2).map((x) => x.id)).toEqual(['b-free', 'a-closed']);
   });
 
   it('suggested lists share at least two of the top fits, most shared first', () => {

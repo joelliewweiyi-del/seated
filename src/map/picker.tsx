@@ -73,7 +73,7 @@ export interface ListChoice {
 
 interface PickerProps {
   lists: ListChoice[];
-  /** Your picks, when you answered the two questions. */
+  /** Your picks, when you chose a character. */
   forYou: ListChoice | null;
   /** Your own lists; null when you have no character yet. */
   mine: Array<ListChoice & { list: SeatedList }> | null;
@@ -345,13 +345,13 @@ export function Picker(p: PickerProps) {
   );
 }
 
-/** Once per device, a few seconds in, for someone who came by a link: the host offers the two questions. */
+/** Once per device, a few seconds in, for someone who came by a link: the host offers the characters. */
 export function Nudge({ onOpen, onClose }: { onOpen: () => void; onClose: () => void }) {
   return (
     <div className="px nudge" role="status">
       <Host size={34} />
       <p>
-        <b>Looking for somewhere good?</b> Two questions, and I'll find your tables.
+        <b>Looking for somewhere good?</b> Choose your character, and I'll find your tables.
       </p>
       <button className="btn small primary" onClick={onOpen}>
         Show me

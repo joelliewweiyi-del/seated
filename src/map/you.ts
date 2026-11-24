@@ -1,9 +1,9 @@
-// You: your two answers, your character and your lists. Answers stay on this device until you make a character;
+// You: the character you picked, its look and your lists. Answers stay on this device until you make a character;
 // then the character's key (kept on this device, shown to you once and on request) opens them anywhere.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, ApiError, type Account, type SeatedList } from './api';
 import type { Look } from './avatar';
-import { profileFor, tasteOf, type Answers, type Profile, type Weights } from './taste';
+import { profileById, profileFor, tasteOf, type Answers, type Profile, type Weights } from './taste';
 import type { MapRestaurant } from './data';
 
 const STORE = 'seated.map.you';
@@ -95,7 +95,7 @@ export function useYou(restaurants: MapRestaurant[]): You {
         if (!live) return;
         setAccount(m.account);
         setLists(m.lists);
-        if (Object.keys(m.account.answers ?? {}).length) save({ answers: m.account.answers });
+        if (m.account.answers?.type) save({ answers: m.account.answers });
       })
       .catch((e) => {
         if (!live) return;
@@ -113,9 +113,11 @@ export function useYou(restaurants: MapRestaurant[]): You {
     const ids = new Set(lists.flatMap((l) => l.places));
     return [...ids].map((id) => byId.get(id)).filter((r): r is MapRestaurant => !!r);
   }, [lists, byId]);
-  const answered = !!(stored.answers.night && stored.answers.win);
+  // The character you picked is your profile; without one, your lists choose it.
+  const chosen = profileById(stored.answers.type);
+  const answered = !!chosen;
   const taste = useMemo(() => tasteOf(stored.answers, listed), [stored.answers, listed]);
-  const profile = answered || listed.length ? profileFor(taste) : null;
+  const profile = chosen ?? (listed.length ? profileFor(taste) : null);
 
   // Keep the character's profile in step with its taste.
   useEffect(() => {
@@ -156,7 +158,7 @@ export function useYou(restaurants: MapRestaurant[]): You {
     setWelcomed: () => save({ welcomed: true }),
     answer: (a) => {
       save({ answers: a, welcomed: true });
-      if (stored.key && a.night && a.win) api.update(stored.key, { answers: a }).then(setAccount).catch(() => {});
+      if (stored.key && a.type) api.update(stored.key, { answers: a }).then(setAccount).catch(() => {});
     },
     create: async (name, look) => {
       const r = await run(() => api.createAccount(name, look, stored.answers, profile?.id ?? null));
@@ -169,7 +171,7 @@ export function useYou(restaurants: MapRestaurant[]): You {
     restore: async (key) => {
       const m = await run(() => api.me(key));
       if (!m) return null;
-      save({ key: key.trim().toUpperCase(), welcomed: true, answers: Object.keys(m.account.answers ?? {}).length ? m.account.answers : stored.answers });
+      save({ key: key.trim().toUpperCase(), welcomed: true, answers: m.account.answers?.type ? m.account.answers : stored.answers });
       setAccount(m.account);
       setLists(m.lists);
       return m.account;

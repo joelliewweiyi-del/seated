@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
-// The welcome (two questions, a profile, a character) and lists, on the demo server. Its API runs the real
+// The welcome (choose your character: a scene, then a character), a character with a key, and lists, on the demo server. Its API runs the real
 // supabase/schema.sql in PGlite, so these never touch the real project. Every visitor gets its own browser
 // context and its own address (X-Forwarded-For), as separate people on separate connections would.
 const shot = (page: Page, name: string) => page.screenshot({ path: `test-results/screens/map-${name}.png` });
@@ -26,15 +26,19 @@ async function visitor(browser: Browser, opts: { phone?: boolean } = {}): Promis
 
 const welcome = (page: Page) => page.getByRole('dialog');
 
-async function answer(page: Page, night: string, win: string) {
-  await expect(welcome(page).getByRole('heading', { name: "What's the night?" })).toBeVisible();
-  await welcome(page).getByRole('button', { name: new RegExp(`^${night}`) }).click();
-  await expect(welcome(page).getByRole('heading', { name: 'What makes it a great dinner?' })).toBeVisible();
-  await welcome(page).getByRole('button', { name: new RegExp(`^${win}`) }).click();
+/** Choose your character: the scene, then the character in it. The welcome closes on the map. */
+async function choose(page: Page, scene: string, character: string) {
+  await expect(welcome(page).getByRole('heading', { name: 'Choose your character' })).toBeVisible();
+  await welcome(page).getByRole('button', { name: scene, exact: true }).click();
+  await expect(welcome(page).getByRole('heading', { name: 'Who are you?' })).toBeVisible();
+  await welcome(page).locator('.choice', { hasText: character }).click();
+  await expect(welcome(page)).toHaveCount(0);
 }
 
+/** Makes a character with a name and a key, from You. */
 async function makeCharacter(page: Page, name: string): Promise<string> {
-  await welcome(page).getByRole('button', { name: 'Make my character' }).click();
+  await page.getByRole('button', { name: 'You', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Make my character' }).click();
   await welcome(page).getByRole('button', { name: 'Next hair', exact: true }).click();
   await welcome(page).getByRole('button', { name: 'Next extra' }).click();
   await welcome(page).getByLabel('Name on your lists').fill(name);
@@ -44,27 +48,24 @@ async function makeCharacter(page: Page, name: string): Promise<string> {
   return (await key.innerText()).trim();
 }
 
-test('a first visit asks two questions, names a profile, puts free tables first, and shows the picks as a lens', async ({ browser }) => {
+test('a first visit: choose your character, a scene then a character, and the map shows its picks as a lens', async ({ browser }) => {
   const page = await visitor(browser);
   await page.goto('/map/');
-  await expect(welcome(page).locator('.step-count')).toHaveText('1 of 2');
+  await expect(welcome(page).getByRole('heading', { name: 'Choose your character' })).toBeVisible();
   await shot(page, '11-welcome');
-  await answer(page, 'Date night', 'Natural wine');
-  await expect(welcome(page).getByRole('heading', { name: 'Natural Wine Wanderer' })).toBeVisible();
-  const badges = await welcome(page).locator('.picks .badge').evaluateAll((els) => els.map((e) => e.classList.contains('open')));
-  expect(badges).toHaveLength(5);
-  // Free tables first: once a row is not free, no free row follows.
-  expect(badges.indexOf(false) === -1 || !badges.slice(badges.indexOf(false)).includes(true)).toBe(true);
-  await shot(page, '12-profile');
-  await welcome(page).getByRole('button', { name: 'Show my picks on the map' }).click();
+  await welcome(page).getByRole('button', { name: 'Fashion', exact: true }).click();
+  await shot(page, '12-characters');
+  await welcome(page).locator('.choice', { hasText: 'Fashion Baddie' }).click();
   await expect(welcome(page)).toHaveCount(0);
-  await expect(page.locator('.chip.lens')).toHaveText('For you');
-  await expect(page.locator('.lens-line')).toContainText('Natural Wine Wanderer');
+  await expect(page.locator('.chip.lens')).toHaveText('Fashion Baddie');
+  await expect(page.locator('.lens-line')).toContainText('Fashion Baddie');
+  // The You button wears the character's face.
+  await expect(page.locator('.you-btn svg')).not.toHaveClass(/no-character/);
   await expect(page).toHaveURL(/[?&]lens=you(&|$)/);
   await expect.poll(() => listed(page)).toBe(12);
   // The answers stay on this device: no welcome again, and the picks come back from the link.
   await page.reload();
-  await expect(page.locator('.chip.lens')).toHaveText('For you');
+  await expect(page.locator('.chip.lens')).toHaveText('Fashion Baddie');
   await expect(welcome(page)).toHaveCount(0);
   await page.context().close();
 });
@@ -80,9 +81,9 @@ test('skipping leaves the map and the welcome never opens by itself again; a lin
   await page.reload();
   await expect(page.locator('.list-head h2')).toBeVisible();
   await expect(welcome(page)).toHaveCount(0);
-  // The You button brings the questions back.
+  // The You button brings the characters back.
   await page.getByRole('button', { name: 'You', exact: true }).click();
-  await expect(welcome(page).getByRole('heading', { name: "What's the night?" })).toBeVisible();
+  await expect(welcome(page).getByRole('heading', { name: 'Choose your character' })).toBeVisible();
   await page.context().close();
 
   const linked = await visitor(browser);
@@ -95,8 +96,7 @@ test('skipping leaves the map and the welcome never opens by itself again; a lin
 test('a character: made once with a key, opened on another device with the key typed loosely, then deleted', async ({ browser }) => {
   const a = await visitor(browser);
   await a.goto('/map/');
-  await answer(a, 'Something special', "The chef's menu");
-  await expect(welcome(a).getByRole('heading', { name: 'Tasting Menu Chaser' })).toBeVisible();
+  await choose(a, 'Food', 'Tasting Menu Chaser');
   const key = await makeCharacter(a, `Ana ${run}`);
   await shot(a, '13-key');
   await welcome(a).getByRole('button', { name: 'Done' }).click();
@@ -108,9 +108,9 @@ test('a character: made once with a key, opened on another device with the key t
   await welcome(b).getByRole('button', { name: 'Have an account? Use your key' }).click();
   await welcome(b).getByLabel('Your Seated key').fill(key.toLowerCase().replaceAll('-', ' '));
   await welcome(b).getByRole('button', { name: 'Open my character' }).click();
-  // The answers came with the character, so it lands on the profile.
-  await expect(welcome(b).getByRole('heading', { name: 'Tasting Menu Chaser' })).toBeVisible();
-  await welcome(b).getByRole('button', { name: 'Close', exact: true }).click();
+  // The chosen character came with the key, so it lands on the map with its picks.
+  await expect(welcome(b)).toHaveCount(0);
+  await expect(b.locator('.chip.lens')).toHaveText('Tasting Menu Chaser');
   await expect(b.getByRole('button', { name: `You: Ana ${run}` })).toBeVisible();
 
   // A wrong key says what to do.
@@ -137,7 +137,7 @@ test('lists: add places from their cards, see the list as a lens, share it in Co
   test.setTimeout(90_000);
   const maker = await visitor(browser);
   await maker.goto('/map/');
-  await answer(maker, 'Date night', 'Natural wine');
+  await choose(maker, 'Fashion', 'Fashion Baddie');
   await makeCharacter(maker, `Bo ${run}`);
   await welcome(maker).getByRole('button', { name: 'Done' }).click();
   await maker.goto('/map/?lens=all'); // every restaurant: the first three in the data need not be curated
@@ -211,8 +211,9 @@ test('lists: add places from their cards, see the list as a lens, share it in Co
 test('be a local: a ready-made Amsterdam character in one tap, with its line; a change makes it your own', async ({ browser }) => {
   const page = await visitor(browser);
   await page.goto('/map/');
-  await answer(page, 'Easy and good', 'A local spot');
-  await welcome(page).getByRole('button', { name: 'Make my character' }).click();
+  await choose(page, 'Food', 'Neighbourhood Regular');
+  await page.getByRole('button', { name: 'You', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Make my character' }).click();
   const herring = welcome(page).locator('.local', { hasText: 'Herring eater' });
   await herring.click();
   await expect(herring).toHaveAttribute('aria-pressed', 'true');
@@ -228,19 +229,30 @@ test('be a local: a ready-made Amsterdam character in one tap, with its line; a 
   await page.context().close();
 });
 
-test('on a phone the welcome and the character builder fit the screen', async ({ browser }) => {
+test('on a phone the welcome and the character builder fit the screen, and the picks open as rows only', async ({ browser }) => {
   const page = await visitor(browser, { phone: true });
   await page.goto('/map/');
-  await expect(welcome(page).getByRole('heading', { name: "What's the night?" })).toBeVisible();
+  await expect(welcome(page).getByRole('heading', { name: 'Choose your character' })).toBeVisible();
   const wide = () => page.evaluate(() => document.documentElement.scrollWidth);
   expect(await wide()).toBeLessThanOrEqual(390);
   // Every control on the welcome is at least 40 px tall to a thumb, the text links and the You button too.
   const tall = () => page.evaluate(() => [...document.querySelectorAll('[role=dialog] button, .you-btn')].map((b) => [b.textContent?.trim() || b.getAttribute('aria-label'), Math.round(b.getBoundingClientRect().height)] as const).filter(([, h]) => h > 0 && h < 40));
   expect(await tall()).toEqual([]);
   await shot(page, '17-phone-welcome');
-  await answer(page, 'Easy and good', 'A local spot');
-  await expect(welcome(page).getByRole('heading', { name: 'Neighbourhood Regular' })).toBeVisible();
-  await welcome(page).getByRole('button', { name: 'Make my character' }).click();
+  await welcome(page).getByRole('button', { name: 'Fashion', exact: true }).click();
+  expect(await wide()).toBeLessThanOrEqual(390);
+  expect(await tall()).toEqual([]);
+  await welcome(page).locator('.choice', { hasText: 'Fashion Baddie' }).click();
+  // Her places as a half-height list of rows: no sum line, search or chips over the map.
+  await expect(page.locator('.side.rows')).toBeVisible();
+  await expect(page.locator('.side.rows .sum')).toBeHidden();
+  await expect(page.locator('.side.rows .filters')).toBeHidden();
+  await expect(page.locator('.side.rows .rows .row').first()).toBeVisible();
+  const sheet = await page.locator('.side.rows').boundingBox();
+  expect(sheet!.height).toBeLessThanOrEqual(844 * 0.5);
+  await shot(page, '17b-phone-picks');
+  await page.getByRole('button', { name: 'You', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Make my character' }).click();
   await expect(welcome(page).getByRole('button', { name: 'Save my character' })).toBeVisible();
   expect(await wide()).toBeLessThanOrEqual(390);
   expect(await tall()).toEqual([]);
