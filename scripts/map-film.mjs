@@ -180,7 +180,8 @@ const tonight = fri.add === 0;
 const C0 = PHONE ? { x: mid.x + 200, y: mid.y - 100, z: 0.125 } : { x: mid.x + 600, y: mid.y - 300, z: 0.125 }; // the whole city
 const C1 = PHONE ? { x: 11128 - 150, y: 5212 + 40, z: 0.15 } : { x: 11128, y: 5212, z: 0.15 }; // the canal belt, most signs
 // The hero: left of centre on a wide screen, clear of the card; high on a phone, clear of the sheet that comes up.
-const CH = PHONE ? { x: hero.x, y: hero.y + (0.18 * H) / 0.25, z: 0.25 } : { x: hero.x + 520, y: hero.y - 40, z: 0.25 };
+// Phone: the sign at about 37% of the height, below the captions and above the card.
+const CH = PHONE ? { x: hero.x, y: hero.y + (0.075 * H) / 0.25, z: 0.25 } : { x: hero.x + 520, y: hero.y - 40, z: 0.25 };
 const C5 = PHONE ? { x: mid.x + 150, y: mid.y - 60, z: 0.125 } : { x: mid.x + 300, y: mid.y - 200, z: 0.125 };
 
 let frame = 0;
@@ -236,15 +237,15 @@ const backOut = (k) => 1 + 2.70158 * Math.pow(k - 1, 3) + 1.70158 * Math.pow(k -
 function pop(lines, t, t0, t1, top, o = {}) {
   if (t < t0 || t > t1) return null;
   let i = 0;
-  const out = clamp01((t1 - t) / 0.15);
+  const out = clamp01((t1 - t) / 0.3);
   const html = lines.map((line) => {
     // Millennial: the cream strip fades in with its line's first word, so no empty strip shows.
-    const strip = MILL ? ` style="opacity:${(ease(clamp01((t - t0 - 0.06 * i) / 0.3)) * out).toFixed(3)}"` : '';
+    const strip = MILL ? ` style="opacity:${(ease(clamp01((t - t0 - 0.08 * i) / 0.5)) * out).toFixed(3)}"` : '';
     return `<div${strip}>${line.split(' ').map((w) => {
     const hl = w.startsWith('*');
     w = w.replace(/\*$/, '');
-    const dt = t - t0 - G(0.08, 0.06) * i++;
-    const k = clamp01(dt / 0.3);
+    const dt = t - t0 - G(0.09, 0.08) * i++;
+    const k = clamp01(dt / G(0.38, 0.5));
     const sc = dt <= 0 ? 0.3 : 0.3 + 0.7 * backOut(k);
     if (MILL) return `<span${hl ? ' class="hl"' : ''} style="opacity:${dt <= 0 ? 0 : ease(k)};transform:translateY(${((1 - ease(k)) * 12).toFixed(2)}px)">${hl ? w.slice(1) : w}</span>`;
     return `<span${hl ? ' class="hl"' : ''} style="opacity:${dt <= 0 ? 0 : Math.min(1, k * 3) * out};transform:scale(${sc.toFixed(3)})">${hl ? w.slice(1) : w}</span>`;
@@ -253,45 +254,45 @@ function pop(lines, t, t0, t1, top, o = {}) {
   return { html, top, mill: MILL, ...o };
 }
 /** An emoji sticker that pops in tilted at (x, y) from t0 to t1. */
-const sticker = (emoji, t, t0, t1, x, y, r) => (t < t0 || t > t1 ? null : { emoji, x, y, r, s: (0.3 + 0.7 * backOut(clamp01((t - t0) / 0.3))) * clamp01((t1 - t) / 0.15) });
+const sticker = (emoji, t, t0, t1, x, y, r) => (t < t0 || t > t1 ? null : { emoji, x, y, r, s: (0.3 + 0.7 * backOut(clamp01((t - t0) / 0.38))) * clamp01((t1 - t) / 0.3) });
 const fade = (t, a, b, f = 0.35) => clamp01(Math.min((t - a) / f, (b - t) / f));
 const secs = (s) => Math.round(s * FPS);
 const ringAt = (p, t, t0) => (p && t >= t0 && t < t0 + 0.45 ? { x: p.x, y: p.y, s: 10 + (t - t0) * 120, a: 1 - (t - t0) / 0.45 } : null);
 const tap = (from, to, t, t0, t1) => { const m = ease(clamp01((t - t0) / (t1 - t0))); return { x: lerp(from.x, to.x, m), y: lerp(from.y, to.y, m) }; };
 
-// The cut (Joel, 24 Nov 2026: "GEN Z VIBES", fast): about 18 s. Captions pop word by word; stickers pop in tilted.
+// The cut (Joel, 24 Nov 2026: "GEN Z VIBES"; then "transitions a bit slower"): about 22 s. Captions pop word by word; stickers pop in tilted.
 const TOPCAP = PHONE ? '22%' : '20%';
 const FREE_WHEN = tonight ? 'tonight' : 'rn';
 
-// Scene 1 (0 to 3.4 s): cream screen, three beats.
-for (let i = 0; i < secs(3.4); i++) {
+// Scene 1 (0 to 4.2 s): cream screen, three beats.
+for (let i = 0; i < secs(4.2); i++) {
   const t = i / FPS;
   await shoot({
     cam: C0,
     ui: UI({
       veil: 1,
-      pop: pop(G(["it's friday", 'night'], ['friday,', '19:40.']), t, 0.15, 1.25, '45%', { dark: true }) ?? pop(G(['no rez.'], ['no reservation.']), t, 1.3, 2.25, '45%', { dark: true }) ?? pop(G(["we're", '*cooked'], ['the group chat', 'is getting *restless.*']), t, 2.3, 3.35, '45%', { dark: true }),
-      stk: MILL ? null : sticker('💀', t, 2.65, 3.35, PHONE ? '72%' : '62%', PHONE ? '60%' : '62%', 12),
+      pop: pop(G(["it's friday", 'night'], ['friday,', '19:40.']), t, 0.2, 1.45, '45%', { dark: true }) ?? pop(G(['no rez.'], ['no reservation.']), t, 1.55, 2.75, '45%', { dark: true }) ?? pop(G(["we're", '*cooked'], ['the group chat', 'is getting *restless.*']), t, 2.85, 4.15, '45%', { dark: true }),
+      stk: MILL ? null : sticker('💀', t, 3.2, 4.15, PHONE ? '72%' : '62%', PHONE ? '60%' : '62%', 12),
     }),
   });
 }
 
-// Scene 2 (3.4 to 5 s): the city snaps in on Friday.
-for (let i = 0; i < secs(1.6); i++) {
+// Scene 2 (4.2 to 6.4 s): the city fades in on Friday.
+for (let i = 0; i < secs(2.2); i++) {
   const t = i / FPS;
-  const k = ease(clamp01(t / 0.45));
+  const k = ease(clamp01(t / 0.9));
   await shoot({
-    cam: camAt(C0, C1, ease(clamp01(t / 3.4))), // one move from here into the belt
-    ui: UI({ veil: 1 - k, top: clamp01((t - 0.3) / 0.3), pop: pop(G(['wait.', 'seated.food'], ['enter', '*seated.food']), t, 0.35, 1.6, TOPCAP), stk: MILL ? null : sticker('👀', t, 0.75, 1.6, PHONE ? '82%' : '64%', PHONE ? '14%' : '30%', -10) }),
+    cam: camAt(C0, C1, ease(clamp01(t / 4.6))), // one move from here into the belt
+    ui: UI({ veil: 1 - k, top: clamp01((t - 0.6) / 0.4), pop: pop(G(['wait.', 'seated.food'], ['enter', '*seated.food']), t, 0.5, 2.2, TOPCAP), stk: MILL ? null : sticker('👀', t, 1.0, 2.2, PHONE ? '82%' : '64%', PHONE ? '14%' : '30%', -10) }),
   });
 }
 
-// Scene 3 (5 to 8.2 s): into the canal belt; every green sign is a free table.
-for (let i = 0; i < secs(3.2); i++) {
+// Scene 3 (6.4 to 10.2 s): into the canal belt; every green sign is a free table.
+for (let i = 0; i < secs(3.8); i++) {
   const t = i / FPS;
   await shoot({
-    cam: camAt(C0, C1, ease(clamp01((t + 1.6) / 3.4))),
-    ui: UI({ top: 1, pop: pop(G([`${facts.free} tables`, `*free ${FREE_WHEN}`], [`${facts.free} tables, *free*`, tonight ? 'tonight.' : 'this friday.']), t, 0.5, 2.0, TOPCAP) ?? pop(G(['no cap.'], ['read live from', 'their own systems.']), t, 2.05, 3.15, TOPCAP), stk: MILL ? null : sticker('🍽️', t, 0.95, 2.0, PHONE ? '80%' : '66%', PHONE ? '30%' : '28%', 8) }),
+    cam: camAt(C0, C1, ease(clamp01((t + 2.2) / 4.6))),
+    ui: UI({ top: 1, pop: pop(G([`${facts.free} tables`, `*free ${FREE_WHEN}`], [`${facts.free} tables, *free*`, tonight ? 'tonight.' : 'this friday.']), t, 0.3, 1.95, TOPCAP) ?? pop(G(['read live,', 'every 15 min'], ['read live from', 'their own systems.']), t, 2.05, 3.75, TOPCAP), stk: MILL ? null : sticker('🍽️', t, 0.8, 1.95, PHONE ? '80%' : '66%', PHONE ? '30%' : '28%', 8) }),
   });
 }
 
@@ -300,11 +301,11 @@ const from4 = PHONE ? { x: W * 0.72, y: H * 0.7 } : { x: W * 0.62, y: H * 0.8 };
 const DINNER = facts.times.find((x) => x >= '17:00') ?? null; // none read yet: Book alone
 const NAME = facts.name.toLowerCase();
 let opened = false, signAt = null, tgt = null, timeAt = null, bookAt = null, picked = false;
-const T0 = 0.9, TC = 1.5; // camera arrives, tap the sign
-const TS = TC + 1.1; // the card has been seen; it scrolls
-const TT = TS + 1.0; // tap the dinner time
-const TB = DINNER ? TT + 0.9 : TS + 1.1; // tap Book
-const CAPTOP = PHONE ? '27%' : '20%';
+const T0 = 1.3, TC = 2.0; // camera arrives, tap the sign
+const TS = TC + 1.5; // the card has been seen; it scrolls
+const TT = TS + 1.3; // tap the dinner time
+const TB = DINNER ? TT + 1.1 : TS + 1.4; // tap Book
+const CAPTOP = PHONE ? '18%' : '20%'; // two lines at most: the sign stands below them
 const CAPRIGHT = PHONE ? '0' : '380px'; // clear of the wide card
 const findBook = () => page.evaluate(() => {
   const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
@@ -313,7 +314,7 @@ const findBook = () => page.evaluate(() => {
   if (r.bottom > innerHeight || r.top < 0) return { off: r.top };
   return { x: r.x + Math.min(r.width / 2, 60), y: r.y + r.height / 2, label: b.textContent.trim() };
 });
-for (let i = 0; i < secs(TB + 1.0); i++) {
+for (let i = 0; i < secs(TB + 1.4); i++) {
   const t = i / FPS;
   if (!signAt && t >= T0 + 0.05) {
     const hit = await page.evaluate((id) => window.seatedMap.hits.filter((h) => h.id === id).map((h) => ({ x: h.x, y: h.y, w: h.w, h: h.h })), HERO);
@@ -324,9 +325,11 @@ for (let i = 0; i < secs(TB + 1.0); i++) {
     opened = true;
     // The map would fly there itself, fast; the film takes its target and eases there instead.
     tgt = await page.evaluate((id) => { const v = window.seatedMap; v.onSelect(id); const t = v.target ?? v.cam; return { x: t.x, y: t.y, z: t.z }; }, HERO);
+    // On the phone the camera stays put: the sign is already between the captions and the card.
+    if (PHONE) tgt = { ...CH };
   }
-  if (opened && t >= TS && t < TS + 0.6) {
-    const k = ease(clamp01((t - TS) / 0.5));
+  if (opened && t >= TS && t < TS + 0.8) {
+    const k = ease(clamp01((t - TS) / 0.7));
     await page.evaluate(({ k, hm }) => {
       const s = document.querySelector('.card-scroll');
       const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
@@ -339,7 +342,7 @@ for (let i = 0; i < secs(TB + 1.0); i++) {
       s.scrollTop = k * s.__to;
     }, { k, hm: DINNER });
   }
-  if (opened && DINNER && !timeAt && t >= TS + 0.62) {
+  if (opened && DINNER && !timeAt && t >= TS + 0.85) {
     timeAt = await page.evaluate((hm) => {
       const b = [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm);
       if (!b) return null;
@@ -352,48 +355,48 @@ for (let i = 0; i < secs(TB + 1.0); i++) {
     picked = true;
     await page.evaluate((hm) => [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm).click(), DINNER);
   }
-  if (opened && !bookAt && t >= (DINNER ? TT + 0.1 : TS + 0.62)) {
+  if (opened && !bookAt && t >= (DINNER ? TT + 0.1 : TS + 0.85)) {
     bookAt = await findBook();
     if (!bookAt || bookAt.off != null) throw new Error(`the Book button of ${HERO} is missing or off screen: ${JSON.stringify(bookAt)}`);
     if (DINNER && !bookAt.label.includes(DINNER)) throw new Error(`Book does not follow the picked time: "${bookAt.label}"`);
   }
   let cur = null;
   if (t >= 0.2 && t < TC + 0.4) cur = signAt ? tap(from4, signAt, t, T0 - 0.1, TC - 0.12) : from4;
-  else if (DINNER && timeAt && t >= TS + 0.65 && t < TT + 0.25) cur = tap(signAt, timeAt, t, TS + 0.65, TT - 0.12);
-  else if (bookAt && t >= (DINNER ? TT + 0.25 : TS + 0.65) && t < TB + 0.7) cur = tap(DINNER ? timeAt : signAt, bookAt, t, DINNER ? TT + 0.25 : TS + 0.65, TB - 0.12);
-  const capTop = opened ? CAPTOP : TOPCAP;
+  else if (DINNER && timeAt && t >= TS + 0.9 && t < TT + 0.25) cur = tap(signAt, timeAt, t, TS + 0.9, TT - 0.12);
+  else if (bookAt && t >= (DINNER ? TT + 0.25 : TS + 0.9) && t < TB + 0.7) cur = tap(DINNER ? timeAt : signAt, bookAt, t, DINNER ? TT + 0.25 : TS + 0.9, TB - 0.12);
+  const capTop = PHONE ? CAPTOP : opened ? CAPTOP : TOPCAP;
   const capRight = opened ? CAPRIGHT : '0';
   await shoot({
-    cam: tgt ? camAt(CH, tgt, ease(clamp01((t - TC) / 0.9))) : camAt(C1, CH, ease(clamp01(t / T0))),
+    cam: tgt ? camAt(CH, tgt, ease(clamp01((t - TC) / 1.2))) : camAt(C1, CH, ease(clamp01(t / T0))),
     ui: UI({
       top: 1,
-      side: opened ? clamp01((t - TC) / 0.2) : 0,
+      side: opened ? ease(clamp01((t - TC) / 0.4)) : 0,
       cur,
       ring: ringAt(signAt, t, TC) ?? ringAt(DINNER ? timeAt : null, t, TT) ?? ringAt(bookAt, t, TB),
       pop:
-        pop(G([`${NAME}.`, 'impossible', 'to book'], [`${NAME}.`, 'the one everyone', '"tried to book."']), t, 0.25, TS + 0.55, capTop, { right: capRight }) ??
-        pop(G([DINNER ? `friday ${DINNER}??` : 'friday??', '*FREE'], [DINNER ? `friday, ${DINNER}.` : 'friday.', '*available.']), t, TS + 0.6, TB - 0.05, opened && PHONE ? '19%' : capTop, { right: capRight }) ??
-        pop(G(['booked.', '*ate.'], ['booked.', '*natural wine* pending.']), t, TB, TB + 1.0, opened && PHONE ? '19%' : capTop, { right: capRight }),
-      stk: MILL ? null : sticker('🔥', t, 0.55, TS + 0.55, PHONE ? '82%' : '58%', PHONE ? '16%' : '12%', 10) ?? sticker('😭', t, TT - 0.3, TB - 0.05, PHONE ? '83%' : '58%', PHONE ? '16%' : '12%', -12) ?? sticker('✅', t, TB + 0.1, TB + 1.0, PHONE ? '80%' : '58%', PHONE ? '16%' : '12%', 8),
+        pop(G([`${NAME}.`, '*never* free'], [`${NAME}.`, 'usually fully booked.']), t, 0.3, TS + 0.8, capTop, { right: capRight }) ??
+        pop(G([DINNER ? `friday ${DINNER}?` : 'friday?', '*FREE'], [DINNER ? `friday, ${DINNER}.` : 'friday.', '*available.']), t, TS + 0.9, TB - 0.05, capTop, { right: capRight }) ??
+        pop(G(['*booked.'], ['booked.', '*natural wine* pending.']), t, TB, TB + 1.35, capTop, { right: capRight }),
+      stk: MILL ? null : sticker('🔥', t, 0.7, TS + 0.8, PHONE ? '82%' : '58%', PHONE ? '16%' : '12%', 10) ?? sticker('😭', t, TT - 0.3, TB - 0.05, PHONE ? '83%' : '58%', PHONE ? '16%' : '12%', -12) ?? sticker('✅', t, TB + 0.15, TB + 1.35, PHONE ? '80%' : '58%', PHONE ? '16%' : '12%', 8),
     }),
   });
 }
 
-// Scene 5 (about 14.6 to 18 s): the card goes, a quick pull out, the end card pops.
+// Scene 5 (the last 4 s): the card goes, a slow pull out, the end card.
 const C4 = { ...tgt };
 const icon = await page.evaluate(() => document.querySelector('link[rel=icon]').href);
 const END = `<img src="${icon}" alt=""><b>seated.food</b><span>${G('friday night: secured', 'friday night, sorted.')}</span>`;
 let closed = false;
-for (let i = 0; i < secs(3.4); i++) {
+for (let i = 0; i < secs(4.0); i++) {
   const t = i / FPS;
-  if (!closed && t >= 0.15) { closed = true; await page.evaluate(() => { const v = window.seatedMap; v.onSelect(null); v.target = null; }); }
-  const k = clamp01((t - 1.2) / 0.35);
+  if (!closed && t >= 0.3) { closed = true; await page.evaluate(() => { const v = window.seatedMap; v.onSelect(null); v.target = null; }); }
+  const k = clamp01((t - 1.6) / 0.5);
   await shoot({
-    cam: camAt(C4, C5, ease(clamp01(t / 1.4))),
-    ui: UI({ top: clamp01(1 - t / 0.2), side: closed ? 0 : clamp01(1 - t / 0.2), e: END, ea: Math.min(1, k * 2), veil: k * 0.6, stk: MILL ? sticker('🥂', t, 1.45, 3.4, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 10) : sticker('✨', t, 1.45, 3.4, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 14) }),
+    cam: camAt(C4, C5, ease(clamp01(t / 1.9))),
+    ui: UI({ top: clamp01(1 - t / 0.45), side: closed ? 0 : clamp01(1 - t / 0.3), e: END, ea: Math.min(1, k * 2), veil: k * 0.6, stk: MILL ? sticker('🥂', t, 1.9, 4.0, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 10) : sticker('✨', t, 1.9, 4.0, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 14) }),
   });
   // The end card pops with the same overshoot as the words.
-  await page.evaluate((sc) => { const e = document.getElementById('e'); e.style.transform = `translate(-50%, -50%) scale(${sc})`; }, t < 1.2 ? 0.3 : 0.3 + 0.7 * backOut(clamp01((t - 1.2) / 0.35)));
+  await page.evaluate((sc) => { const e = document.getElementById('e'); e.style.transform = `translate(-50%, -50%) scale(${sc})`; }, t < 1.6 ? 0.3 : MILL ? 0.94 + 0.06 * ease(clamp01((t - 1.6) / 0.5)) : 0.3 + 0.7 * backOut(clamp01((t - 1.6) / 0.45)));
 }
 
 console.log(JSON.stringify({ frames: frame, zoomCtl, fri, facts }));
