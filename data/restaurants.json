@@ -3217,5 +3217,32 @@
     "website": null,
     "city": "Amsterdam",
     "address": "Molensteeg 13-H, 1012 BG Amsterdam"
+  },
+  {
+    "id": "elan",
+    "name": "Élan",
+    "platform": "tebi",
+    "platformUid": "186253_c2a9efe0d92b44d299dc395fd095c445023448ab80adf95dc878af2c9b82fa3a",
+    "website": "https://elanamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Frans Halsstraat 76, 1072 BV Amsterdam"
+  },
+  {
+    "id": "omi",
+    "name": "Omi",
+    "platform": "tebi",
+    "platformUid": "801017_e4f19ac45d7a83ec7fd8c7e5d2cca0dc74632503e38a1bf0cecef3ed8b80acdc",
+    "website": "https://omiamsterdam.nl",
+    "city": "Amsterdam",
+    "address": "Tweede Jan Steenstraat 3, Amsterdam"
+  },
+  {
+    "id": "xiang",
+    "name": "Xiang",
+    "platform": "guestplan",
+    "platformUid": "d8e2da034069a3177335ee34c0449acdcd0bd395:61949",
+    "website": "https://www.xiangamsterdam.com",
+    "city": "Amsterdam",
+    "address": "Oude Doelenstraat 1, 1012 ED Amsterdam"
   }
 ]

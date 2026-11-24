@@ -439,6 +439,14 @@
   "source": "list",
   "roof": 19
  },
+ "elan": {
+  "lat": 52.355654,
+  "lng": 4.888424,
+  "area": "Oude Pijp",
+  "kind": "brasserie",
+  "source": "list",
+  "roof": 16
+ },
  "entrepot": {
   "lat": 52.369655,
   "lng": 4.911907,
@@ -893,6 +901,14 @@
   "source": "site: Location Ruysdaelkade 251, 1072 AX Amsterdam",
   "roof": 16
  },
+ "omi": {
+  "lat": 52.355651,
+  "lng": 4.898303,
+  "area": "Oude Pijp",
+  "kind": "fine",
+  "source": "site: Omi Tweede Jan Steenstraat 3H, 1073 VK Amsterdam",
+  "roof": 18
+ },
  "oocker": {
   "lat": 52.361331,
   "lng": 4.900604,
@@ -1346,6 +1362,14 @@
   "kind": "fine",
   "source": "list",
   "roof": 11
+ },
+ "xiang": {
+  "lat": 52.37182,
+  "lng": 4.89623,
+  "area": "Burgwallen Oude Zijde",
+  "kind": "bistro",
+  "source": "list",
+  "roof": 16.5
  },
  "yamazato": {
   "lat": 52.348585,

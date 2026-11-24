@@ -152,6 +152,12 @@
     "photo": null,
     "from": "https://restaurantdekas.com/"
   },
+  "elan": {
+    "ig": "elan.amsterdam",
+    "photo": "https://elanamsterdam.nl/wp-content/uploads/2026/11/elan-landing-origineel.jpg",
+    "from": "https://elanamsterdam.nl/",
+    "fixed": true
+  },
   "entrepot": {
     "ig": null,
     "photo": null,
@@ -280,6 +286,12 @@
     "photo": null,
     "from": "https://www.nneapizza.com/"
   },
+  "omi": {
+    "ig": "omi.amsterdam",
+    "photo": null,
+    "from": "https://omiamsterdam.nl/",
+    "fixed": true
+  },
   "restaurant-212": {
     "ig": "restaurant.212",
     "photo": "https://static.wixstatic.com/media/396d30_1cd1960333674f66b92e3c6679f5f6c2~mv2.jpeg/v1/fill/w_2500,h_1666,al_c/396d30_1cd1960333674f66b92e3c6679f5f6c2~mv2.jpeg",
@@ -404,6 +416,11 @@
     "photo": null,
     "from": "https://restaurantwils.nl/",
     "fixed": true
+  },
+  "xiang": {
+    "ig": "xiangamsterdam",
+    "photo": "https://cdn.prod.website-files.com/6a4ba45799831ebe9113516e/6ab37e64e752c237d216daae_265bd319ad2855a76aebaa34ced1df78_Opengraph%20golden%20chopstick.png",
+    "from": "https://www.xiangamsterdam.com/"
   },
   "zoldering": {
     "ig": "zoldering.nl",
