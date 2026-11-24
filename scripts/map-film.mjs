@@ -3,7 +3,8 @@
 // so every frame is sharp and the camera moves at an even 60 fps. Read data.json from the Blob store once (never poll
 // seated.food), save it as $F/data-film.json, start a demo server on :4330 (`PORT=4330 npx tsx src/server/main.ts --demo`
 // after `npm run build`), then: F=<out dir> node scripts/map-film.mjs. Encode: ffmpeg -framerate 60 -i $F/frames/%05d.png
-// -vf scale=1920:1080:flags=lanczos -c:v libx264 -crf 16 -pix_fmt yuv420p film.mp4 (frames are 3840 x 2160). The story: Friday, no reservation, the map, one hard-to-get place free
+// -vf scale=1920:1080:flags=lanczos -c:v libx264 -crf 16 -pix_fmt yuv420p film.mp4 (frames are 3840 x 2160; with
+// FORMAT=phone 1440 x 2560, scale=1080:1920). The story: Friday, no reservation, the map, one hard-to-get place free
 // (HERO, default gitane; it must be free on the coming Friday in the snapshot), its Book button, the end card. Rendered on
 // a Friday itself, the map reads "tonight" and the card shows times.
 import { chromium } from 'playwright';
@@ -13,7 +14,10 @@ const F = process.env.F;
 const BASE = process.env.BASE ?? 'http://127.0.0.1:4330';
 const ONLY = process.env.ONLY ? process.env.ONLY.split(',').map(Number) : null; // frames to write, for a quick look
 const FPS = 60;
-const W = 960, H = 540;
+// FORMAT=phone: 9:16 in the map's phone layout (Joel, 24 Nov 2026: "show on mobile"); 360 x 640 CSS px at 4x,
+// scaled to 1080 x 1920. Otherwise 16:9 desktop, 960 x 540 at 4x, scaled to 1920 x 1080.
+const PHONE = process.env.FORMAT === 'phone';
+const [W, H] = PHONE ? [360, 640] : [960, 540];
 
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 4 });
@@ -40,7 +44,12 @@ await ctx.addInitScript(() => {
 const page = await ctx.newPage();
 await page.route('**/map/data.json', (r) => r.fulfill({ path: `${F}/data-film.json`, contentType: 'application/json' }));
 await page.route('**/map-api/**', (r) => r.abort());
-await page.goto(`${BASE}/map/?lens=seated`);
+// The coming Friday (today on a Friday) goes in the link, so the map opens on it in either layout.
+const today0 = new Date();
+const friAdd = (5 - today0.getDay() + 7) % 7;
+const friDay = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() + friAdd);
+const FRI = `${friDay.getFullYear()}-${String(friDay.getMonth() + 1).padStart(2, '0')}-${String(friDay.getDate()).padStart(2, '0')}`;
+await page.goto(`${BASE}/map/?lens=seated${friAdd ? `&date=${FRI}` : ''}`);
 // The map starts only as the clock runs: step it until the signs are in and every image is loaded.
 for (let i = 0; ; i++) {
   const ok = await page.evaluate(() => { window.__film.step(1000 / 60); const v = window.seatedMap; return !!v && v.markers?.length > 0 && v.waiting === 0; });
@@ -72,12 +81,33 @@ await page.addStyleTag({
   #film .end span { display: block; font-size: 22px; margin-top: 12px; color: #0f766e; }
   #film .dot { display: inline-block; width: 18px; height: 18px; background: #3fae5f; box-shadow: 0 0 0 2px #2b2733; margin-right: 10px; vertical-align: -1px; }
   #film .cur { position: absolute; width: 24px; height: 36px; image-rendering: pixelated; }
+  #film.phone .story { width: 330px; }
+  #film.phone .story p { font-size: 29px; min-height: 40px; white-space: nowrap; }
+  #film.phone .story i { height: 28px; }
+  #film.phone .cap { left: 14px; right: 14px; max-width: none; bottom: 64px; font-size: 21px; padding: 12px 16px 14px; }
+  #film.phone .cap.top { top: 64px; bottom: auto; }
+  #film.phone .end { padding: 22px 26px 24px; }
+  #film.phone .end b { font-size: 40px; }
+  #film.phone .end span { font-size: 19px; }
+  /* Gen Z captions (Joel, 24 Nov 2026: "GEN Z VIBES"): big bold words that pop in one by one, emoji stickers. */
+  #film .pop { position: absolute; left: 0; right: 0; text-align: center; transform: translateY(-50%); padding: 0 22px;
+    font: 900 50px/1.02 -apple-system, 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif; letter-spacing: -0.03em; color: #fff;
+    text-shadow: 0 3px 0 #2b2733, 0 -2px 0 #2b2733, 3px 0 0 #2b2733, -3px 0 0 #2b2733, 2px 2px 0 #2b2733, -2px 2px 0 #2b2733, 0 10px 24px rgba(29,26,36,.5); }
+  #film .pop div { margin: 0.06em 0; }
+  #film .pop span { display: inline-block; transform-origin: 50% 70%; }
+  #film .pop .hl { color: #5fd47e; }
+  #film .pop.dark { color: #2b2733; text-shadow: none; }
+  #film .pop.dark .hl { color: #0f766e; }
+  #film.phone .pop { font-size: 42px; }
+  #film .stk { position: absolute; font-size: 88px; line-height: 1; transform-origin: 50% 50%; filter: drop-shadow(0 6px 10px rgba(29,26,36,.35)); }
+  #film.phone .stk { font-size: 72px; }
   #film .ring { position: absolute; width: 10px; height: 10px; border: 3px solid #0f766e; border-radius: 50%; transform: translate(-50%, -50%); }
   `,
 });
 await page.evaluate(() => {
   const el = document.createElement('div');
   el.id = 'film';
+  if (innerWidth <= 640) el.className = 'phone';
   // A 12 x 18 pixel arrow, ink outline and cream fill.
   const rows = [
     'X...........', 'XX..........', 'XcX.........', 'XccX........', 'XcccX.......', 'XccccX......', 'XcccccX.....',
@@ -89,7 +119,7 @@ await page.evaluate(() => {
     if (ch !== '.') svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="${ch === 'X' ? '#2b2733' : '#fffaf0'}"/>`;
   }));
   svg += '</svg>';
-  el.innerHTML = `<div class="veil" id="v" style="opacity:0"></div><div class="panel title" id="t"></div><div class="panel story" id="s"></div><div class="panel cap" id="c"></div><div class="panel end" id="e"></div>
+  el.innerHTML = `<div class="veil" id="v" style="opacity:0"></div><div class="panel title" id="t"></div><div class="panel story" id="s"></div><div class="pop" id="p"></div><div class="stk" id="g"></div><div class="panel cap" id="c"></div><div class="panel end" id="e"></div>
     <div class="ring" id="r"></div><img class="cur" id="k" src="data:image/svg+xml;base64,${btoa(svg)}">`;
   document.body.appendChild(el);
 });
@@ -130,16 +160,17 @@ const facts = await page.evaluate(async ({ date, hero }) => {
   const seated = d.guides.find((g) => g.id === 'seated');
   const pool = d.restaurants.filter((r) => !seated || seated.picks?.includes(r.id) || r.g?.includes('seated'));
   const h = d.restaurants.find((r) => r.id === hero);
-  return { i, free: pool.filter((r) => r.d[i] === 'o').length, hero: h.d[i], name: h.name, why: h.why, times: h.t?.[date] ?? [] };
+  return { i, free: pool.filter((r) => r.d[i] === 'o').length, hero: h.d[i], name: h.name, why: h.why, michelin: h.michelin, times: h.t?.[date] ?? [] };
 }, { date: fri.date, hero: HERO });
 if (facts.hero !== 'o') throw new Error(`${HERO} is not free on Friday ${fri.date} in this snapshot (${facts.hero}): pick another HERO`);
 const tonight = fri.add === 0;
 
 // Camera keys (world pixels).
-const C0 = { x: mid.x + 600, y: mid.y - 300, z: 0.125 };       // the whole city
-const C1 = { x: 11128, y: 5212, z: 0.15 };                      // the canal belt where most signs stand (19 at this zoom)
-const CH = { x: hero.x + 520, y: hero.y - 40, z: 0.25 };        // the hero left of centre, clear of the card
-const C5 = { x: mid.x + 300, y: mid.y - 200, z: 0.125 };
+const C0 = PHONE ? { x: mid.x + 200, y: mid.y - 100, z: 0.125 } : { x: mid.x + 600, y: mid.y - 300, z: 0.125 }; // the whole city
+const C1 = PHONE ? { x: 11128 - 150, y: 5212 + 40, z: 0.15 } : { x: 11128, y: 5212, z: 0.15 }; // the canal belt, most signs
+// The hero: left of centre on a wide screen, clear of the card; high on a phone, clear of the sheet that comes up.
+const CH = PHONE ? { x: hero.x, y: hero.y + (0.18 * H) / 0.25, z: 0.25 } : { x: hero.x + 520, y: hero.y - 40, z: 0.25 };
+const C5 = PHONE ? { x: mid.x + 150, y: mid.y - 60, z: 0.125 } : { x: mid.x + 300, y: mid.y - 200, z: 0.125 };
 
 let frame = 0;
 let manual = true;
@@ -160,8 +191,15 @@ async function shoot(state) {
     const show = (id, html, a) => { const n = $(id); if (html != null) n.innerHTML = html; n.style.opacity = String(a); n.style.display = a > 0 ? '' : 'none'; };
     show('t', ui.t, ui.ta);
     show('c', ui.c, ui.ca);
+    $('c').classList.toggle('top', !!ui.ctop);
     show('e', ui.e, ui.ea);
     show('s', ui.s, ui.sa ?? 0);
+    const p = $('p');
+    p.style.display = ui.pop ? '' : 'none';
+    if (ui.pop) { p.innerHTML = ui.pop.html; p.style.top = ui.pop.top; p.classList.toggle('dark', !!ui.pop.dark); p.style.right = ui.pop.right ?? '0'; }
+    const g = $('g');
+    g.style.display = ui.stk ? '' : 'none';
+    if (ui.stk) { g.textContent = ui.stk.emoji; g.style.left = ui.stk.x; g.style.top = ui.stk.y; g.style.transform = `translate(-50%, -50%) rotate(${ui.stk.r}deg) scale(${ui.stk.s})`; }
     $('v').style.opacity = String(ui.veil ?? 0);
     const k = $('k');
     k.style.display = ui.cur ? '' : 'none';
@@ -180,56 +218,77 @@ async function shoot(state) {
   frame++;
 }
 
-const UI = (o = {}) => ({ t: null, ta: 0, c: null, ca: 0, e: null, ea: 0, s: null, sa: 0, cur: null, ring: null, top: 0, side: 0, ...o });
+const UI = (o = {}) => ({ t: null, ta: 0, c: null, ca: 0, e: null, ea: 0, s: null, sa: 0, cur: null, ring: null, top: 0, side: 0, pop: null, stk: null, ...o });
+/** Overshoot easing: a word or sticker pops past its size and settles. */
+const backOut = (k) => 1 + 2.70158 * Math.pow(k - 1, 3) + 1.70158 * Math.pow(k - 1, 2);
+/** A caption shown from t0 to t1, its words popping in one by one; a word written *word is green. */
+function pop(lines, t, t0, t1, top, o = {}) {
+  if (t < t0 || t > t1) return null;
+  let i = 0;
+  const out = clamp01((t1 - t) / 0.15);
+  const html = lines.map((line) => `<div>${line.split(' ').map((w) => {
+    const hl = w.startsWith('*');
+    const dt = t - t0 - 0.08 * i++;
+    const k = clamp01(dt / 0.3);
+    const sc = dt <= 0 ? 0.3 : 0.3 + 0.7 * backOut(k);
+    return `<span${hl ? ' class="hl"' : ''} style="opacity:${dt <= 0 ? 0 : Math.min(1, k * 3) * out};transform:scale(${sc.toFixed(3)})">${hl ? w.slice(1) : w}</span>`;
+  }).join(' ')}</div>`).join('');
+  return { html, top, ...o };
+}
+/** An emoji sticker that pops in tilted at (x, y) from t0 to t1. */
+const sticker = (emoji, t, t0, t1, x, y, r) => (t < t0 || t > t1 ? null : { emoji, x, y, r, s: (0.3 + 0.7 * backOut(clamp01((t - t0) / 0.3))) * clamp01((t1 - t) / 0.15) });
 const fade = (t, a, b, f = 0.35) => clamp01(Math.min((t - a) / f, (b - t) / f));
 const secs = (s) => Math.round(s * FPS);
 const ringAt = (p, t, t0) => (p && t >= t0 && t < t0 + 0.45 ? { x: p.x, y: p.y, s: 10 + (t - t0) * 120, a: 1 - (t - t0) / 0.45 } : null);
 const tap = (from, to, t, t0, t1) => { const m = ease(clamp01((t - t0) / (t1 - t0))); return { x: lerp(from.x, to.x, m), y: lerp(from.y, to.y, m) }; };
 
-// The map shows Friday from the first frame: tap the day while the bar is hidden.
-if (!tonight) {
-  const ok = await page.evaluate(() => { const b = [...document.querySelectorAll('.topbar button')].find((x) => x.textContent.trim() === 'Fri'); b?.click(); return !!b; });
-  if (!ok) throw new Error('no Fri button in the top bar: the film needs the quick days (wide screen)');
-}
+// The cut (Joel, 24 Nov 2026: "GEN Z VIBES", fast): about 18 s. Captions pop word by word; stickers pop in tilted.
+const TOPCAP = PHONE ? '22%' : '20%';
+const FREE_WHEN = tonight ? 'tonight' : 'rn';
 
-// Scene 1 (0 to 5 s): a cream screen, typed: Friday night. No reservation. Now what?
-const LINES = [['Friday night.', 0.3], ['No reservation.', 1.5], ['Now what?', 2.9]];
-const typed = (t) => LINES.map(([s, t0], i) => {
-  const n = Math.max(0, Math.min(s.length, Math.floor((t - t0) * 22)));
-  const caret = t >= t0 && (n < s.length || (i === LINES.length - 1 && Math.floor(t * 2.2) % 2 === 0)) && !(i < LINES.length - 1 && t >= LINES[i + 1][1]);
-  return `<p${i === 2 ? ' class="teal"' : ''}>${s.slice(0, n)}${caret ? '<i></i>' : ''}</p>`;
-}).join('');
-for (let i = 0; i < secs(5); i++) {
+// Scene 1 (0 to 3.4 s): cream screen, three beats.
+for (let i = 0; i < secs(3.4); i++) {
   const t = i / FPS;
-  await shoot({ cam: C0, ui: UI({ s: typed(t), sa: clamp01((4.7 - t) / 0.3), veil: 1 }) });
+  await shoot({
+    cam: C0,
+    ui: UI({
+      veil: 1,
+      pop: pop(["it's friday", 'night'], t, 0.15, 1.25, '45%', { dark: true }) ?? pop(['no rez.'], t, 1.3, 2.25, '45%', { dark: true }) ?? pop(["we're", '*cooked'], t, 2.3, 3.35, '45%', { dark: true }),
+      stk: sticker('💀', t, 2.65, 3.35, PHONE ? '72%' : '62%', PHONE ? '60%' : '62%', 12),
+    }),
+  });
 }
 
-// Scene 2 (5 to 7 s): the veil lifts on the whole city, Friday already green; the bar comes in.
-for (let i = 0; i < secs(2); i++) {
+// Scene 2 (3.4 to 5 s): the city snaps in on Friday.
+for (let i = 0; i < secs(1.6); i++) {
   const t = i / FPS;
-  const k = ease(clamp01(t / 1.0));
-  await shoot({ cam: camAt(C0, C1, ease(clamp01((t - 0.4) / 3.6)) * 0.4), ui: UI({ veil: 1 - k, top: clamp01((t - 0.9) / 0.5), c: `Open seated.food.`, ca: fade(t, 0.8, 2.2, 0.25) }) });
+  const k = ease(clamp01(t / 0.45));
+  await shoot({
+    cam: camAt(C0, C1, ease(clamp01(t / 3.4))), // one move from here into the belt
+    ui: UI({ veil: 1 - k, top: clamp01((t - 0.3) / 0.3), pop: pop(['wait.', 'seated.food'], t, 0.35, 1.6, TOPCAP), stk: sticker('👀', t, 0.75, 1.6, PHONE ? '82%' : '64%', PHONE ? '14%' : '30%', -10) }),
+  });
 }
 
-// Scene 3 (7 to 12 s): into the canal belt; one look, every free table.
-const CAP3 = `<span class="dot"></span>One look: ${facts.free} places with a table for two${tonight ? ' tonight' : ' on Friday'}.<small>Green is free. Each sign reads the restaurant's own booking calendar.</small>`;
-const c2start = camAt(C0, C1, 0.4 * ease(clamp01(1.6 / 3.6)));
-for (let i = 0; i < secs(5); i++) {
+// Scene 3 (5 to 8.2 s): into the canal belt; every green sign is a free table.
+for (let i = 0; i < secs(3.2); i++) {
   const t = i / FPS;
-  await shoot({ cam: camAt(c2start, C1, ease(clamp01(t / 2.8))), ui: UI({ top: 1, c: CAP3, ca: fade(t, 0.3, 4.8, 0.3) }) });
+  await shoot({
+    cam: camAt(C0, C1, ease(clamp01((t + 1.6) / 3.4))),
+    ui: UI({ top: 1, pop: pop([`${facts.free} tables`, `*free ${FREE_WHEN}`], t, 0.5, 2.0, TOPCAP) ?? pop(['no cap.'], t, 2.05, 3.15, TOPCAP), stk: sticker('🍽️', t, 0.95, 2.0, PHONE ? '80%' : '66%', PHONE ? '30%' : '28%', 8) }),
+  });
 }
 
-// Scene 4 (12 to 20.6 s): over to the hard-to-get place, tap its sign, the card opens on its photo and Instagram,
-// then a dinner time and Book (Joel, 24 Nov 2026: the photo went by unseen, and "Book 10:00" is no Friday night).
-const from4 = { x: W * 0.62, y: H * 0.8 };
+// Scene 4 (8.2 to about 14.6 s): snap to the hard-to-get place, tap it, a dinner time, Book.
+const from4 = PHONE ? { x: W * 0.72, y: H * 0.7 } : { x: W * 0.62, y: H * 0.8 };
 const DINNER = facts.times.find((x) => x >= '17:00') ?? null; // none read yet: Book alone
-const CAP4a = `${facts.name}. Usually booked months ahead.`;
-const CAP4b = `${DINNER ? `Friday ${DINNER}. Free.` : 'Free on Friday.'}<small>Book on their own page.</small>`;
+const NAME = facts.name.toLowerCase();
 let opened = false, signAt = null, tgt = null, timeAt = null, bookAt = null, picked = false;
-const T0 = 1.6, TC = 2.6; // camera arrives, tap the sign
-const TS = TC + 1.4; // the photo has been seen; the card scrolls
-const TT = TS + 1.6; // tap the dinner time
-const TB = DINNER ? TT + 1.3 : TS + 1.6; // tap Book
+const T0 = 0.9, TC = 1.5; // camera arrives, tap the sign
+const TS = TC + 1.1; // the card has been seen; it scrolls
+const TT = TS + 1.0; // tap the dinner time
+const TB = DINNER ? TT + 0.9 : TS + 1.1; // tap Book
+const CAPTOP = PHONE ? '27%' : '20%';
+const CAPRIGHT = PHONE ? '0' : '380px'; // clear of the wide card
 const findBook = () => page.evaluate(() => {
   const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
   if (!b) return null;
@@ -237,7 +296,7 @@ const findBook = () => page.evaluate(() => {
   if (r.bottom > innerHeight || r.top < 0) return { off: r.top };
   return { x: r.x + Math.min(r.width / 2, 60), y: r.y + r.height / 2, label: b.textContent.trim() };
 });
-for (let i = 0; i < secs(TB + 1.7); i++) {
+for (let i = 0; i < secs(TB + 1.0); i++) {
   const t = i / FPS;
   if (!signAt && t >= T0 + 0.05) {
     const hit = await page.evaluate((id) => window.seatedMap.hits.filter((h) => h.id === id).map((h) => ({ x: h.x, y: h.y, w: h.w, h: h.h })), HERO);
@@ -249,18 +308,21 @@ for (let i = 0; i < secs(TB + 1.7); i++) {
     // The map would fly there itself, fast; the film takes its target and eases there instead.
     tgt = await page.evaluate((id) => { const v = window.seatedMap; v.onSelect(id); const t = v.target ?? v.cam; return { x: t.x, y: t.y, z: t.z }; }, HERO);
   }
-  if (opened && t >= TS && t < TS + 0.8) {
-    // Scroll the card until its Book button (and the dinner times above it) are in sight.
-    const k = ease(clamp01((t - TS) / 0.7));
-    await page.evaluate((k) => {
+  if (opened && t >= TS && t < TS + 0.6) {
+    const k = ease(clamp01((t - TS) / 0.5));
+    await page.evaluate(({ k, hm }) => {
       const s = document.querySelector('.card-scroll');
       const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
+      const tb = hm && [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm);
       if (!s || !b) return;
-      if (s.__to == null) s.__to = Math.max(0, Math.min(s.scrollHeight - s.clientHeight, b.getBoundingClientRect().bottom - s.getBoundingClientRect().bottom + s.scrollTop + 16));
+      const sr = s.getBoundingClientRect();
+      // With a time: that button a little above the middle of what the card shows. Without: Book in sight.
+      const want = tb ? tb.getBoundingClientRect().top - sr.top + s.scrollTop - s.clientHeight * 0.4 : b.getBoundingClientRect().bottom - sr.bottom + s.scrollTop + 16;
+      if (s.__to == null) s.__to = Math.max(0, Math.min(s.scrollHeight - s.clientHeight, want));
       s.scrollTop = k * s.__to;
-    }, k);
+    }, { k, hm: DINNER });
   }
-  if (opened && DINNER && !timeAt && t >= TS + 0.85) {
+  if (opened && DINNER && !timeAt && t >= TS + 0.62) {
     timeAt = await page.evaluate((hm) => {
       const b = [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm);
       if (!b) return null;
@@ -273,38 +335,48 @@ for (let i = 0; i < secs(TB + 1.7); i++) {
     picked = true;
     await page.evaluate((hm) => [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm).click(), DINNER);
   }
-  if (opened && !bookAt && t >= (DINNER ? TT + 0.1 : TS + 0.85)) {
+  if (opened && !bookAt && t >= (DINNER ? TT + 0.1 : TS + 0.62)) {
     bookAt = await findBook();
     if (!bookAt || bookAt.off != null) throw new Error(`the Book button of ${HERO} is missing or off screen: ${JSON.stringify(bookAt)}`);
     if (DINNER && !bookAt.label.includes(DINNER)) throw new Error(`Book does not follow the picked time: "${bookAt.label}"`);
   }
   let cur = null;
-  if (t >= 0.3 && t < TC + 0.5) cur = signAt ? tap(from4, signAt, t, T0, TC - 0.15) : from4;
-  else if (DINNER && timeAt && t >= TS + 0.9 && t < TT + 0.3) cur = tap(signAt, timeAt, t, TS + 0.9, TT - 0.15);
-  else if (bookAt && t >= (DINNER ? TT + 0.3 : TS + 0.9) && t < TB + 0.9) cur = tap(DINNER ? timeAt : signAt, bookAt, t, DINNER ? TT + 0.3 : TS + 0.9, TB - 0.15);
+  if (t >= 0.2 && t < TC + 0.4) cur = signAt ? tap(from4, signAt, t, T0 - 0.1, TC - 0.12) : from4;
+  else if (DINNER && timeAt && t >= TS + 0.65 && t < TT + 0.25) cur = tap(signAt, timeAt, t, TS + 0.65, TT - 0.12);
+  else if (bookAt && t >= (DINNER ? TT + 0.25 : TS + 0.65) && t < TB + 0.7) cur = tap(DINNER ? timeAt : signAt, bookAt, t, DINNER ? TT + 0.25 : TS + 0.65, TB - 0.12);
+  const capTop = opened ? CAPTOP : TOPCAP;
+  const capRight = opened ? CAPRIGHT : '0';
   await shoot({
-    cam: tgt ? camAt(CH, tgt, ease(clamp01((t - TC) / 1.4))) : camAt(C1, CH, ease(clamp01(t / T0))),
+    cam: tgt ? camAt(CH, tgt, ease(clamp01((t - TC) / 0.9))) : camAt(C1, CH, ease(clamp01(t / T0))),
     ui: UI({
       top: 1,
-      side: opened ? clamp01((t - TC) / 0.25) : 0,
+      side: opened ? clamp01((t - TC) / 0.2) : 0,
       cur,
       ring: ringAt(signAt, t, TC) ?? ringAt(DINNER ? timeAt : null, t, TT) ?? ringAt(bookAt, t, TB),
-      c: t < TS + 0.9 ? CAP4a : CAP4b,
-      ca: t < TS + 0.9 ? fade(t, TC + 0.4, TS + 0.8, 0.25) : fade(t, TS + 1.0, TB + 1.6, 0.25),
+      pop:
+        pop([`${NAME}.`, 'impossible', 'to book'], t, 0.25, TS + 0.55, capTop, { right: capRight }) ??
+        pop([DINNER ? `friday ${DINNER}??` : 'friday??', '*FREE'], t, TS + 0.6, TB - 0.05, opened && PHONE ? '19%' : capTop, { right: capRight }) ??
+        pop(['booked.', '*ate.'], t, TB, TB + 1.0, opened && PHONE ? '19%' : capTop, { right: capRight }),
+      stk: sticker('🔥', t, 0.55, TS + 0.55, PHONE ? '82%' : '58%', PHONE ? '16%' : '12%', 10) ?? sticker('😭', t, TT - 0.3, TB - 0.05, PHONE ? '83%' : '58%', PHONE ? '16%' : '12%', -12) ?? sticker('✅', t, TB + 0.1, TB + 1.0, PHONE ? '80%' : '58%', PHONE ? '16%' : '12%', 8),
     }),
   });
 }
 
-// Scene 5 (20.6 to 26.6 s): the card closes, the camera pulls out over a green city, the end card.
+// Scene 5 (about 14.6 to 18 s): the card goes, a quick pull out, the end card pops.
 const C4 = { ...tgt };
 const icon = await page.evaluate(() => document.querySelector('link[rel=icon]').href);
-const END = `<img src="${icon}" alt=""><b>seated.food</b><span>Friday night, sorted.</span>`;
+const END = `<img src="${icon}" alt=""><b>seated.food</b><span>friday night: secured</span>`;
 let closed = false;
-for (let i = 0; i < secs(6); i++) {
+for (let i = 0; i < secs(3.4); i++) {
   const t = i / FPS;
-  if (!closed && t >= 0.35) { closed = true; await page.evaluate(() => { const v = window.seatedMap; v.onSelect(null); v.target = null; }); }
-  const ea = clamp01((t - 3.3) / 0.45);
-  await shoot({ cam: camAt(C4, C5, ease(clamp01((t - 0.2) / 3.4))), ui: UI({ top: clamp01(1 - t / 0.35), side: closed ? 0 : clamp01(1 - t / 0.35), e: END, ea, veil: ea * 0.55 }) });
+  if (!closed && t >= 0.15) { closed = true; await page.evaluate(() => { const v = window.seatedMap; v.onSelect(null); v.target = null; }); }
+  const k = clamp01((t - 1.2) / 0.35);
+  await shoot({
+    cam: camAt(C4, C5, ease(clamp01(t / 1.4))),
+    ui: UI({ top: clamp01(1 - t / 0.2), side: closed ? 0 : clamp01(1 - t / 0.2), e: END, ea: Math.min(1, k * 2), veil: k * 0.6, stk: sticker('✨', t, 1.45, 3.4, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 14) }),
+  });
+  // The end card pops with the same overshoot as the words.
+  await page.evaluate((sc) => { const e = document.getElementById('e'); e.style.transform = `translate(-50%, -50%) scale(${sc})`; }, t < 1.2 ? 0.3 : 0.3 + 0.7 * backOut(clamp01((t - 1.2) / 0.35)));
 }
 
 console.log(JSON.stringify({ frames: frame, zoomCtl, fri, facts }));
