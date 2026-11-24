@@ -77,6 +77,8 @@ interface Lens {
   /** The maker of someone else's list. */
   by: SeatedList['by'];
   ids: Set<string>;
+  /** Your picks only: best fit first (0), so a Fashion Baddie's wine bars lead her list. */
+  rank?: Map<string, number>;
 }
 
 /** Only the lens's restaurants, when a lens is chosen. */
@@ -230,7 +232,7 @@ export function App() {
     const g = data.guides.find((x) => x.id === lensId);
     if (g) return { id: g.id, kind: 'guide', title: g.short, line: g.line, url: g.url, by: null, ids: new Set(data.restaurants.filter((r) => r.g.includes(g.id)).map((r) => r.id)) };
     if (lensId === 'you')
-      return you.profile ? { id: 'you', kind: 'you', title: you.profile.name, line: `Your picks as a ${you.profile.name}.`, url: null, by: null, ids: new Set(picks.map((r) => r.id)) } : null;
+      return you.profile ? { id: 'you', kind: 'you', title: you.profile.name, line: `Your picks as a ${you.profile.name}.`, url: null, by: null, ids: new Set(picks.map((r) => r.id)), rank: new Map(picks.map((r, i) => [r.id, i])) } : null;
     if (listId) {
       const own = you.lists.find((l) => l.id === listId);
       const l = own ?? you.community?.find((x) => x.id === listId) ?? you.opened[listId];
@@ -986,6 +988,7 @@ function List(p: ListProps) {
       p.me
         ? a.m - b.m
         : STATUS_RANK[b.s] - STATUS_RANK[a.s] ||
+          (p.lens?.rank ? (p.lens.rank.get(a.r.id) ?? 99) - (p.lens.rank.get(b.r.id) ?? 99) : 0) ||
           Number(b.r.michelin === '3') - Number(a.r.michelin === '3') ||
           (b.r.hot ?? 0) - (a.r.hot ?? 0) ||
           a.r.name.localeCompare(b.r.name),

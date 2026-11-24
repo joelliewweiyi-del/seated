@@ -21,8 +21,9 @@ const PHONE = process.env.FORMAT === 'phone';
 const MILL = process.env.STYLE === 'millennial';
 const G = (genz, mill) => (MILL ? mill : genz);
 /** STYLE=real: looks like a screen recording someone posted (Joel, 24 Nov 2026: "reads too much like a script", "not just
- * text but how it's shown"; then "POV is too small. Too much going on"): a status bar over the page, taps, a fling and
- * a pinch, one big hook line and one reaction. Phone only. The bar is written as $F/bar-top.png; encode with
+ * text but how it's shown"; then "POV is too small. Too much going on"; then the storyboard "choose your character,
+ * Fashion, Fashion Baddie, show all her places"): a status bar over the page, taps, one hook line and one reaction.
+ * Phone only; HERO must be one of the Fashion Baddie's places (weinlokal-stern). The bar is written as $F/bar-top.png; encode with
  * -i frames/%05d.png -i bar-top.png -filter_complex "[0]scale=1080:1848:flags=lanczos[v];[1][v]vstack=2". */
 const REAL = PHONE && process.env.STYLE === 'real';
 const BAR_TOP = 24; // CSS px of the phone's status bar
@@ -287,45 +288,88 @@ if (REAL) {
     #film .dot { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(255,255,255,.55); border: 1px solid rgba(0,0,0,.22); box-shadow: 0 1px 4px rgba(0,0,0,.2); }` });
   await page.evaluate(() => {
     const f = document.getElementById('film');
-    f.insertAdjacentHTML('beforeend', '<div class="tt" id="h" style="top:60px"></div><div class="tt" id="x" style="top:140px"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div>');
+    f.insertAdjacentHTML('beforeend', '<div class="tt" id="h" style="top:60px"></div><div class="tt" id="x" style="top:60px"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div>');
   });
   const HOOK = 'pov: friday 19:00<br>and nobody booked anything';
   const WOW = `wait ${facts.name.toLowerCase()} has a table??`;
-  const DINNER = facts.times.find((x) => x >= '17:00') ?? null;
-  // One frame: camera, page chrome, text and up to two touches.
+  const DINNER = facts.times.find((x) => x >= '19:00') ?? facts.times.find((x) => x >= '17:00') ?? null;
+  // One frame: camera, page chrome, text and a touch.
   const real = async (cam, o = {}) => {
     await page.evaluate(({ hook, wow, dots }) => {
       const $ = (id) => document.getElementById(id);
       $('h').innerHTML = hook ? hook.split('<br>').map((l) => `<span>${l}</span>`).join('<br>') : '';
       $('x').innerHTML = wow ? `<span>${wow}</span>` : '';
       ['d1', 'd2'].forEach((id, i) => { const d = $(id), p = dots[i]; d.style.display = p ? '' : 'none'; if (p) { d.style.left = `${p.x}px`; d.style.top = `${p.y}px`; d.style.transform = `scale(${p.s ?? 1})`; } });
-    }, { hook: HOOK, wow: o.wow ? WOW : null, dots: o.dots ?? [] });
+    }, { hook: o.hook ? HOOK : null, wow: o.wow ? WOW : null, dots: o.dots ?? [] });
     await shoot({ cam, ui: UI({ top: 1, side: o.side ?? 0 }) });
   };
-  // A fling: the finger drags for 0.2 s, then the map coasts and slows down, as under a real thumb.
-  const fling = (a, b, u) => { const k = u < 0.2 ? (u / 0.2) * 0.3 : 0.3 + 0.7 * (1 - Math.exp(-5 * (u - 0.2))) / (1 - Math.exp(-5 * 0.8)); return camAt(a, b, Math.min(1, k)); };
   const tapDot = (p, t, t0) => (p && t >= t0 - 0.12 && t < t0 + 0.1 ? [{ x: p.x, y: p.y, s: t < t0 ? 0.85 : 1 }] : []);
   const hold = async (cam, s, o) => { for (let i = 0; i < secs(s); i++) await real(cam, o); };
+  /** The middle of the first visible element that matches, and whose text matches `text` (a regex source). */
+  const spot = (sel, text) => page.evaluate(({ sel, text }) => {
+    const re = text ? new RegExp(text) : null;
+    const el = [...document.querySelectorAll(sel)].find((x) => (!re || re.test(x.textContent.trim())) && x.getBoundingClientRect().height > 0);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return r.bottom > innerHeight || r.top < 0 ? null : { x: r.x + Math.min(r.width / 2, 70), y: r.y + r.height / 2 };
+  }, { sel, text });
+  /** A tap: the finger comes down on `sel`, the page gets the click, the finger lifts. `o` is kept on every frame. */
+  const tapOn = async (cam, sel, text, o = {}) => {
+    const p = await spot(sel, text);
+    if (!p) throw new Error(`nothing to tap: ${sel} ${text ?? ''} is missing or off screen`);
+    for (let i = 0; i < secs(0.12); i++) await real(cam, { ...o, dots: tapDot(p, i / FPS, 0.12) });
+    await page.evaluate(({ sel, text }) => {
+      const re = text ? new RegExp(text) : null;
+      [...document.querySelectorAll(sel)].find((x) => (!re || re.test(x.textContent.trim())) && x.getBoundingClientRect().height > 0).click();
+    }, { sel, text });
+    return p;
+  };
+  /** Where the map wants to fly after a click (its own flyTo), or null. */
+  const flight = () => page.evaluate(() => { const v = window.seatedMap; return v.target ? { ...v.target } : null; });
+  const fly = async (a, b, s, o) => { for (let i = 0; i < secs(s); i++) await real(camAt(a, b, ease(Math.min(1, i / FPS / (s * 0.9)))), o); };
 
-  // 0 to 1.1 s: the city on Friday. Then a thumb flings toward the canal belt.
-  const A = C0, B = { x: lerp(C0.x, C1.x, 0.85), y: lerp(C0.y, C1.y, 0.85), z: C0.z };
-  await hold(A, 1.1);
-  for (let i = 0; i < secs(1.1); i++) await real(fling(A, B, i / FPS / 1.0));
-  // A pinch into the belt, a look around, a pinch in to the hero.
-  for (let i = 0; i < secs(0.7); i++) await real(camAt(B, C1, ease(Math.min(1, i / FPS / 0.6))));
-  await hold(C1, 1.4);
-  for (let i = 0; i < secs(0.9); i++) await real(camAt(C1, CH, ease(Math.min(1, i / FPS / 0.8))));
-  await hold(CH, 0.5);
-
-  // Tap the sign; the card comes up and is read.
-  const hit = await page.evaluate((id) => window.seatedMap.hits.filter((h) => h.id === id).map((h) => ({ x: h.x, y: h.y, w: h.w, h: h.h })), HERO);
-  if (!hit.length) throw new Error(`${HERO} has no sign in view`);
-  const sign = { x: hit[0].x + Math.min(hit[0].w / 2, 30), y: hit[0].y + hit[0].h / 2 };
-  for (let i = 0; i < secs(0.12); i++) await real(CH, { dots: tapDot(sign, i / FPS, 0.12) });
-  await page.evaluate((id) => window.seatedMap.onSelect(id), HERO);
-  for (let i = 0; i < secs(1.5); i++) { const t = i / FPS; await real(CH, { side: 1, dots: tapDot(sign, t + 0.12, 0.12) }); }
-
-  // A thumb scrolls the card to the times; the reaction goes up as the time shows.
+  // 1. Friday, the whole city; the hook. (0 to 1.8 s)
+  await hold(C0, 1.8, { hook: true });
+  // 2. A tap on You: choose your character. (1.8 to 3.4 s)
+  let p = await tapOn(C0, '.you-btn', null, { hook: true });
+  for (let i = 0; i < secs(1.4); i++) await real(C0, { dots: tapDot(p, i / FPS + 0.12, 0.12) });
+  // 3. Fashion. (3.4 to 4.9 s)
+  p = await tapOn(C0, '[role=dialog] .choice.scene', '^Fashion$');
+  for (let i = 0; i < secs(1.4); i++) await real(C0, { dots: tapDot(p, i / FPS + 0.12, 0.12) });
+  // 4. Fashion Baddie: the map flies to her places and they come up as a list. (4.9 to 7.6 s)
+  await page.evaluate(() => { window.seatedMap.target = null; });
+  p = await tapOn(C0, '[role=dialog] .choice.archetype', '^Fashion Baddie');
+  for (let i = 0; i < 6; i++) await page.evaluate(() => window.__film.step(1000 / 60)); // React renders, the lens frames
+  const C4 = await flight();
+  if (!C4) throw new Error('picking Fashion Baddie did not move the map (frameLens in App.tsx)');
+  for (let i = 0; i < secs(1.1); i++) {
+    const t = i / FPS;
+    await real(camAt(C0, C4, ease(Math.min(1, t / 1.0))), { side: ease(clamp01((t - 0.3) / 0.4)), dots: tapDot(p, t + 0.12, 0.12) });
+  }
+  await hold(C4, 1.5, { side: 1 });
+  // 5. A thumb scrolls her list to the hero and taps it. (7.6 to 10 s)
+  const scroller = await page.evaluate((name) => {
+    const s = document.querySelector('.side .list');
+    const row = [...document.querySelectorAll('.side .rows .row')].find((r) => r.textContent.includes(name));
+    if (!s || !row) return null;
+    const want = row.getBoundingClientRect().top - s.getBoundingClientRect().top + s.scrollTop - s.clientHeight * 0.45;
+    return { from: s.scrollTop, to: Math.max(0, Math.min(s.scrollHeight - s.clientHeight, want)) };
+  }, facts.name);
+  if (!scroller) throw new Error(`${facts.name} is not in the Fashion Baddie list`);
+  for (let i = 0; i < secs(0.9); i++) {
+    const u = i / FPS;
+    const k = u < 0.18 ? (u / 0.18) * 0.4 : 0.4 + 0.6 * (1 - Math.exp(-6 * (u - 0.18))) / (1 - Math.exp(-6 * 0.72));
+    await page.evaluate((y) => { document.querySelector('.side .list').scrollTop = y; }, lerp(scroller.from, scroller.to, Math.min(1, k)));
+    await real(C4, { side: 1 });
+  }
+  await hold(C4, 0.5, { side: 1 });
+  await page.evaluate(() => { window.seatedMap.target = null; });
+  p = await tapOn(C4, '.side .rows .row', facts.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), { side: 1 });
+  for (let i = 0; i < 6; i++) await page.evaluate(() => window.__film.step(1000 / 60));
+  const CS = (await flight()) ?? C4;
+  for (let i = 0; i < secs(1.0); i++) await real(camAt(C4, CS, ease(Math.min(1, i / FPS / 0.9))), { side: 1, dots: tapDot(p, i / FPS + 0.12, 0.12) });
+  await hold(CS, 0.9, { side: 1 });
+  // 6. The card scrolls to the times; the reaction; a time; Book. (10 to about 14 s)
   const scrollTo = await page.evaluate((hm) => {
     const s = document.querySelector('.card-scroll');
     const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
@@ -340,28 +384,20 @@ if (REAL) {
     const u = i / FPS;
     const k = u < 0.18 ? (u / 0.18) * 0.4 : 0.4 + 0.6 * (1 - Math.exp(-6 * (u - 0.18))) / (1 - Math.exp(-6 * 0.72));
     await page.evaluate((y) => { document.querySelector('.card-scroll').scrollTop = y; }, Math.min(1, k) * scrollTo);
-    await real(CH, { side: 1, wow: u > 0.55 });
+    await real(CS, { side: 1, wow: u > 0.55 });
   }
-  const box = (sel, label) => page.evaluate(({ sel, label }) => {
-    const b = [...document.querySelectorAll(sel)].find((x) => (label ? x.textContent.trim() === label : /^Book/.test(x.textContent.trim())));
-    if (!b) return null;
-    const r = b.getBoundingClientRect();
-    return r.bottom > innerHeight || r.top < 0 ? null : { x: r.x + Math.min(r.width / 2, 70), y: r.y + r.height / 2, label: b.textContent.trim() };
-  }, { sel, label });
-  await hold(CH, 1.0, { side: 1, wow: true });
+  await hold(CS, 0.9, { side: 1, wow: true });
   if (DINNER) {
-    const tb = await box('.side button', DINNER);
-    if (!tb) throw new Error(`the ${DINNER} button is missing or off screen`);
-    for (let i = 0; i < secs(0.12); i++) await real(CH, { side: 1, wow: true, dots: tapDot(tb, i / FPS, 0.12) });
-    await page.evaluate((hm) => [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm).click(), DINNER);
-    for (let i = 0; i < secs(0.9); i++) await real(CH, { side: 1, wow: true, dots: tapDot(tb, i / FPS + 0.12, 0.12) });
+    p = await tapOn(CS, '.side button', `^${DINNER}$`, { side: 1, wow: true });
+    for (let i = 0; i < secs(0.8); i++) await real(CS, { side: 1, wow: true, dots: tapDot(p, i / FPS + 0.12, 0.12) });
   }
   // Book is pressed and held a moment; the film ends there, before the restaurant's own page.
-  const bk = await box('.side a, .side button');
+  const bk = await spot('.side a, .side button', '^Book');
   if (!bk) throw new Error('the Book button is missing or off screen');
-  if (DINNER && !bk.label.includes(DINNER)) throw new Error(`Book does not follow the picked time: "${bk.label}"`);
-  for (let i = 0; i < secs(0.12); i++) await real(CH, { side: 1, wow: true, dots: tapDot(bk, i / FPS, 0.12) });
-  for (let i = 0; i < secs(1.3); i++) await real(CH, { side: 1, wow: true, dots: tapDot(bk, i / FPS + 0.12, 0.12) });
+  const label = await page.evaluate(() => [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim())).textContent.trim());
+  if (DINNER && !label.includes(DINNER)) throw new Error(`Book does not follow the picked time: "${label}"`);
+  for (let i = 0; i < secs(0.12); i++) await real(CS, { side: 1, wow: true, dots: tapDot(bk, i / FPS, 0.12) });
+  for (let i = 0; i < secs(1.3); i++) await real(CS, { side: 1, wow: true, dots: tapDot(bk, i / FPS + 0.12, 0.12) });
 } else {
 // The cut (Joel, 24 Nov 2026: "GEN Z VIBES"; then "transitions a bit slower"): about 22 s. Captions pop word by word; stickers pop in tilted.
 const TOPCAP = PHONE ? '22%' : '20%';
