@@ -17,6 +17,9 @@ const FPS = 60;
 // FORMAT=phone: 9:16 in the map's phone layout (Joel, 24 Nov 2026: "show on mobile"); 360 x 640 CSS px at 4x,
 // scaled to 1080 x 1920. Otherwise 16:9 desktop, 960 x 540 at 4x, scaled to 1920 x 1080.
 const PHONE = process.env.FORMAT === 'phone';
+/** STYLE=millennial: the calmer cut (Joel, 24 Nov 2026: "a bit too gen z", "a millennial havermelk elite version"). */
+const MILL = process.env.STYLE === 'millennial';
+const G = (genz, mill) => (MILL ? mill : genz);
 const [W, H] = PHONE ? [360, 640] : [960, 540];
 
 const b = await chromium.launch();
@@ -99,6 +102,14 @@ await page.addStyleTag({
   #film .pop.dark { color: #2b2733; text-shadow: none; }
   #film .pop.dark .hl { color: #0f766e; }
   #film.phone .pop { font-size: 42px; }
+  /* Millennial: dry lines set like a magazine, ink on cream strips, words fade up. */
+  #film .pop.mill { font: italic 500 34px/1.12 Georgia, 'Times New Roman', serif; letter-spacing: -0.01em; color: #2b2733; text-shadow: none; }
+  #film .pop.mill div { display: table; margin: 5px auto; background: #fffaf0; padding: 0.08em 0.4em 0.14em; box-shadow: 0 6px 18px rgba(29,26,36,.22); }
+  #film .pop.mill .hl { color: #0f766e; }
+  #film .pop.mill span { margin-right: 0.26em; } #film .pop.mill span:last-child { margin-right: 0; }
+  #film.phone .pop.mill.dark { font-size: 36px; }
+  #film .pop.mill.dark div { background: none; box-shadow: none; }
+  #film.phone .pop.mill { font-size: 29px; }
   #film .stk { position: absolute; font-size: 88px; line-height: 1; transform-origin: 50% 50%; filter: drop-shadow(0 6px 10px rgba(29,26,36,.35)); }
   #film.phone .stk { font-size: 72px; }
   #film .ring { position: absolute; width: 10px; height: 10px; border: 3px solid #0f766e; border-radius: 50%; transform: translate(-50%, -50%); }
@@ -196,7 +207,7 @@ async function shoot(state) {
     show('s', ui.s, ui.sa ?? 0);
     const p = $('p');
     p.style.display = ui.pop ? '' : 'none';
-    if (ui.pop) { p.innerHTML = ui.pop.html; p.style.top = ui.pop.top; p.classList.toggle('dark', !!ui.pop.dark); p.style.right = ui.pop.right ?? '0'; }
+    if (ui.pop) { p.innerHTML = ui.pop.html; p.style.top = ui.pop.top; p.classList.toggle('dark', !!ui.pop.dark); p.classList.toggle('mill', !!ui.pop.mill); p.style.right = ui.pop.right ?? '0'; }
     const g = $('g');
     g.style.display = ui.stk ? '' : 'none';
     if (ui.stk) { g.textContent = ui.stk.emoji; g.style.left = ui.stk.x; g.style.top = ui.stk.y; g.style.transform = `translate(-50%, -50%) rotate(${ui.stk.r}deg) scale(${ui.stk.s})`; }
@@ -226,14 +237,20 @@ function pop(lines, t, t0, t1, top, o = {}) {
   if (t < t0 || t > t1) return null;
   let i = 0;
   const out = clamp01((t1 - t) / 0.15);
-  const html = lines.map((line) => `<div>${line.split(' ').map((w) => {
+  const html = lines.map((line) => {
+    // Millennial: the cream strip fades in with its line's first word, so no empty strip shows.
+    const strip = MILL ? ` style="opacity:${(ease(clamp01((t - t0 - 0.06 * i) / 0.3)) * out).toFixed(3)}"` : '';
+    return `<div${strip}>${line.split(' ').map((w) => {
     const hl = w.startsWith('*');
-    const dt = t - t0 - 0.08 * i++;
+    w = w.replace(/\*$/, '');
+    const dt = t - t0 - G(0.08, 0.06) * i++;
     const k = clamp01(dt / 0.3);
     const sc = dt <= 0 ? 0.3 : 0.3 + 0.7 * backOut(k);
+    if (MILL) return `<span${hl ? ' class="hl"' : ''} style="opacity:${dt <= 0 ? 0 : ease(k)};transform:translateY(${((1 - ease(k)) * 12).toFixed(2)}px)">${hl ? w.slice(1) : w}</span>`;
     return `<span${hl ? ' class="hl"' : ''} style="opacity:${dt <= 0 ? 0 : Math.min(1, k * 3) * out};transform:scale(${sc.toFixed(3)})">${hl ? w.slice(1) : w}</span>`;
-  }).join(' ')}</div>`).join('');
-  return { html, top, ...o };
+  }).join(' ')}</div>`;
+  }).join('');
+  return { html, top, mill: MILL, ...o };
 }
 /** An emoji sticker that pops in tilted at (x, y) from t0 to t1. */
 const sticker = (emoji, t, t0, t1, x, y, r) => (t < t0 || t > t1 ? null : { emoji, x, y, r, s: (0.3 + 0.7 * backOut(clamp01((t - t0) / 0.3))) * clamp01((t1 - t) / 0.15) });
@@ -253,8 +270,8 @@ for (let i = 0; i < secs(3.4); i++) {
     cam: C0,
     ui: UI({
       veil: 1,
-      pop: pop(["it's friday", 'night'], t, 0.15, 1.25, '45%', { dark: true }) ?? pop(['no rez.'], t, 1.3, 2.25, '45%', { dark: true }) ?? pop(["we're", '*cooked'], t, 2.3, 3.35, '45%', { dark: true }),
-      stk: sticker('💀', t, 2.65, 3.35, PHONE ? '72%' : '62%', PHONE ? '60%' : '62%', 12),
+      pop: pop(G(["it's friday", 'night'], ['friday,', '19:40.']), t, 0.15, 1.25, '45%', { dark: true }) ?? pop(G(['no rez.'], ['no reservation.']), t, 1.3, 2.25, '45%', { dark: true }) ?? pop(G(["we're", '*cooked'], ['the group chat', 'is getting *restless.*']), t, 2.3, 3.35, '45%', { dark: true }),
+      stk: MILL ? null : sticker('💀', t, 2.65, 3.35, PHONE ? '72%' : '62%', PHONE ? '60%' : '62%', 12),
     }),
   });
 }
@@ -265,7 +282,7 @@ for (let i = 0; i < secs(1.6); i++) {
   const k = ease(clamp01(t / 0.45));
   await shoot({
     cam: camAt(C0, C1, ease(clamp01(t / 3.4))), // one move from here into the belt
-    ui: UI({ veil: 1 - k, top: clamp01((t - 0.3) / 0.3), pop: pop(['wait.', 'seated.food'], t, 0.35, 1.6, TOPCAP), stk: sticker('👀', t, 0.75, 1.6, PHONE ? '82%' : '64%', PHONE ? '14%' : '30%', -10) }),
+    ui: UI({ veil: 1 - k, top: clamp01((t - 0.3) / 0.3), pop: pop(G(['wait.', 'seated.food'], ['enter', '*seated.food']), t, 0.35, 1.6, TOPCAP), stk: MILL ? null : sticker('👀', t, 0.75, 1.6, PHONE ? '82%' : '64%', PHONE ? '14%' : '30%', -10) }),
   });
 }
 
@@ -274,7 +291,7 @@ for (let i = 0; i < secs(3.2); i++) {
   const t = i / FPS;
   await shoot({
     cam: camAt(C0, C1, ease(clamp01((t + 1.6) / 3.4))),
-    ui: UI({ top: 1, pop: pop([`${facts.free} tables`, `*free ${FREE_WHEN}`], t, 0.5, 2.0, TOPCAP) ?? pop(['no cap.'], t, 2.05, 3.15, TOPCAP), stk: sticker('🍽️', t, 0.95, 2.0, PHONE ? '80%' : '66%', PHONE ? '30%' : '28%', 8) }),
+    ui: UI({ top: 1, pop: pop(G([`${facts.free} tables`, `*free ${FREE_WHEN}`], [`${facts.free} tables, *free*`, tonight ? 'tonight.' : 'this friday.']), t, 0.5, 2.0, TOPCAP) ?? pop(G(['no cap.'], ['read live from', 'their own systems.']), t, 2.05, 3.15, TOPCAP), stk: MILL ? null : sticker('🍽️', t, 0.95, 2.0, PHONE ? '80%' : '66%', PHONE ? '30%' : '28%', 8) }),
   });
 }
 
@@ -354,10 +371,10 @@ for (let i = 0; i < secs(TB + 1.0); i++) {
       cur,
       ring: ringAt(signAt, t, TC) ?? ringAt(DINNER ? timeAt : null, t, TT) ?? ringAt(bookAt, t, TB),
       pop:
-        pop([`${NAME}.`, 'impossible', 'to book'], t, 0.25, TS + 0.55, capTop, { right: capRight }) ??
-        pop([DINNER ? `friday ${DINNER}??` : 'friday??', '*FREE'], t, TS + 0.6, TB - 0.05, opened && PHONE ? '19%' : capTop, { right: capRight }) ??
-        pop(['booked.', '*ate.'], t, TB, TB + 1.0, opened && PHONE ? '19%' : capTop, { right: capRight }),
-      stk: sticker('🔥', t, 0.55, TS + 0.55, PHONE ? '82%' : '58%', PHONE ? '16%' : '12%', 10) ?? sticker('😭', t, TT - 0.3, TB - 0.05, PHONE ? '83%' : '58%', PHONE ? '16%' : '12%', -12) ?? sticker('✅', t, TB + 0.1, TB + 1.0, PHONE ? '80%' : '58%', PHONE ? '16%' : '12%', 8),
+        pop(G([`${NAME}.`, 'impossible', 'to book'], [`${NAME}.`, 'the one everyone', '"tried to book."']), t, 0.25, TS + 0.55, capTop, { right: capRight }) ??
+        pop(G([DINNER ? `friday ${DINNER}??` : 'friday??', '*FREE'], [DINNER ? `friday, ${DINNER}.` : 'friday.', '*available.']), t, TS + 0.6, TB - 0.05, opened && PHONE ? '19%' : capTop, { right: capRight }) ??
+        pop(G(['booked.', '*ate.'], ['booked.', '*natural wine* pending.']), t, TB, TB + 1.0, opened && PHONE ? '19%' : capTop, { right: capRight }),
+      stk: MILL ? null : sticker('🔥', t, 0.55, TS + 0.55, PHONE ? '82%' : '58%', PHONE ? '16%' : '12%', 10) ?? sticker('😭', t, TT - 0.3, TB - 0.05, PHONE ? '83%' : '58%', PHONE ? '16%' : '12%', -12) ?? sticker('✅', t, TB + 0.1, TB + 1.0, PHONE ? '80%' : '58%', PHONE ? '16%' : '12%', 8),
     }),
   });
 }
@@ -365,7 +382,7 @@ for (let i = 0; i < secs(TB + 1.0); i++) {
 // Scene 5 (about 14.6 to 18 s): the card goes, a quick pull out, the end card pops.
 const C4 = { ...tgt };
 const icon = await page.evaluate(() => document.querySelector('link[rel=icon]').href);
-const END = `<img src="${icon}" alt=""><b>seated.food</b><span>friday night: secured</span>`;
+const END = `<img src="${icon}" alt=""><b>seated.food</b><span>${G('friday night: secured', 'friday night, sorted.')}</span>`;
 let closed = false;
 for (let i = 0; i < secs(3.4); i++) {
   const t = i / FPS;
@@ -373,7 +390,7 @@ for (let i = 0; i < secs(3.4); i++) {
   const k = clamp01((t - 1.2) / 0.35);
   await shoot({
     cam: camAt(C4, C5, ease(clamp01(t / 1.4))),
-    ui: UI({ top: clamp01(1 - t / 0.2), side: closed ? 0 : clamp01(1 - t / 0.2), e: END, ea: Math.min(1, k * 2), veil: k * 0.6, stk: sticker('✨', t, 1.45, 3.4, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 14) }),
+    ui: UI({ top: clamp01(1 - t / 0.2), side: closed ? 0 : clamp01(1 - t / 0.2), e: END, ea: Math.min(1, k * 2), veil: k * 0.6, stk: MILL ? sticker('🥂', t, 1.45, 3.4, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 10) : sticker('✨', t, 1.45, 3.4, PHONE ? '78%' : '62%', PHONE ? '40%' : '33%', 14) }),
   });
   // The end card pops with the same overshoot as the words.
   await page.evaluate((sc) => { const e = document.getElementById('e'); e.style.transform = `translate(-50%, -50%) scale(${sc})`; }, t < 1.2 ? 0.3 : 0.3 + 0.7 * backOut(clamp01((t - 1.2) / 0.35)));
