@@ -59,7 +59,7 @@ await page.addStyleTag({
   #film .title { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; padding: 22px 34px 24px; }
   #film .title b { display: block; font-size: 44px; line-height: 1.1; font-weight: 600; }
   #film .title span { display: block; font-size: 22px; margin-top: 10px; color: #0f766e; }
-  #film .cap { left: 28px; bottom: 44px; font-size: 26px; line-height: 1.2; max-width: 560px; }
+  #film .cap { left: 28px; bottom: 44px; font-size: 26px; line-height: 1.2; max-width: 500px; }
   #film .cap small { display: block; font-family: system-ui, sans-serif; font-size: 15px; margin-top: 6px; color: #625d6b; }
   #film .veil { inset: 0; position: absolute; background: #fffaf0; }
   #film .story { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: left; background: none; box-shadow: none; width: 640px; }
@@ -219,13 +219,25 @@ for (let i = 0; i < secs(5); i++) {
   await shoot({ cam: camAt(c2start, C1, ease(clamp01(t / 2.8))), ui: UI({ top: 1, c: CAP3, ca: fade(t, 0.3, 4.8, 0.3) }) });
 }
 
-// Scene 4 (12 to 19.5 s): over to the hard-to-get place, tap its sign, the card opens, tap Book.
+// Scene 4 (12 to 20.6 s): over to the hard-to-get place, tap its sign, the card opens on its photo and Instagram,
+// then a dinner time and Book (Joel, 24 Nov 2026: the photo went by unseen, and "Book 10:00" is no Friday night).
 const from4 = { x: W * 0.62, y: H * 0.8 };
+const DINNER = facts.times.find((x) => x >= '17:00') ?? null; // none read yet: Book alone
 const CAP4a = `${facts.name}. Usually booked months ahead.`;
-const CAP4b = `Free on Friday. Book on their own page.`;
-let opened = false, signAt = null, tgt = null, bookAt = null;
-const T0 = 1.6, TC = 2.6, TB = 5.4; // camera arrives, tap the sign, tap Book
-for (let i = 0; i < secs(7.5); i++) {
+const CAP4b = `${DINNER ? `Friday ${DINNER}. Free.` : 'Free on Friday.'}<small>Book on their own page.</small>`;
+let opened = false, signAt = null, tgt = null, timeAt = null, bookAt = null, picked = false;
+const T0 = 1.6, TC = 2.6; // camera arrives, tap the sign
+const TS = TC + 1.4; // the photo has been seen; the card scrolls
+const TT = TS + 1.6; // tap the dinner time
+const TB = DINNER ? TT + 1.3 : TS + 1.6; // tap Book
+const findBook = () => page.evaluate(() => {
+  const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
+  if (!b) return null;
+  const r = b.getBoundingClientRect();
+  if (r.bottom > innerHeight || r.top < 0) return { off: r.top };
+  return { x: r.x + Math.min(r.width / 2, 60), y: r.y + r.height / 2, label: b.textContent.trim() };
+});
+for (let i = 0; i < secs(TB + 1.7); i++) {
   const t = i / FPS;
   if (!signAt && t >= T0 + 0.05) {
     const hit = await page.evaluate((id) => window.seatedMap.hits.filter((h) => h.id === id).map((h) => ({ x: h.x, y: h.y, w: h.w, h: h.h })), HERO);
@@ -237,9 +249,9 @@ for (let i = 0; i < secs(7.5); i++) {
     // The map would fly there itself, fast; the film takes its target and eases there instead.
     tgt = await page.evaluate((id) => { const v = window.seatedMap; v.onSelect(id); const t = v.target ?? v.cam; return { x: t.x, y: t.y, z: t.z }; }, HERO);
   }
-  if (opened && t >= TC + 0.6 && t < TC + 1.4) {
-    // Scroll the card until its Book button is in sight.
-    const k = ease(clamp01((t - TC - 0.6) / 0.7));
+  if (opened && t >= TS && t < TS + 0.8) {
+    // Scroll the card until its Book button (and the dinner times above it) are in sight.
+    const k = ease(clamp01((t - TS) / 0.7));
     await page.evaluate((k) => {
       const s = document.querySelector('.card-scroll');
       const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
@@ -248,34 +260,42 @@ for (let i = 0; i < secs(7.5); i++) {
       s.scrollTop = k * s.__to;
     }, k);
   }
-  if (opened && !bookAt && t >= TC + 1.4) {
-    bookAt = await page.evaluate(() => {
-      const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
+  if (opened && DINNER && !timeAt && t >= TS + 0.85) {
+    timeAt = await page.evaluate((hm) => {
+      const b = [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm);
       if (!b) return null;
-      const r0 = b.getBoundingClientRect();
-      if (r0.bottom > innerHeight || r0.top < 0) return { off: r0.top };
       const r = b.getBoundingClientRect();
-      return { x: r.x + Math.min(r.width / 2, 60), y: r.y + r.height / 2 };
-    });
+      return r.bottom > innerHeight || r.top < 0 ? { off: r.top } : { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }, DINNER);
+    if (!timeAt || timeAt.off != null) throw new Error(`the ${DINNER} button of ${HERO} is missing or off screen: ${JSON.stringify(timeAt)}`);
+  }
+  if (DINNER && !picked && t >= TT) {
+    picked = true;
+    await page.evaluate((hm) => [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm).click(), DINNER);
+  }
+  if (opened && !bookAt && t >= (DINNER ? TT + 0.1 : TS + 0.85)) {
+    bookAt = await findBook();
     if (!bookAt || bookAt.off != null) throw new Error(`the Book button of ${HERO} is missing or off screen: ${JSON.stringify(bookAt)}`);
+    if (DINNER && !bookAt.label.includes(DINNER)) throw new Error(`Book does not follow the picked time: "${bookAt.label}"`);
   }
   let cur = null;
   if (t >= 0.3 && t < TC + 0.5) cur = signAt ? tap(from4, signAt, t, T0, TC - 0.15) : from4;
-  else if (bookAt && t >= TC + 1.5 && t < TB + 0.9) cur = tap(signAt, bookAt, t, TC + 1.5, TB - 0.15);
+  else if (DINNER && timeAt && t >= TS + 0.9 && t < TT + 0.3) cur = tap(signAt, timeAt, t, TS + 0.9, TT - 0.15);
+  else if (bookAt && t >= (DINNER ? TT + 0.3 : TS + 0.9) && t < TB + 0.9) cur = tap(DINNER ? timeAt : signAt, bookAt, t, DINNER ? TT + 0.3 : TS + 0.9, TB - 0.15);
   await shoot({
     cam: tgt ? camAt(CH, tgt, ease(clamp01((t - TC) / 1.4))) : camAt(C1, CH, ease(clamp01(t / T0))),
     ui: UI({
       top: 1,
       side: opened ? clamp01((t - TC) / 0.25) : 0,
       cur,
-      ring: ringAt(signAt, t, TC) ?? ringAt(bookAt, t, TB),
-      c: t < 4.6 ? CAP4a : CAP4b,
-      ca: t < 4.6 ? fade(t, TC + 0.4, 4.5, 0.25) : fade(t, 4.7, 7.4, 0.25),
+      ring: ringAt(signAt, t, TC) ?? ringAt(DINNER ? timeAt : null, t, TT) ?? ringAt(bookAt, t, TB),
+      c: t < TS + 0.9 ? CAP4a : CAP4b,
+      ca: t < TS + 0.9 ? fade(t, TC + 0.4, TS + 0.8, 0.25) : fade(t, TS + 1.0, TB + 1.6, 0.25),
     }),
   });
 }
 
-// Scene 5 (19.5 to 25.5 s): the card closes, the camera pulls out over a green city, the end card.
+// Scene 5 (20.6 to 26.6 s): the card closes, the camera pulls out over a green city, the end card.
 const C4 = { ...tgt };
 const icon = await page.evaluate(() => document.querySelector('link[rel=icon]').href);
 const END = `<img src="${icon}" alt=""><b>seated.food</b><span>Friday night, sorted.</span>`;
