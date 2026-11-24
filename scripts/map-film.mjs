@@ -21,12 +21,12 @@ const PHONE = process.env.FORMAT === 'phone';
 const MILL = process.env.STYLE === 'millennial';
 const G = (genz, mill) => (MILL ? mill : genz);
 /** STYLE=real: looks like a screen recording someone posted (Joel, 24 Nov 2026: "reads too much like a script", "not just
- * text but how it's shown"): a status bar and an address bar around the page, finger taps and flings, jump cuts, one hook
- * line and one reaction. Phone only. The two bars are written as $F/bar-top.png and $F/bar-bottom.png; encode with
- * -i frames/%05d.png -i bar-top.png -i bar-bottom.png -filter_complex "[0]scale=1080:1704:flags=lanczos[v];[1][v][2]vstack=3,crop=1080:1920:0:0". */
+ * text but how it's shown"; then "POV is too small. Too much going on"): a status bar over the page, taps, a fling and
+ * a pinch, one big hook line and one reaction. Phone only. The bar is written as $F/bar-top.png; encode with
+ * -i frames/%05d.png -i bar-top.png -filter_complex "[0]scale=1080:1848:flags=lanczos[v];[1][v]vstack=2". */
 const REAL = PHONE && process.env.STYLE === 'real';
-const BAR_TOP = 24, BAR_BOTTOM = 48; // CSS px of the phone's status bar and the browser's address bar
-const [W, H] = PHONE ? [360, REAL ? 640 - BAR_TOP - BAR_BOTTOM : 640] : [960, 540];
+const BAR_TOP = 24; // CSS px of the phone's status bar
+const [W, H] = PHONE ? [360, REAL ? 640 - BAR_TOP : 640] : [960, 540];
 
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 4 });
@@ -267,39 +267,36 @@ const ringAt = (p, t, t0) => (p && t >= t0 && t < t0 + 0.45 ? { x: p.x, y: p.y, 
 const tap = (from, to, t, t0, t1) => { const m = ease(clamp01((t - t0) / (t1 - t0))); return { x: lerp(from.x, to.x, m), y: lerp(from.y, to.y, m) }; };
 
 if (REAL) {
-  // The two bars around the page, drawn once at 3x (1080 px wide).
-  const bars = await ctx.browser().newPage({ viewport: { width: 360, height: BAR_TOP + BAR_BOTTOM }, deviceScaleFactor: 3 });
+  // The status bar, drawn once at 3x (1080 px wide).
+  const bars = await ctx.browser().newPage({ viewport: { width: 360, height: BAR_TOP }, deviceScaleFactor: 3 });
   await bars.setContent(`<style>body{margin:0;font-family:-apple-system,'SF Pro Text','Helvetica Neue',sans-serif}
     #t{height:${BAR_TOP}px;background:#fffaf0;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 28px;font-weight:600;font-size:14px;color:#111}
-    #t .i{display:flex;gap:5px;align-items:center}
-    #b{height:${BAR_BOTTOM}px;background:#f4f3f1;border-top:1px solid #dddad5;display:flex;align-items:center;justify-content:center}
-    #b div{width:300px;height:32px;border-radius:10px;background:#e6e4e0;display:flex;align-items:center;justify-content:center;font-size:14px;color:#222}</style>
+    #t .i{display:flex;gap:5px;align-items:center}</style>
     <div id="t"><span>19:04</span><span class="i">
       <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
       <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4a9 9 0 0 1 12 0"/><path d="M4 6.6a5.4 5.4 0 0 1 7 0"/><circle cx="7.5" cy="9.3" r="0.9" fill="#111"/></svg>
       <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="#111" opacity=".4"/><rect x="2" y="2" width="12" height="8" rx="1.6" fill="#111"/><rect x="22.5" y="4" width="1.6" height="4" rx=".8" fill="#111" opacity=".4"/></svg>
-    </span></div><div id="b"><div>seated.food</div></div>`);
+    </span></div>`);
   await bars.locator('#t').screenshot({ path: `${F}/bar-top.png` });
-  await bars.locator('#b').screenshot({ path: `${F}/bar-bottom.png` });
   await bars.close();
 
   // Text as the apps draw it: black on a white rounded box, placed once. A touch is a soft grey dot, as with "show touches".
   await page.addStyleTag({ content: `
-    #film .tt { position: absolute; left: 0; right: 0; text-align: center; font: 600 16px/1.3 -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; letter-spacing: -0.01em; }
-    #film .tt span { background: #fff; color: #111; padding: 3px 8px; border-radius: 6px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+    #film .tt { position: absolute; left: 0; right: 0; text-align: center; font: 700 23px/1.32 -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; letter-spacing: -0.01em; }
+    #film .tt span { background: #fff; color: #111; padding: 3px 10px; border-radius: 8px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
     #film .dot { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(255,255,255,.55); border: 1px solid rgba(0,0,0,.22); box-shadow: 0 1px 4px rgba(0,0,0,.2); }` });
   await page.evaluate(() => {
     const f = document.getElementById('film');
-    f.insertAdjacentHTML('beforeend', '<div class="tt" id="h" style="top:64px"></div><div class="tt" id="x" style="top:122px"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div>');
+    f.insertAdjacentHTML('beforeend', '<div class="tt" id="h" style="top:60px"></div><div class="tt" id="x" style="top:140px"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div>');
   });
-  const HOOK = 'pov: friday 19:00 and nobody booked anything';
+  const HOOK = 'pov: friday 19:00<br>and nobody booked anything';
   const WOW = `wait ${facts.name.toLowerCase()} has a table??`;
   const DINNER = facts.times.find((x) => x >= '17:00') ?? null;
   // One frame: camera, page chrome, text and up to two touches.
   const real = async (cam, o = {}) => {
     await page.evaluate(({ hook, wow, dots }) => {
       const $ = (id) => document.getElementById(id);
-      $('h').innerHTML = hook ? `<span>${hook}</span>` : '';
+      $('h').innerHTML = hook ? hook.split('<br>').map((l) => `<span>${l}</span>`).join('<br>') : '';
       $('x').innerHTML = wow ? `<span>${wow}</span>` : '';
       ['d1', 'd2'].forEach((id, i) => { const d = $(id), p = dots[i]; d.style.display = p ? '' : 'none'; if (p) { d.style.left = `${p.x}px`; d.style.top = `${p.y}px`; d.style.transform = `scale(${p.s ?? 1})`; } });
     }, { hook: HOOK, wow: o.wow ? WOW : null, dots: o.dots ?? [] });
@@ -307,24 +304,17 @@ if (REAL) {
   };
   // A fling: the finger drags for 0.2 s, then the map coasts and slows down, as under a real thumb.
   const fling = (a, b, u) => { const k = u < 0.2 ? (u / 0.2) * 0.3 : 0.3 + 0.7 * (1 - Math.exp(-5 * (u - 0.2))) / (1 - Math.exp(-5 * 0.8)); return camAt(a, b, Math.min(1, k)); };
-  const flingDot = (a, b, u, from) => (u >= 0.24 ? [] : [{ x: from.x - (b.x - a.x) * a.z * Math.min(1, u / 0.2) * 0.3, y: from.y - (b.y - a.y) * a.z * Math.min(1, u / 0.2) * 0.3, s: u < 0.04 ? 0.7 + u * 7.5 : 1 }]);
-  const pinchDots = (u, c, r0, r1) => (u >= 1 ? [] : [{ x: c.x - lerp(r0, r1, ease(u)), y: c.y + lerp(r0, r1, ease(u)) * 0.6 }, { x: c.x + lerp(r0, r1, ease(u)), y: c.y - lerp(r0, r1, ease(u)) * 0.6 }]);
   const tapDot = (p, t, t0) => (p && t >= t0 - 0.12 && t < t0 + 0.1 ? [{ x: p.x, y: p.y, s: t < t0 ? 0.85 : 1 }] : []);
   const hold = async (cam, s, o) => { for (let i = 0; i < secs(s); i++) await real(cam, o); };
-  const center = { x: W / 2, y: H / 2 };
 
   // 0 to 1.1 s: the city on Friday. Then a thumb flings toward the canal belt.
   const A = C0, B = { x: lerp(C0.x, C1.x, 0.85), y: lerp(C0.y, C1.y, 0.85), z: C0.z };
   await hold(A, 1.1);
-  for (let i = 0; i < secs(1.1); i++) { const u = i / FPS; await real(fling(A, B, u / 1.0), { dots: flingDot(A, B, u / 1.0, { x: W * 0.62, y: H * 0.62 }) }); }
-  // A pinch into the belt, a look around.
-  for (let i = 0; i < secs(0.7); i++) { const u = i / FPS / 0.6; await real(camAt(B, C1, ease(Math.min(1, u))), { dots: pinchDots(u, center, 30, 85) }); }
+  for (let i = 0; i < secs(1.1); i++) await real(fling(A, B, i / FPS / 1.0));
+  // A pinch into the belt, a look around, a pinch in to the hero.
+  for (let i = 0; i < secs(0.7); i++) await real(camAt(B, C1, ease(Math.min(1, i / FPS / 0.6))));
   await hold(C1, 1.4);
-  // A pinch in toward the hero, a little too far, then a small drag back.
-  const over = { x: CH.x + 60, y: CH.y + 90, z: CH.z };
-  for (let i = 0; i < secs(0.9); i++) { const u = i / FPS / 0.75; await real(camAt(C1, over, ease(Math.min(1, u))), { dots: pinchDots(u, { x: W * 0.45, y: H * 0.45 }, 25, 95) }); }
-  await hold(over, 0.35);
-  for (let i = 0; i < secs(0.8); i++) { const u = i / FPS / 0.7; await real(fling(over, CH, u), { dots: flingDot(over, CH, u, { x: W * 0.5, y: H * 0.55 }) }); }
+  for (let i = 0; i < secs(0.9); i++) await real(camAt(C1, CH, ease(Math.min(1, i / FPS / 0.8))));
   await hold(CH, 0.5);
 
   // Tap the sign; the card comes up and is read.
@@ -350,7 +340,7 @@ if (REAL) {
     const u = i / FPS;
     const k = u < 0.18 ? (u / 0.18) * 0.4 : 0.4 + 0.6 * (1 - Math.exp(-6 * (u - 0.18))) / (1 - Math.exp(-6 * 0.72));
     await page.evaluate((y) => { document.querySelector('.card-scroll').scrollTop = y; }, Math.min(1, k) * scrollTo);
-    await real(CH, { side: 1, wow: u > 0.55, dots: u < 0.2 ? [{ x: W * 0.55, y: H * 0.85 - (u / 0.18) * 0.4 * scrollTo }] : [] });
+    await real(CH, { side: 1, wow: u > 0.55 });
   }
   const box = (sel, label) => page.evaluate(({ sel, label }) => {
     const b = [...document.querySelectorAll(sel)].find((x) => (label ? x.textContent.trim() === label : /^Book/.test(x.textContent.trim())));
