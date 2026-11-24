@@ -482,7 +482,8 @@ export class MapView {
   // ── frame ────────────────────────────────────────────────────────────────
 
   private resize(): void {
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // At most 2x for speed; the launch film (scripts/map-film.mjs) draws at 4x and scales down, for half-pixel motion.
+    this.dpr = Math.min(window.devicePixelRatio || 1, (window as { __maxDpr?: number }).__maxDpr ?? 2);
     const r = this.canvas.getBoundingClientRect();
     this.canvas.width = Math.max(1, Math.round(r.width * this.dpr));
     this.canvas.height = Math.max(1, Math.round(r.height * this.dpr));
@@ -663,6 +664,14 @@ export class MapView {
     for (let y = this.fogAt.y; y < H; y += tile) for (let x = this.fogAt.x; x < W; x += tile) g.drawImage(this.fog!, x, y, tile, tile);
   }
 
+  /**
+   * A screen position rounded to whole device pixels: on a 2x screen a slow pan moved in 2-pixel steps with a still frame
+   * between (CSS-pixel rounding; the launch film stuttered, Joel 24 Nov 2026). Everything drawn from it stays on device pixels.
+   */
+  private snap(v: number): number {
+    return Math.round(v * this.dpr) / this.dpr;
+  }
+
   private drawLevel(L: 'hi' | 0 | 1, toX: (x: number) => number, toY: (y: number) => number, W: number, H: number, ours = false): number {
     const { k, span, has, url } = ours ? this.world.oursLevel(L) : this.world.level(L);
     const z = this.cam.z;
@@ -679,11 +688,11 @@ export class MapView {
           if (!t.failed) waiting++;
           continue;
         }
-        // Whole pixels, so neighbouring chunks meet without a seam.
-        const sx = Math.round(toX(cx * span));
-        const sy = Math.round(toY(cy * span));
-        const ex = Math.round(toX(cx * span + (t.img.width / k)));
-        const ey = Math.round(toY(cy * span + (t.img.height / k)));
+        // Whole device pixels, so neighbouring chunks meet without a seam and a slow pan moves in device-pixel steps.
+        const sx = this.snap(toX(cx * span));
+        const sy = this.snap(toY(cy * span));
+        const ex = this.snap(toX(cx * span + (t.img.width / k)));
+        const ey = this.snap(toY(cy * span + (t.img.height / k)));
         this.ctx.drawImage(t.img, sx, sy, ex - sx, ey - sy);
       }
     }
@@ -715,7 +724,7 @@ export class MapView {
     // The overview underneath his chunks: it shows while chunks load, and alone when far away.
     if (this.overview?.ok) {
       ctx.imageSmoothingEnabled = z < 0.125;
-      ctx.drawImage(this.overview.img, Math.round(toX(0)), Math.round(toY(0)), Math.round(this.world.width * z), Math.round(this.world.height * z));
+      ctx.drawImage(this.overview.img, this.snap(toX(0)), this.snap(toY(0)), this.snap(this.world.width * z), this.snap(this.world.height * z));
       ctx.imageSmoothingEnabled = false;
     }
     // The level whose pixels are at least as fine as the screen's, so images are only ever enlarged.
@@ -738,7 +747,7 @@ export class MapView {
     // only where his art is missing or fades out in a dither, and never the rest of his drawing.
     let oursWaiting = 0;
     const ext = this.world.ours?.levels.at(-1);
-    if (this.oursOverview?.ok && ext) ctx.drawImage(this.oursOverview.img, Math.round(toX(ext.x / ext.k)), Math.round(toY(ext.y / ext.k)), Math.round(ext.w / ext.k * z), Math.round(ext.h / ext.k * z));
+    if (this.oursOverview?.ok && ext) ctx.drawImage(this.oursOverview.img, this.snap(toX(ext.x / ext.k)), this.snap(toY(ext.y / ext.k)), this.snap(ext.w / ext.k * z), this.snap(ext.h / ext.k * z));
     if (this.world.ours && (z >= 0.25 || this.world.onlyOurs)) {
       ctx.imageSmoothingEnabled = z < 0.25; // far out (only our art): its 1/4 level, shrunk
       oursWaiting = this.drawLevel(z >= 1 ? 'hi' : z >= 0.5 ? 0 : 1, toX, toY, W, H, true);
@@ -748,7 +757,7 @@ export class MapView {
     this.drawFogEdge(toX, toY, W, H);
     this.drawMarkers(ctx, toX, toY, W, H, now);
     // You go over the signs: a sign never hides where you are.
-    if (this.you) this.drawYou(ctx, Math.round(toX(this.you.x)), Math.round(toY(this.you.y)), now);
+    if (this.you) this.drawYou(ctx, this.snap(toX(this.you.x)), this.snap(toY(this.you.y)), now);
   }
 
   /** You are here: your character floats over a small ring on the ground, bobbing (still when motion is reduced). */
@@ -785,8 +794,8 @@ export class MapView {
     });
     const drawn: Array<{ m: Marker; x: number; y: number; full: boolean }> = [];
     for (const m of order) {
-      const x = Math.round(toX(m.ax));
-      const y = Math.round(toY(m.ay));
+      const x = this.snap(toX(m.ax));
+      const y = this.snap(toY(m.ay));
       if (x < -120 || y < -60 || x > W + 120 || y > H + 60) continue;
       // Names from the city view in; zoomed further out only free places keep theirs. Crowded names shrink to pins.
       const showName = z >= 0.25 || m.id === this.selected || m.id === this.hovered || (z >= 0.125 && m.rank >= 300);

@@ -3,7 +3,7 @@
 // so every frame is sharp and the camera moves at an even 60 fps. Read data.json from the Blob store once (never poll
 // seated.food), save it as $F/data-film.json, start a demo server on :4330 (`PORT=4330 npx tsx src/server/main.ts --demo`
 // after `npm run build`), then: F=<out dir> node scripts/map-film.mjs. Encode: ffmpeg -framerate 60 -i $F/frames/%05d.png
-// -c:v libx264 -crf 16 -pix_fmt yuv420p film.mp4. The story: Friday, no reservation, the map, one hard-to-get place free
+// -vf scale=1920:1080:flags=lanczos -c:v libx264 -crf 16 -pix_fmt yuv420p film.mp4 (frames are 3840 x 2160). The story: Friday, no reservation, the map, one hard-to-get place free
 // (HERO, default gitane; it must be free on the coming Friday in the snapshot), its Book button, the end card. Rendered on
 // a Friday itself, the map reads "tonight" and the card shows times.
 import { chromium } from 'playwright';
@@ -16,8 +16,9 @@ const FPS = 60;
 const W = 960, H = 540;
 
 const b = await chromium.launch();
-const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2 });
+const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 4 });
 await ctx.addInitScript(() => {
+  window.__maxDpr = 4; // drawn at 4x, scaled down to 1920: half-pixel motion, no stair steps (Joel, 24 Nov 2026: "so laggy")
   localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true }));
   localStorage.setItem('seated.map.hello', JSON.stringify({ seen: true }));
   // The virtual clock: the map's loop runs only when the film steps it.
