@@ -29,7 +29,7 @@ function restaurant(id: string, roof: number | null): MapRestaurant {
     id, name: id, roof, michelin: null, g: [],
     lat: 52.3731, lng: 4.8926, area: 'Centrum', kind: 'bistro',
     platform: 'Fixture', site: null, hot: null, why: null,
-    readable: true, d: 'o'.repeat(63), t: {}, book: {},
+    readable: true, d: 'o'.repeat(63), t: {}, book: {}, ig: null, photo: null,
     link: 'https://fixture.example', win: 30, readAt: null,
   };
 }

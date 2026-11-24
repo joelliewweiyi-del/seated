@@ -24,6 +24,9 @@ export interface Place {
   guides?: string[];
   /** Weekdays it serves in a normal week (0 = Sunday), from data/map-hours.json; unknown when absent. */
   openDays?: number[];
+  /** Its Instagram handle and its own site's share photo, from data/map-social.json (scripts/map-social.ts). */
+  ig?: string | null;
+  photo?: string | null;
 }
 
 /** A restaurant guide (press or creator) whose picks the map can show as a lens. */
@@ -76,6 +79,10 @@ export interface MapRestaurant {
   /** How many days ahead the calendar seems to open, from the last bookable day. Null = unknown. */
   win: number | null;
   readAt: string | null;
+  /** Instagram handle without the @, as the restaurant's own site links it. */
+  ig: string | null;
+  /** The share photo on the restaurant's own site (og:image), linked from there, never copied. */
+  photo: string | null;
 }
 
 export interface MapData {
@@ -95,6 +102,7 @@ const OPTOUT_URL = new URL('../../data/map-optout.json', import.meta.url);
 const MICHELIN_URL = new URL('../../data/map-michelin.json', import.meta.url);
 const GUIDES_URL = new URL('../../data/map-guides.json', import.meta.url);
 const HOURS_URL = new URL('../../data/map-hours.json', import.meta.url);
+const SOCIAL_URL = new URL('../../data/map-social.json', import.meta.url);
 /** Two-letter weekdays as in OpenStreetMap's opening_hours, indexed like Date.getUTCDay(). */
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 /** The guide in data/map-guides.json whose picks are every restaurant in data/map-michelin.json. */
@@ -126,6 +134,8 @@ export function loadPlaces(): Record<string, Place> {
   }
   const hours = JSON.parse(readFileSync(HOURS_URL, 'utf8')) as { restaurants: Record<string, { open: string[] }> };
   for (const [id, { open }] of Object.entries(hours.restaurants)) if (places[id]) places[id].openDays = open.map((d) => WEEKDAYS.indexOf(d));
+  const social = JSON.parse(readFileSync(SOCIAL_URL, 'utf8')) as Record<string, { ig: string | null; photo: string | null }>;
+  for (const [id, { ig, photo }] of Object.entries(social)) if (places[id]) Object.assign(places[id], { ig, photo });
   return places;
 }
 
@@ -265,6 +275,8 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
       link: platform && r.platformUid ? platform.bookingUrl(r, start, '19:00', CENSUS_PARTY) : r.website,
       win: lastBookable ? daysBetween(readDay(reads.get(r.id)?.readAt) ?? start, lastBookable) : null,
       readAt: reads.get(r.id)?.readAt ?? null,
+      ig: place.ig ?? null,
+      photo: place.photo ?? null,
     });
   }
   // Only guides with enough picks on the map are listed; a restaurant names only listed guides.

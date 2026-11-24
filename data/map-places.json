@@ -375,6 +375,14 @@
   "source": "site: Reserveer nu Ontdek Lindengracht 90, 1015 KK Amsterdam",
   "roof": 17
  },
+ "dame-aan-de-kade": {
+  "lat": 52.353025,
+  "lng": 4.887176,
+  "area": "Oude Pijp",
+  "kind": "brasserie",
+  "source": "list",
+  "roof": 16.5
+ },
  "de-belhamel": {
   "lat": 52.379424,
   "lng": 4.892034,
@@ -478,6 +486,14 @@
   "kind": "fine",
   "source": "list",
   "roof": 23
+ },
+ "franzen": {
+  "lat": 52.355044,
+  "lng": 4.87384,
+  "area": "Museumkwartier",
+  "kind": "bistro",
+  "source": "list",
+  "roof": 17.5
  },
  "fuku-ramen": {
   "lat": 52.355249,
@@ -686,6 +702,14 @@
   "source": "list",
   "roof": 20
  },
+ "kims-so-korean-food": {
+  "lat": 52.37357,
+  "lng": 4.899955,
+  "area": "Burgwallen Oude Zijde",
+  "kind": "bistro",
+  "source": "list",
+  "roof": 12.5
+ },
  "kims-so-oost": {
   "lat": 52.361664,
   "lng": 4.924908,
@@ -693,6 +717,14 @@
   "kind": "bistro",
   "source": "site: Linnaeusstraat 35F, 1093 EE Amsterdam",
   "roof": 15.5
+ },
+ "kiri": {
+  "lat": 52.348585,
+  "lng": 4.893625,
+  "area": "Nieuwe Pijp",
+  "kind": "japanese",
+  "source": "list",
+  "roof": 80.5
  },
  "klaproos": {
   "lat": 52.39415,
@@ -758,6 +790,14 @@
   "source": "list",
   "roof": 17
  },
+ "mesa-mesa": {
+  "lat": 52.3574,
+  "lng": 4.891032,
+  "area": "Oude Pijp",
+  "kind": "bistro",
+  "source": "list",
+  "roof": 42
+ },
  "mont-blanc": {
   "lat": 52.356327,
   "lng": 4.898765,
@@ -820,6 +860,14 @@
   "kind": "wine",
   "source": "list",
   "roof": 9.5
+ },
+ "nk-thai-noodles": {
+  "lat": 52.35962,
+  "lng": 4.893224,
+  "area": "De Weteringschans",
+  "kind": "bistro",
+  "source": "list",
+  "roof": 22.5
  },
  "nnea": {
   "lat": 52.378004,
@@ -1100,6 +1148,14 @@
   "source": "list",
   "roof": 14
  },
+ "taste-of-culture": {
+  "lat": 52.363091,
+  "lng": 4.885125,
+  "area": "De Weteringschans",
+  "kind": "bistro",
+  "source": "list",
+  "roof": 13
+ },
  "testamatta": {
   "lat": 52.362089,
   "lng": 4.873494,
@@ -1201,6 +1257,14 @@
   "lng": 4.872356,
   "area": "Van Lennepbuurt",
   "kind": "pizza",
+  "source": "list",
+  "roof": 18
+ },
+ "vin-fou": {
+  "lat": 52.361369,
+  "lng": 4.865076,
+  "area": "Helmersbuurt",
+  "kind": "wine",
   "source": "list",
   "roof": 18
  },

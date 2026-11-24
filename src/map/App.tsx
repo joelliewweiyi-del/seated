@@ -1261,6 +1261,15 @@ function AddToList({ r, you, onCharacter }: { r: MapRestaurant; you: You; onChar
   );
 }
 
+/** Their Instagram as a tilted sticker: the handle their own site links, opened on Instagram. */
+function IgSticker({ ig }: { ig: string }) {
+  return (
+    <a className="sticker ig" href={`https://www.instagram.com/${ig}/`} target="_blank" rel="noopener noreferrer" title={`@${ig} on Instagram`}>
+      <span className="ig-dot" aria-hidden="true" />@{ig}
+    </a>
+  );
+}
+
 function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onLens, you, onCharacter }: CardProps) {
   const times = freeTimes(r, day);
   const lunch = times.filter((t) => t < '16:00');
@@ -1279,15 +1288,36 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
   const lead = (weekday(data.start) + 6) % 7;
   const cells: Array<string | null> = [...Array(lead).fill(null), ...Array.from({ length: data.days }, (_, i) => dateAt(data, i))];
   const [scroller, more, check] = useMore<HTMLDivElement>(r.id);
+  const [noPhoto, setNoPhoto] = useState(false);
+  useEffect(() => setNoPhoto(false), [r.id]);
   return (
     <section className="px card">
       <div className="card-scroll" ref={scroller} onScroll={check}>
-        <div className="room">
-          <RoomCanvas kind={r.kind} status={status} free={times.length || 3} seed={seed} />
-          <button className="btn small close" onClick={onClose} aria-label="Close">
-            ✕
-          </button>
-        </div>
+        {/* Their own photo with stickers on it (Joel, 24 Nov 2026: "add the link to the Instagram and photos. Very Gen Z"):
+            the Instagram handle and our pixel room. A photo that fails to load falls back to the room alone. */}
+        {r.photo && !noPhoto ? (
+          <div className="room snap">
+            <img className="shot" src={r.photo} alt={`${r.name}, from their own site`} referrerPolicy="no-referrer" onError={() => setNoPhoto(true)} />
+            <a className="sticker credit" href={r.site ?? r.photo} target="_blank" rel="noopener noreferrer">
+              pic: their site ↗
+            </a>
+            <div className="sticker mini-room" aria-hidden="true">
+              <RoomCanvas kind={r.kind} status={status} free={times.length || 3} seed={seed} />
+            </div>
+            {r.ig && <IgSticker ig={r.ig} />}
+            <button className="btn small close" onClick={onClose} aria-label="Close">
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div className="room">
+            <RoomCanvas kind={r.kind} status={status} free={times.length || 3} seed={seed} />
+            {r.ig && <IgSticker ig={r.ig} />}
+            <button className="btn small close" onClick={onClose} aria-label="Close">
+              ✕
+            </button>
+          </div>
+        )}
         <div className="card-body">
           <div className="title-row">
             <h2>{r.name}</h2>

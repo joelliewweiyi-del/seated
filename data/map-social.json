@@ -1,0 +1,413 @@
+{
+  "alba": {
+    "ig": "alba.ams",
+    "photo": "https://static.wixstatic.com/media/396d30_e6b9072c62684a8b970df813d88f2fdd~mv2.jpg/v1/fill/w_2500,h_3749,al_c/396d30_e6b9072c62684a8b970df813d88f2fdd~mv2.jpg",
+    "from": "https://www.alba-amsterdam.nl/"
+  },
+  "bacalar": {
+    "ig": null,
+    "photo": null,
+    "from": "https://bacalar.amsterdam/"
+  },
+  "badcuyp": {
+    "ig": "badcuyp",
+    "photo": null,
+    "from": "https://badcuypamsterdam.nl/",
+    "fixed": true
+  },
+  "bak": {
+    "ig": "bakrestaurant",
+    "photo": null,
+    "from": "https://bakrestaurant.nl/"
+  },
+  "bar-centraal": {
+    "ig": "barcentraalamsterdam",
+    "photo": null,
+    "from": "https://barcentraal.nl/"
+  },
+  "barracuda": {
+    "ig": "restaurant_barracuda_amsterdam",
+    "photo": null,
+    "from": "https://www.barracuda.amsterdam/"
+  },
+  "bisous": {
+    "ig": "bisous__official",
+    "photo": "https://bisous-official.com/wp-content/uploads/2024/05/Bisous-002-24-05-by-RVDA-18657a.jpg",
+    "from": "https://bisous-official.com/"
+  },
+  "bistro-de-la-mer": {
+    "ig": "bistrodelamerams",
+    "photo": "https://static.wixstatic.com/media/396d30_7e69cdca1f694035905cff1c434049c5%7Emv2.jpg/v1/fit/w_2500,h_1330,al_c/396d30_7e69cdca1f694035905cff1c434049c5%7Emv2.jpg",
+    "from": "https://www.bistrodelamer.com/"
+  },
+  "bolenius": {
+    "ig": "boleniusrembrandtpark",
+    "photo": null,
+    "from": "https://bolenius-rembrandtpark.nl/",
+    "fixed": true
+  },
+  "bon-burger": {
+    "ig": "bonburgerbar",
+    "photo": null,
+    "from": "https://www.bonburger.nl/"
+  },
+  "bon-burger-noord": {
+    "ig": null,
+    "photo": null,
+    "from": "https://www.bonburgernoord.nl/"
+  },
+  "boon-de-koot": {
+    "ig": "boonendekoot",
+    "photo": "https://static.wixstatic.com/media/396d30_f799f154a17b41b2b4d3b7792763687d%7Emv2.jpg/v1/fit/w_2500,h_1330,al_c/396d30_f799f154a17b41b2b4d3b7792763687d%7Emv2.jpg",
+    "from": "https://www.boonendekoot.nl/boonendekoot"
+  },
+  "bottleshop": {
+    "ig": "bottleshop.ams",
+    "photo": null,
+    "from": "https://www.bottleshopams.nl/"
+  },
+  "bougainville": {
+    "ig": "bougainvillerestaurant",
+    "photo": "https://le-de.cdn-website.com/d961a0fd673d41a99a58d6209493df2e/dms3rep/multi/opt/0048-lvfphotography.com-_-min-1920w.png",
+    "from": "https://www.restaurantbougainville.com/"
+  },
+  "cafe-binnenvisser": {
+    "ig": null,
+    "photo": null,
+    "from": "https://binnenvisser.nl/"
+  },
+  "cafe-caron": {
+    "ig": "cafecaron",
+    "photo": "https://cafecaron.nl/wp-content/uploads/2024/03/Cafe-Caron-Amsterdam.jpeg",
+    "from": "https://cafecaron.nl/"
+  },
+  "cafe-de-klepel": {
+    "ig": "cafe_deklepel",
+    "photo": null,
+    "from": "https://cafedeklepel.nl/"
+  },
+  "cafe-modern": {
+    "ig": "cafemodernamsterdam",
+    "photo": null,
+    "from": "https://modernamsterdam.nl/"
+  },
+  "cafe-parlotte": {
+    "ig": "cafe_parlotte",
+    "photo": null,
+    "from": "https://www.parlotte.nl/"
+  },
+  "cafe-restaurant-amsterdam": {
+    "ig": "caferestaurantamsterdam",
+    "photo": null,
+    "from": "https://cradam.nl/"
+  },
+  "cafe-wu": {
+    "ig": "cafewu.ams",
+    "photo": "https://cafewu.nl/uploads/_1200x630_crop_center-center_none/hero-tafel.webp",
+    "from": "https://cafewu.nl/"
+  },
+  "calisto": {
+    "ig": null,
+    "photo": null,
+    "from": "https://calistoamsterdam.nl/"
+  },
+  "carmen": {
+    "ig": "carmen.amsterdam",
+    "photo": null,
+    "from": "https://www.carmenamsterdam.com/"
+  },
+  "choux": {
+    "ig": "chouxrestaurant",
+    "photo": null,
+    "from": "https://choux.nl/"
+  },
+  "ciel-bleu": {
+    "ig": "ciel_bleu_restaurant",
+    "photo": "https://irp.cdn-website.com/0191fca8/dms3rep/multi/opt/Hotel-Okura-Amsterdam---Ciel-Bleu---Interior---Lou-1920w.jpg",
+    "from": "https://www.cielbleu.nl/"
+  },
+  "copain": {
+    "ig": "copain.restaurant",
+    "photo": null,
+    "from": "https://www.copain.amsterdam/"
+  },
+  "cornerstore": {
+    "ig": "cornerstore.ams",
+    "photo": null,
+    "from": "https://csnoord.com/",
+    "fixed": true
+  },
+  "cue": {
+    "ig": "cue_amsterdam",
+    "photo": null,
+    "from": "https://www.cue-amsterdam.com/"
+  },
+  "dame-aan-de-kade": {
+    "ig": "dameaandekade",
+    "photo": null,
+    "from": "https://www.dameaandekade.nl/"
+  },
+  "de-kas": {
+    "ig": "restaurantdekas",
+    "photo": null,
+    "from": "https://restaurantdekas.com/"
+  },
+  "entrepot": {
+    "ig": null,
+    "photo": null,
+    "from": "https://restaurantentrepot.nl/"
+  },
+  "euro-pizza": {
+    "ig": "europizza.rest",
+    "photo": null,
+    "from": "https://www.europizza.rest/",
+    "fixed": true
+  },
+  "europa": {
+    "ig": "europa.rest",
+    "photo": null,
+    "from": "https://www.europa.rest/",
+    "fixed": true
+  },
+  "fa-pekelhaaring": {
+    "ig": "firmapekelhaaring",
+    "photo": null,
+    "from": "https://pekelhaaring.nl/"
+  },
+  "flore": {
+    "ig": null,
+    "photo": "https://restaurantflore.com/wp-content/uploads/2025/10/Flore-2.0-Interior-2.jpg",
+    "from": "https://restaurantflore.com/"
+  },
+  "franzen": {
+    "ig": "franzen.amsterdam",
+    "photo": "https://static.wixstatic.com/media/396d30_774e81cb121d4fcb8f8b503edb82b7f0~mv2.jpg/v1/fill/w_2500,h_3750,al_c/396d30_774e81cb121d4fcb8f8b503edb82b7f0~mv2.jpg",
+    "from": "https://www.franzen.amsterdam/"
+  },
+  "fuku-ramen": {
+    "ig": "fuku_ramen_amsterdam",
+    "photo": null,
+    "from": "https://www.fukuramenamsterdam.com/"
+  },
+  "gebr-hartering": {
+    "ig": "gebrhartering",
+    "photo": null,
+    "from": "https://www.gebr-hartering.nl/"
+  },
+  "gitane": {
+    "ig": "gitane_amsterdam",
+    "photo": "https://restaurantgitane.yourhospitalitywebsite.com/upload/heading/image-700x700.jpg",
+    "from": "https://www.restaurantgitane.nl/"
+  },
+  "helling-7": {
+    "ig": "helling_7",
+    "photo": "https://helling7.yourhotelwebsite.com/upload/heading/image-700x700.jpg",
+    "from": "https://www.helling7.nl/"
+  },
+  "hoi-tin": {
+    "ig": "hoitin1975",
+    "photo": "https://www.hoitin.nl/wp-content/uploads/2020/09/Hoi-Tin-Restaurant-Legacy.jpg",
+    "from": "https://www.hoitin.nl/"
+  },
+  "hotel-de-goudfazant": {
+    "ig": null,
+    "photo": null,
+    "from": "https://hoteldegoudfazant.nl/"
+  },
+  "kaagman-kortekaas": {
+    "ig": "kaagmanenkortekaas",
+    "photo": "https://kaagmanenkortekaas.nl/wp-content/uploads/2025/07/20250626-Kaagman-Kortekaas-%C2%A9-Chantal-Arnts-12-scaled.jpg",
+    "from": "https://kaagmanenkortekaas.nl/"
+  },
+  "kamer-bar": {
+    "ig": null,
+    "photo": null,
+    "from": "https://www.kamer.bar/",
+    "fixed": true
+  },
+  "ken-sushi": {
+    "ig": "kensushibar",
+    "photo": null,
+    "from": "https://www.kensushi.nl/",
+    "fixed": true
+  },
+  "kid-amsterdam": {
+    "ig": "kidamsterdam",
+    "photo": "https://framerusercontent.com/images/dIkRIQrhVX3C0qV7BIZTaqPorlY.png",
+    "from": "https://kidamsterdam.com/"
+  },
+  "kims-so-korean-food": {
+    "ig": "kimssokoreanfood",
+    "photo": null,
+    "from": null,
+    "fixed": true
+  },
+  "kiri": {
+    "ig": null,
+    "photo": "https://irp.cdn-website.com/8f717bcf/dms3rep/multi/opt/20260416_1527_OkuraHotel_Kiri_-JelleDraper_DSC_4388-1920w.jpg",
+    "from": "https://www.okura.nl/kiri",
+    "fixed": true
+  },
+  "la-vallade": {
+    "ig": "restaurantlavallade",
+    "photo": null,
+    "from": "https://www.lavallade.nl/",
+    "fixed": true
+  },
+  "marie": {
+    "ig": "marie.amsterdam",
+    "photo": "https://marieamsterdam.com/wp-content/uploads/2025/07/DSC04283.jpg",
+    "from": "https://marieamsterdam.com/"
+  },
+  "mesa-mesa": {
+    "ig": "mesamesa_amsterdam",
+    "photo": null,
+    "from": "https://www.mesamesa.nl/",
+    "fixed": true
+  },
+  "nikotin": {
+    "ig": "nikotin.restobar",
+    "photo": null,
+    "from": "https://www.nikotin.nl/"
+  },
+  "nk-thai-noodles": {
+    "ig": "nkthainoodles",
+    "photo": null,
+    "from": "https://nkthainoodles.nl/"
+  },
+  "nnea": {
+    "ig": "nnea_amsterdam",
+    "photo": null,
+    "from": "https://www.nneapizza.com/"
+  },
+  "restaurant-212": {
+    "ig": "restaurant.212",
+    "photo": "https://static.wixstatic.com/media/396d30_1cd1960333674f66b92e3c6679f5f6c2~mv2.jpeg/v1/fill/w_2500,h_1666,al_c/396d30_1cd1960333674f66b92e3c6679f5f6c2~mv2.jpeg",
+    "from": "https://www.212.amsterdam/restaurant-212"
+  },
+  "restaurant-kyo": {
+    "ig": "kyorestaurant",
+    "photo": null,
+    "from": "https://restaurantkyo.nl/"
+  },
+  "restobar-massalia": {
+    "ig": "massalia.restobar",
+    "photo": "https://restobarmassalia.yourhospitalitywebsite.com/upload/heading/image-700x700.jpg",
+    "from": "https://www.restobarmassalia.nl/"
+  },
+  "rijsel": {
+    "ig": null,
+    "photo": null,
+    "from": "https://rijsel.com/"
+  },
+  "roef": {
+    "ig": "roef.amsterdam",
+    "photo": null,
+    "from": "https://roef-amsterdam.nl/"
+  },
+  "roux": {
+    "ig": "roux.amsterdam",
+    "photo": null,
+    "from": "https://www.restaurantroux.nl/"
+  },
+  "salmuera": {
+    "ig": null,
+    "photo": null,
+    "from": "https://www.sal-amsterdam.nl/",
+    "fixed": true
+  },
+  "scheepskameel": {
+    "ig": "scheepskameel",
+    "photo": "https://scheepskameel.nl/wp-content/uploads/2025/09/shareimage-scheepskameel-1.jpg",
+    "from": "https://scheepskameel.nl/"
+  },
+  "september": {
+    "ig": null,
+    "photo": null,
+    "from": "https://septemberamsterdam.nl/",
+    "fixed": true
+  },
+  "showw": {
+    "ig": "restaurantshoww",
+    "photo": null,
+    "from": "https://www.restaurantshoww.com/en",
+    "fixed": true
+  },
+  "sinck": {
+    "ig": null,
+    "photo": null,
+    "from": "https://www.sinckamsterdam.nl/",
+    "fixed": true
+  },
+  "sinne": {
+    "ig": "sinnerestaurant",
+    "photo": "https://restaurantsinne.nl/wp-content/uploads/2022/10/FT-image-Restaurant-Sinne-min.jpg",
+    "from": "https://restaurantsinne.nl/"
+  },
+  "tannay": {
+    "ig": "tannay.amsterdam",
+    "photo": "https://tannay.nl/wp-content/uploads/2024/03/team.jpg",
+    "from": "https://tannay.nl/"
+  },
+  "thai-thai-poppetje": {
+    "ig": null,
+    "photo": null,
+    "from": "https://thaithaipoppetje.nl/",
+    "fixed": true
+  },
+  "toet": {
+    "ig": "toet.amsterdam",
+    "photo": null,
+    "from": "https://www.toetamsterdam.nl/"
+  },
+  "toscanini": {
+    "ig": "toscaninirestaurant",
+    "photo": null,
+    "from": "https://restauranttoscanini.nl/"
+  },
+  "troef": {
+    "ig": "troef.amsterdam",
+    "photo": null,
+    "from": "https://troefamsterdam.nl/",
+    "fixed": true
+  },
+  "utage-sake-bar": {
+    "ig": "utage_sakebar",
+    "photo": null,
+    "from": "https://www.utage-sakebar.nl/",
+    "fixed": true
+  },
+  "vin-fou": {
+    "ig": "vinfou.amsterdam",
+    "photo": null,
+    "from": "https://www.vinfou.nl/",
+    "fixed": true
+  },
+  "vrr": {
+    "ig": "vrr.rest",
+    "photo": "https://vrr.rest/img/og-image.jpg",
+    "from": "https://vrr.rest/"
+  },
+  "watergang": {
+    "ig": null,
+    "photo": null,
+    "from": "https://restaurantwatergang.nl/"
+  },
+  "weinlokal-stern": {
+    "ig": "weinlokalstern",
+    "photo": null,
+    "from": "https://www.weinlokalstern.nl/",
+    "fixed": true
+  },
+  "wils": {
+    "ig": "restaurantwils",
+    "photo": null,
+    "from": "https://restaurantwils.nl/",
+    "fixed": true
+  },
+  "zoldering": {
+    "ig": "zoldering.nl",
+    "photo": "https://static.wixstatic.com/media/396d30_15508eeb7bf24fb2ae5135bd03295182%7Emv2.jpg/v1/fit/w_2500,h_1330,al_c/396d30_15508eeb7bf24fb2ae5135bd03295182%7Emv2.jpg",
+    "from": "https://www.zoldering.nl/"
+  }
+}

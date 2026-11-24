@@ -17,8 +17,8 @@ const all = process.argv.includes('--all');
 /** The room the map draws inside. Set by hand from what each place is; anything else is a bistro. */
 const KIND: Record<string, string> = {
   'ken-sushi': 'japanese', 'sushi-oodo': 'japanese', hatsune: 'japanese', 'fuku-ramen': 'japanese', 'restaurant-kyo': 'japanese',
-  tsunarie: 'japanese',
-  'weinlokal-stern': 'wine', 'kamer-bar': 'wine', 'cafe-wu': 'wine', bottleshop: 'wine', vrr: 'wine', nikotin: 'wine',
+  tsunarie: 'japanese', kiri: 'japanese',
+  'weinlokal-stern': 'wine', 'vin-fou': 'wine', 'dame-aan-de-kade': 'brasserie', 'kamer-bar': 'wine', 'cafe-wu': 'wine', bottleshop: 'wine', vrr: 'wine', nikotin: 'wine',
   flore: 'fine', 'ciel-bleu': 'fine', vinkeles: 'fine', bolenius: 'fine', cue: 'fine', choux: 'fine', tacite: 'fine', satkara: 'fine',
   'the-white-room': 'fine', sinne: 'fine', 'john-dory': 'fine', senses: 'fine', lastage: 'fine', 'graham-s-kitchen': 'fine',
   occo: 'fine', 'wolf-atelier': 'fine', blik: 'fine', motief: 'fine', marie: 'fine', 'de-silveren-spiegel': 'fine',

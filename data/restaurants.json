@@ -3145,5 +3145,77 @@
     "website": "https://barlotta.nl",
     "city": "Amsterdam",
     "address": null
+  },
+  {
+    "id": "kiri",
+    "name": "KIRI",
+    "platform": "tablecheck",
+    "platformUid": "okura-nl-kiri",
+    "website": "https://www.okura.nl/kiri",
+    "city": "Amsterdam",
+    "address": "Ferdinand Bolstraat 333, 1072 LH Amsterdam"
+  },
+  {
+    "id": "dame-aan-de-kade",
+    "name": "Dame aan de Kade",
+    "platform": "tebi",
+    "platformUid": "569338_ed69b07bd95fe0e1e1748823e46baa7adf372addc68c676734e929d0760a282c",
+    "website": "https://www.dameaandekade.nl",
+    "city": "Amsterdam",
+    "address": "Ruysdaelkade 169-H, 1072 AS Amsterdam"
+  },
+  {
+    "id": "mesa-mesa",
+    "name": "Mesa Mesa",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://www.mesamesa.nl",
+    "city": "Amsterdam",
+    "address": "Marie Heinekenplein 5, 1072 MH Amsterdam"
+  },
+  {
+    "id": "vin-fou",
+    "name": "Vin Fou",
+    "platform": "walk-in",
+    "platformUid": null,
+    "website": "https://www.vinfou.nl",
+    "city": "Amsterdam",
+    "address": "Jan Pieter Heijestraat 143, 1054 MG Amsterdam"
+  },
+  {
+    "id": "nk-thai-noodles",
+    "name": "NK Thai Noodles",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://nkthainoodles.nl",
+    "city": "Amsterdam",
+    "address": "Weteringschans 187D, 1017 XE Amsterdam"
+  },
+  {
+    "id": "franzen",
+    "name": "Franzen",
+    "platform": "other",
+    "platformUid": null,
+    "website": "https://www.franzen.amsterdam",
+    "city": "Amsterdam",
+    "address": "Johannes Verhulststraat 64-H, 1071 NH Amsterdam"
+  },
+  {
+    "id": "taste-of-culture",
+    "name": "Taste of Culture",
+    "platform": "other",
+    "platformUid": null,
+    "website": null,
+    "city": "Amsterdam",
+    "address": "Korte Leidsedwarsstraat 139, 1017 PZ Amsterdam"
+  },
+  {
+    "id": "kims-so-korean-food",
+    "name": "Kim's So Korean Food",
+    "platform": "other",
+    "platformUid": null,
+    "website": null,
+    "city": "Amsterdam",
+    "address": "Molensteeg 13-H, 1012 BG Amsterdam"
   }
 ]
