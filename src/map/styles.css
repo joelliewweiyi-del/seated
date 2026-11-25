@@ -1,5 +1,5 @@
-/* Seated map: light pixel style. Cream panels, 2 px ink borders with notched corners, chunky shadows,
-   a pixel face for labels and a plain face for reading. No gradients, no blur, no glass. */
+/* Seated map: pixel city, glass panels. The map, signs and stickers are pixel; panels and controls are glass (the block
+   at the end, Joel 25 Nov 2026). A pixel face for labels and a plain face for reading. */
 :root {
   --ink: #2b2733;
   --ink-2: #4a4554;
@@ -2139,55 +2139,162 @@ a {
   color: #b8322a;
 }
 
-/* Glass (try-out, Joel 25 Nov 2026: "liquid glass instead of that flat ground"): the small phone card as a translucent
-   layer over the map. Text stays dark violet on a light frost; Book keeps its solid teal. */
-.card.mini {
-  background: rgba(255, 250, 240, 0.5);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border-radius: 26px;
-  box-shadow:
+/* Glass everywhere (Joel, 25 Nov 2026: "liquid glass instead of that flat ground", then "glass everywhere"): every panel
+   is a translucent, blurred layer over the map with rounded corners and a light top edge; controls are glass pills with
+   a hairline. The map, the signs, the pixel font and the stickers stay pixel. Pressed states stay solid (ink, sun,
+   teal), so the choice reads at a glance. Reduced transparency gets solid cream. Declared last so it wins. */
+:root {
+  --glass: rgba(255, 250, 240, 0.62);
+  --glass-strong: rgba(255, 250, 240, 0.84);
+  --glass-ctl: rgba(255, 255, 255, 0.55);
+  --glass-blur: blur(22px) saturate(180%);
+  --glass-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     inset 0 0 0 1px rgba(255, 255, 255, 0.45),
     0 0 0 1px rgba(43, 39, 51, 0.12),
-    0 12px 32px rgba(29, 26, 36, 0.28);
+    0 12px 32px rgba(29, 26, 36, 0.26);
+  --hair: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(43, 39, 51, 0.18);
+}
+.px,
+.px-flat {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 24px;
+  box-shadow: var(--glass-shadow);
+}
+.px.topbar,
+.px.dates {
+  border-radius: 20px;
+}
+.px.dialog,
+.px.pop {
+  background: var(--glass-strong);
+}
+.px.pop,
+.px.toast,
+.px.nudge {
+  border-radius: 16px;
+}
+.card,
+.list {
+  overflow: hidden;
+}
+.card .room {
+  border-bottom: 1px solid rgba(43, 39, 51, 0.15);
+}
+.btn,
+.btn.small,
+.btn:active,
+.chip,
+.daypill,
+.time,
+.search,
+.choice,
+.sheet-toggle,
+.missing input,
+.addlist .newlist input,
+.list-editor,
+.trouble {
+  border-radius: 14px;
+  box-shadow: var(--hair);
+}
+.chip,
+.daypill,
+.time {
+  border-radius: 999px;
+}
+.btn,
+.chip,
+.time,
+.choice,
+.search {
+  background: var(--glass-ctl);
+}
+.btn:active,
+.chip:active,
+.choice:active {
+  transform: scale(0.97);
+}
+.btn.primary {
+  background: var(--primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(15, 118, 110, 0.32);
+}
+.btn.danger {
+  background: var(--full);
+}
+.daypill,
+.quick .chip[aria-pressed='true'],
+.time[aria-pressed='true'] {
+  background: var(--sun);
+}
+.chip[aria-pressed='true'] {
+  background: var(--ink);
+}
+.time[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--ink);
+  transform: none;
+}
+.day {
+  border-radius: 12px;
+  box-shadow: none;
+  background: transparent;
+}
+.day[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.card.mini {
   padding: 12px 14px 6px;
+}
+/* Inner boxes are a lighter frost, never solid cream on the glass. */
+.state {
+  background: rgba(255, 255, 255, 0.4);
+}
+@media (max-width: 900px) {
+  .list-top {
+    background: rgba(255, 250, 240, 0.5);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+}
+/* The dialog takes focus on open so keys work; its own ring is not needed (the controls in it keep theirs). */
+.dialog:focus-visible {
+  outline: none;
 }
 .card.mini .mini-thumb {
   border-radius: 14px;
   box-shadow: 0 0 0 1px rgba(43, 39, 51, 0.2);
 }
-.card.mini .close {
+.card.mini .close,
+.card .room .close {
   width: 34px;
   min-height: 34px;
   height: 34px;
   padding: 0;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(43, 39, 51, 0.15);
-}
-.card.mini .times.strip .time {
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(43, 39, 51, 0.18);
-}
-.card.mini .times.strip .time[aria-pressed='true'] {
-  background: var(--sun);
-  box-shadow: 0 0 0 2px var(--ink);
 }
 .card.mini .book {
   border-radius: 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(15, 118, 110, 0.35);
 }
-.card.mini .mini-links a,
-.card.mini .mini-links button {
+.mini-links a,
+.mini-links button {
   text-decoration: none;
   color: var(--ink);
   font-weight: 600;
 }
+.more-bar {
+  background: rgba(255, 207, 74, 0.85);
+  border-top: 1px solid rgba(43, 39, 51, 0.15);
+}
+.side.has-card .card .actions {
+  background: var(--glass-strong);
+}
 @media (prefers-reduced-transparency: reduce) {
-  .card.mini {
+  .px,
+  .px-flat {
     background: var(--panel);
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
