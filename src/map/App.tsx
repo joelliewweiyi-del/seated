@@ -1317,6 +1317,80 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
   const [scroller, more, check] = useMore<HTMLDivElement>(r.id);
   const [noPhoto, setNoPhoto] = useState(false);
   useEffect(() => setNoPhoto(false), [r.id]);
+  // On a phone the card opens small: who, the free times, Book and one line of links (Joel, 25 Nov 2026: "just
+  // literally show these bubbles ... and book, and that's it"). More opens the whole card.
+  const narrow = useNarrow();
+  const [full, setFull] = useState(false);
+  useEffect(() => setFull(false), [r.id]);
+  const route = `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&travelmode=bicycling`;
+  if (narrow && !full)
+    return (
+      <section className="px card mini">
+        <div className="mini-head">
+          <div className="mini-thumb" aria-hidden="true">
+            {r.photo && !noPhoto ? (
+              <img src={r.photo} alt="" referrerPolicy="no-referrer" onError={() => setNoPhoto(true)} />
+            ) : (
+              <RoomCanvas kind={r.kind} status={status} free={times.length || 3} seed={seed} />
+            )}
+          </div>
+          <div className="mini-name">
+            <h2>{r.name}</h2>
+            <p className="where">
+              {KIND_WORD[r.kind] ?? 'Restaurant'} · {r.area}
+            </p>
+          </div>
+          <button className="btn small close" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </div>
+        {status === 'open' && times.length > 0 ? (
+          <div className="times strip" role="group" aria-label={`Free times, ${dayLabel(day, { long: true })}`}>
+            {times.map((t) => (
+              <button key={t} className="time" aria-pressed={t === pick} onClick={() => setPicked(t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="mini-state">
+            <span className="stud" style={{ background: STATUS_COLOUR[status] }} />
+            {dayLabel(day)}: {walkIn(r) ? 'walk in' : STATUS_WORD[status].toLowerCase()}
+            {next && (
+              <button className="link" onClick={() => onDay(next)}>
+                first free {dayLabel(next)}
+              </button>
+            )}
+          </p>
+        )}
+        {book && !walkIn(r) && (
+          <a className={`btn book${status === 'open' ? ' primary' : ''}`} href={book} target="_blank" rel="noopener">
+            {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
+          </a>
+        )}
+        {book && !walkIn(r) && status === 'open' && NO_DATE_LINK.has(r.platform) && (
+          <p className="mini-hint">
+            {r.platform} opens on its own date: pick {dayLabel(day)}
+            {pick ? `, ${pick}` : ''}.
+          </p>
+        )}
+        <nav className="mini-links">
+          {r.site && (walkIn(r) || r.site !== book) && (
+            <a href={r.site} target="_blank" rel="noopener">
+              Site
+            </a>
+          )}
+          <a href={route} target="_blank" rel="noopener">
+            Route
+          </a>
+          <button onClick={() => share(r, day).then(setShared)}>{shared || 'Share'}</button>
+          <button aria-pressed={saved} onClick={onSave}>
+            {saved ? '♥ Saved' : '♡ Save'}
+          </button>
+          <button onClick={() => setFull(true)}>More</button>
+        </nav>
+      </section>
+    );
   return (
     <section className="px card">
       <div className="card-scroll" ref={scroller} onScroll={check}>
@@ -1448,7 +1522,7 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
                 Website
               </a>
             )}
-            <a className="btn" href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&travelmode=bicycling`} target="_blank" rel="noopener">
+            <a className="btn" href={route} target="_blank" rel="noopener">
               Directions
             </a>
             <button className="btn" onClick={() => share(r, day).then(setShared)}>

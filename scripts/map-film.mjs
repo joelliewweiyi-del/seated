@@ -370,12 +370,13 @@ if (REAL) {
   const CS = (await flight()) ?? C4;
   for (let i = 0; i < secs(1.0); i++) await real(camAt(C4, CS, ease(Math.min(1, i / FPS / 0.9))), { side: 1, dots: tapDot(p, i / FPS + 0.12, 0.12) });
   await hold(CS, 0.9, { side: 1 });
-  // 6. The card scrolls to the times; the reaction; a time; Book. (10 to about 14 s)
+  // 6. The card scrolls to the times (the phone's small card has nothing to scroll); the reaction; a time; Book. (10 to about 14 s)
   const scrollTo = await page.evaluate((hm) => {
     const s = document.querySelector('.card-scroll');
     const b = [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim()));
     const tb = hm && [...document.querySelectorAll('.side button')].find((x) => x.textContent.trim() === hm);
-    if (!s || !b) return null;
+    if (!b) return null;
+    if (!s) return 0; // the phone's small card: the times and Book are already in sight
     const sr = s.getBoundingClientRect();
     const want = tb ? tb.getBoundingClientRect().top - sr.top + s.scrollTop - s.clientHeight * 0.4 : b.getBoundingClientRect().bottom - sr.bottom + s.scrollTop + 16;
     return Math.max(0, Math.min(s.scrollHeight - s.clientHeight, want));
@@ -384,7 +385,7 @@ if (REAL) {
   for (let i = 0; i < secs(0.9); i++) {
     const u = i / FPS;
     const k = u < 0.18 ? (u / 0.18) * 0.4 : 0.4 + 0.6 * (1 - Math.exp(-6 * (u - 0.18))) / (1 - Math.exp(-6 * 0.72));
-    await page.evaluate((y) => { document.querySelector('.card-scroll').scrollTop = y; }, Math.min(1, k) * scrollTo);
+    await page.evaluate((y) => { const s = document.querySelector('.card-scroll'); if (s) s.scrollTop = y; }, Math.min(1, k) * scrollTo);
     await real(CS, { side: 1, wow: u > 0.55 });
   }
   await hold(CS, 0.9, { side: 1, wow: true });
