@@ -3,7 +3,8 @@
 # seated-map (also https://seated-map.vercel.app). Every CLI deploy of this project lands on production,
 # also with --environment preview (tried 5 Nov 2026), and its .vercel.app domain is public.
 # The page reads /data.json, which deploy/map/vercel.json points at the Vercel Blob store (fra1) that Seated fills
-# after each census (BLOB_READ_WRITE_TOKEN, 1Password bara-dev/seated-map-blob). Nothing else deploys from here.
+# after each census (BLOB_READ_WRITE_TOKEN, 1Password bara-dev/seated-map-blob). The AI search is a function here too
+# (api/classify.mjs, Jev; TYPESAFE_API_KEY in the project's environment). Nothing else deploys from here.
 # It also applies supabase/schema.sql to the Supabase project "seated" (characters and lists), which is idempotent.
 #   VITE_MAP_CONTACT=hello@seated.food scripts/map-deploy.sh --prod
 set -euo pipefail
@@ -39,4 +40,9 @@ npx tsx scripts/map-og.ts dist/map # the share card (og.jpg): built here, never 
 # A data.json in the build would shadow the /data.json rewrite and freeze the public map.
 if [[ -e dist/map/data.json ]]; then echo "dist/map/data.json must not exist" >&2; exit 1; fi
 cp deploy/map/vercel.json dist/map/vercel.json
+# The AI search (/api/classify): a Vercel function beside the page, with what it knows of each restaurant. It reads
+# TYPESAFE_API_KEY from the project's environment (set once from 1Password bara-dev "typesafe api"; never in the page).
+mkdir -p dist/map/api
+cp deploy/map/api/classify.mjs dist/map/api/classify.mjs
+npx tsx scripts/map-facts.ts dist/map/api/_facts.mjs
 VERCEL_ORG_ID=team_eUkad93RQyEOnkyPiSoPR4Mr VERCEL_PROJECT_ID=prj_TUZq0gmT8CLbhxEHRADEXdOdsE9h vercel deploy dist/map --prod --yes

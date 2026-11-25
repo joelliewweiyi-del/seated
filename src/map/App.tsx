@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { ago, badgeStyle, CURATED, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, timeSpan, weekday, type MapData, type MapRestaurant, type Status } from './data';
+import { AI_MIN, useAiSearch, type AiSearch } from './aiSearch';
+import { ago, badgeStyle, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, timeSpan, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, ZOOMS, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, bike } from './marks';
 import { Nudge, Picker, type ListChoice } from './picker';
 import type { SeatedList } from './api';
-import { Avatar, cleanLook } from './avatar';
+import { Avatar, cleanLook, type Look } from './avatar';
 import { profileById } from './taste';
 import { picksFor, Trouble, Welcome, YouPanel, type WelcomeStep } from './welcome';
 import { useYou, type You } from './you';
@@ -146,14 +147,16 @@ export function App() {
   const [date, setDate] = useState<string | null>(readUrl().date);
   const [selected, setSelected] = useState<string | null>(readUrl().r);
   // The guide the map is seen through: from the link, so a lens can be shared. Unknown ids are ignored.
-  // No lens in the link: the curated list. 'all' is every restaurant.
-  const [lensId, setLens] = useState<string | null>(readUrl().lens ?? CURATED);
+  // No lens in the link: every restaurant (Joel, 25 Nov 2026: "The standard should just be showing everything"; it was the
+  // curated list, and a first visitor did not know restaurants were hidden). An old ?lens=all link is the same.
+  const [lensId, setLens] = useState<string | null>(readUrl().lens);
   const [filters, setFilters] = useRemembered<Filters>('seated.map.filters', NO_FILTERS);
   const [saved, setSaved] = useRemembered<{ ids: string[] }>('seated.map.saved', { ids: [] });
   const favs = useMemo(() => new Set(saved.ids), [saved]);
   const toggleFav = useCallback((id: string) => setSaved((o) => ({ ids: o.ids.includes(id) ? o.ids.filter((x) => x !== id) : [...o.ids, id] })), [setSaved]);
   const [me, setMe] = useState<{ lat: number; lng: number; note?: string } | null>(null);
   const [query, setQuery] = useState('');
+  const ai = useAiSearch(query);
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   // Once per device, a few seconds in, the host points at the lists (and goes again after 20 s).
   const [hello, setHello] = useRemembered<{ seen: boolean }>('seated.map.hello', { seen: false });
@@ -251,7 +254,7 @@ export function App() {
     for (const p of placed) {
       const s = statusOfR(p.r);
       if (!inKinds(filters, p.r, favs)) continue;
-      const match = !q || matches(p.r, q);
+      const match = !q || matches(p.r, q) || !!ai?.ids?.has(p.r.id);
       markers.push({
         id: p.r.id,
         name: p.r.name,
@@ -262,14 +265,15 @@ export function App() {
         badge: badgeFor(p.r, s, day),
         hollow: s === 'none',
         rank: STATUS_RANK[s] + (p.r.hot ?? 0) * 20 + (p.r.michelin ? 15 : 0) + (lens && inLens(lens, p.r) ? 400 : 0),
-        dim: (filters.open && s !== 'open') || !match || !inLens(lens, p.r),
-        pin: !inLens(lens, p.r),
+        // A search looks at every restaurant, whatever list is on (Joel, 25 Nov 2026: "she wanted everything to be searched").
+        dim: (filters.open && s !== 'open') || !match || (!q && !inLens(lens, p.r)),
+        pin: !q && !inLens(lens, p.r),
       });
     }
     view.setMarkers(markers);
     view.keepClear(placed.map((p) => ({ x: p.ax, y: p.ay })));
     view.setYou(me && !me.note ? world.project(me.lat, me.lng) : null, you.account ? cleanLook(you.account.avatar) : null);
-  }, [placed, day, data, world, filters, favs, query, statusOfR, me, lens, you.account]);
+  }, [placed, day, data, world, filters, favs, query, statusOfR, me, lens, you.account, ai]);
 
   // Where you are. Found on every load, the map flies there (Joel, 20 Nov 2026: "When I load the page I want to be
   // immediately transported to my location"); the browser asks first if it has to. On load (`quiet`) a refusal or a
@@ -376,8 +380,7 @@ export function App() {
     if (!OUR_ART) q.set('art', 'sez'); // a reload or a shared link keeps sezlab's art when it was chosen
     if (day !== data.start) q.set('date', day);
     if (selected) q.set('r', selected);
-    if (lensId === 'all') q.set('lens', 'all');
-    else if (lens && lens.id !== CURATED) q.set(lens.kind === 'list' ? 'list' : 'lens', lens.kind === 'list' ? lens.id.slice(2) : lens.id);
+    if (lens) q.set(lens.kind === 'list' ? 'list' : 'lens', lens.kind === 'list' ? lens.id.slice(2) : lens.id);
     const next = `${location.pathname}${q.toString() ? `?${q}` : ''}`;
     if (next === `${location.pathname}${location.search}`) return;
     try {
@@ -518,7 +521,7 @@ export function App() {
   const freeOf = (rs: Placed[]) => rs.filter((p) => statusOfR(p.r) === 'open').length;
   const lists: ListChoice[] = data
     ? [
-        { id: 'all', name: 'Every restaurant', by: 'All of Seated', line: '', picks: placed.length, free: freeOf(placed) },
+        { id: 'all', name: 'All places', by: 'All of Seated', line: '', picks: placed.length, free: freeOf(placed) },
         ...data.guides.map((g) => {
           const mine = placed.filter((p) => p.r.g.includes(g.id));
           return { id: g.id, name: g.short, by: g.by, line: g.line, picks: mine.length, free: freeOf(mine) };
@@ -568,9 +571,23 @@ export function App() {
             onAbout={() => setDialog('about')}
             you={you}
             onYou={() => (you.account || you.answered ? setDialog('you') : openWelcome('scene'))}
-          />
+          >
+            <Find
+              query={query}
+              onQuery={(v) => {
+                setQuery(v);
+                if (narrow && v.trim()) setCollapsed(false); // on a phone the answers show as the list
+              }}
+              ai={ai}
+              lens={lens}
+              look={you.account ? cleanLook(you.account.avatar) : (you.profile?.look ?? null)}
+              onLists={() => setDialog('lists')}
+              onAll={() => setLens(null)}
+              onCharacter={() => openWelcome('scene')}
+            />
+          </TopBar>
 
-          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}${rowsFor === lensId && !filters.near && !sel ? ' near rows' : ''}${sel ? ' has-card' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
+          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}${rowsFor !== null && rowsFor === lensId && !filters.near && !sel ? ' near rows' : ''}${sel ? ' has-card' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
               <Card
                 r={sel}
@@ -598,16 +615,15 @@ export function App() {
                 filters={filters}
                 onFilters={setFilters}
                 lens={lens}
-                onLists={() => setDialog('lists')}
                 favs={favs}
                 me={filters.near ? me : null}
                 query={query}
+                ai={ai}
                 collapsed={collapsed}
                 onToggle={() => {
                   setRowsFor(null);
                   setCollapsed((c) => !c);
                 }}
-                onQuery={setQuery}
                 onPick={focus}
                 onDay={setDate}
                 nextOpen={nextOpenDay(data, day, (r) => inKinds(filters, r, favs) && inLens(lens, r))}
@@ -671,7 +687,7 @@ export function App() {
           onSaveList={you.saveList}
           onDeleteList={async (id) => {
             const ok = await you.deleteList(id);
-            if (ok && lensId === `l:${id}`) setLens(CURATED);
+            if (ok && lensId === `l:${id}`) setLens(null);
             return ok;
           }}
           onReport={you.report}
@@ -829,7 +845,7 @@ function Quick({ data, day, onPick }: { data: MapData; day: string; onPick: (d: 
 }
 
 /** One slim bar: the brand, the day with a step either side, and How it works. All days open from the day itself. */
-function TopBar({ data, day, onPick, onAbout, you, onYou }: { data: MapData; day: string; onPick: (d: string) => void; onAbout: () => void; you: You; onYou: () => void }) {
+function TopBar({ data, day, onPick, onAbout, you, onYou, children }: { data: MapData; day: string; onPick: (d: string) => void; onAbout: () => void; you: You; onYou: () => void; children?: React.ReactNode }) {
   const narrow = useNarrow();
   const [open, setOpen] = useState(false);
   const i = dayIndex(data, day);
@@ -881,7 +897,69 @@ function TopBar({ data, day, onPick, onAbout, you, onYou }: { data: MapData; day
           }}
         />
       )}
+      {children}
     </header>
+  );
+}
+
+/**
+ * The search and what the map shows, under the top bar on every screen (Joel, 25 Nov 2026, from a first visitor: "she
+ * didn't even know which version of the map she was looking at", "she wanted everything to be searched", "the profile
+ * needs to be easily changed"). The search looks at every restaurant: names at once, and Jev's AI answer half a second
+ * after the typing stops. "Showing" names the list or character the map is seen through, with Change and ✕ All.
+ */
+function Find(p: {
+  query: string;
+  onQuery: (v: string) => void;
+  ai: AiSearch | null;
+  lens: Lens | null;
+  look: Look | null;
+  onLists: () => void;
+  onAll: () => void;
+  onCharacter: () => void;
+}) {
+  const q = p.query.trim();
+  return (
+    <div className="px find">
+      <div className="find-row">
+        <input
+          className="search"
+          type="search"
+          enterKeyHint="search"
+          placeholder="Search: brunch, natural wine…"
+          value={p.query}
+          onChange={(e) => p.onQuery(e.target.value)}
+          aria-label="Find a restaurant"
+        />
+        <span className="showing-label">Showing</span>
+        <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists} title="What the map shows: pick a list or every restaurant">
+          {p.lens?.kind === 'you' && <Avatar look={p.look} size={18} />}
+          {p.lens ? p.lens.title : 'All places'}
+        </button>
+        {p.lens?.kind === 'you' && (
+          <button className="chip change" onClick={p.onCharacter}>
+            Change
+          </button>
+        )}
+        {p.lens && (
+          <button className="chip all" onClick={p.onAll} aria-label="Show every restaurant" title="Show every restaurant">
+            ✕
+          </button>
+        )}
+      </div>
+      {q.length >= AI_MIN && (
+        <p className="ai-line" role="status">
+          <span className="ai-mark" aria-hidden="true">
+            ✦
+          </span>{' '}
+          {!p.ai || p.ai.busy
+            ? 'Asking the AI which places fit…'
+            : p.ai.error
+              ? p.ai.error
+              : `${p.ai.ids?.size ?? 0} ${p.ai.ids?.size === 1 ? 'place fits' : 'places fit'} “${p.ai.q}”${p.ai.by === 'stand-in' ? ' (keyword stand-in, no AI here)' : ' · AI (Jev), it can miss one'}`}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -952,14 +1030,14 @@ interface ListProps {
   /** The lens the list is seen through, or null for every restaurant. */
   lens: Lens | null;
   /** Opens the list picker. */
-  onLists: () => void;
   favs: Set<string>;
   /** Where distances start, when "Near me" is on. */
   me: { lat: number; lng: number; note?: string } | null;
   query: string;
+  /** The AI's answer to the search, beside the name search. */
+  ai: AiSearch | null;
   collapsed: boolean;
   onToggle: () => void;
-  onQuery: (v: string) => void;
   onPick: (id: string) => void;
   onDay: (d: string) => void;
   /** The next day after this one with any free table among the rows shown. */
@@ -984,7 +1062,8 @@ function List(p: ListProps) {
   const hasMichelin = p.placed.some((x) => x.r.michelin);
   const rows = p.placed
     .map((x) => ({ r: x.r, s: p.statusOf(x.r), m: p.me ? metres(p.me, x.r) : 0 }))
-    .filter(({ r, s }) => inLens(p.lens, r) && inKinds(f, r, p.favs) && (!f.open || s === 'open') && (!q || matches(r, q)))
+    // A search looks at every restaurant (the list on or not); without one, the list on decides.
+    .filter(({ r, s }) => (q ? matches(r, q) || !!p.ai?.ids?.has(r.id) : inLens(p.lens, r)) && inKinds(f, r, p.favs) && (!f.open || s === 'open'))
     .sort((a, b) =>
       p.me
         ? a.m - b.m
@@ -995,7 +1074,7 @@ function List(p: ListProps) {
           a.r.name.localeCompare(b.r.name),
     );
   const guide = p.lens;
-  const seen = p.placed.filter((x) => inLens(p.lens, x.r));
+  const seen = p.placed.filter((x) => (q ? matches(x.r, q) || !!p.ai?.ids?.has(x.r.id) : inLens(p.lens, x.r)));
   const openCount = seen.filter((x) => p.statusOf(x.r) === 'open').length;
   const hotOpen = seen.filter((x) => x.r.hot && p.statusOf(x.r) === 'open').length;
   const anyKind = f.stars || f.bib || f.hot || f.fav;
@@ -1015,11 +1094,6 @@ function List(p: ListProps) {
     <section className="px list" ref={narrow ? scroller : undefined} onScroll={narrow ? check : undefined}>
       <div className="list-head">
         <div className="list-top">
-          {p.data.guides.length > 0 && (
-            <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists} title="Pick a list">
-              {guide ? guide.title : 'Every restaurant'}
-            </button>
-          )}
           <button className="row head-toggle" onClick={p.onToggle} aria-expanded={!p.collapsed}>
             <span className="stud" style={{ background: STATUS_COLOUR.open }} aria-hidden="true" />
             <h2>{openCount} free</h2>
@@ -1029,10 +1103,12 @@ function List(p: ListProps) {
           </button>
         </div>
         <p className="sum">
-          for two, of {guide ? (guide.kind === 'guide' ? `${seen.length} ${guide.title} picks` : `${seen.length} in “${guide.title}”`) : `${p.placed.length} restaurants`}
+          {q
+            ? `${seen.length} of all ${p.placed.length} restaurants match, for two`
+            : `for two, of ${guide ? (guide.kind === 'guide' ? `${seen.length} ${guide.title} picks` : `${seen.length} in “${guide.title}”`) : `${p.placed.length} restaurants`}`}
           {hotOpen ? `; ${hotOpen} hard to get` : ''}
           {p.me && !p.me.note ? ', nearest first' : ''} · read {ago(p.data.generatedAt)}
-          {guide && (guide.by || guide.url || (guide.kind !== 'guide' && guide.line)) && (
+          {guide && !q && (guide.by || guide.url || (guide.kind !== 'guide' && guide.line)) && (
             <span className="lens-line">
               {' · '}
               {guide.kind !== 'guide' && guide.line && <span>{guide.line} </span>}
@@ -1058,7 +1134,6 @@ function List(p: ListProps) {
           </p>
         )}
         <div className="filters">
-          <input className="search" type="search" placeholder="Name, area or food  /" value={p.query} onChange={(e) => p.onQuery(e.target.value)} aria-label="Find a restaurant" />
           <div className="chips" role="group" aria-label="Show">
             {CHIPS.map(([k, label]) => (
               <button key={k} className="chip" aria-pressed={f[k]} onClick={() => p.onFilters({ ...f, [k]: !f[k] })}>

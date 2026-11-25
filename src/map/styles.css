@@ -2292,3 +2292,78 @@ a {
     backdrop-filter: none;
   }
 }
+/* The search and "Showing", under the top bar on every screen (Joel, 25 Nov 2026: a first visitor could not search and
+   did not know which list the map showed). One row: the search, then the list or character the map is seen through. */
+.find {
+  pointer-events: auto;
+  width: min(560px, 100%);
+  padding: 6px;
+  border-radius: 20px;
+}
+.find-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.find .search {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  min-height: 38px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.85);
+}
+.find .showing-label {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.find .chip.lens {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  max-width: 44%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 38px;
+}
+.find .chip.change,
+.find .chip.all {
+  min-height: 38px;
+  white-space: nowrap;
+}
+.find .ai-line {
+  margin: 6px 8px 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.find .ai-mark {
+  color: var(--primary);
+}
+@media (max-width: 900px) {
+  .find {
+    width: 100%;
+  }
+  .find .showing-label {
+    display: none;
+  }
+  .find .chip.lens {
+    max-width: 38%;
+  }
+  .find {
+    padding: 4px;
+  }
+  .find .search,
+  .find .chip.lens,
+  .find .chip.change,
+  .find .chip.all {
+    min-height: 34px;
+  }
+  .find .search {
+    font-size: 16px; /* under 16 px an iPhone zooms the page on focus */
+  }
+}

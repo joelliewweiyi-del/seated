@@ -110,12 +110,13 @@ test('on a phone the map, the day bar and the list sheet all fit, and the chrome
   await expect(page.locator('.daypill')).toBeVisible();
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(390);
-  // Closed, the top bar and the list sheet together leave at least 80% of the screen to the map (Joel, 6 Nov 2026).
+  // Closed, the top bar, the search and the list sheet together leave at least 78% of the screen to the map (Joel, 6 Nov
+  // 2026: 80%; the always-there search bar costs 2 points, Joel, 25 Nov 2026: "very very accessible").
   const chrome = await page.evaluate(() => {
     const h = (sel: string) => document.querySelector(sel)!.getBoundingClientRect().height;
     return h('.top') + h('.side > *') + h('.foot');
   });
-  expect(chrome).toBeLessThan(844 * 0.2);
+  expect(chrome).toBeLessThan(844 * 0.22);
   await settled(page);
   await shot(page, '04-phone-home');
   // The day strip opens from the day, and a picked day closes it again.
@@ -132,7 +133,7 @@ test('on a phone the map, the day bar and the list sheet all fit, and the chrome
   // Show map stay on top, and the rows fill the sheet.
   await page.locator('.list').evaluate((e) => e.scrollBy(0, 400));
   await expect(page.locator('.list-head .row')).toBeInViewport({ ratio: 1 });
-  await expect(page.locator('.search')).not.toBeInViewport();
+  await expect(page.locator('.list .chips').first()).not.toBeInViewport(); // the search itself stays up top (Find)
   const shown = await page.locator('.rows li').evaluateAll((els) => {
     const box = document.querySelector('.list')!.getBoundingClientRect();
     return els.filter((e) => { const r = e.getBoundingClientRect(); return r.top >= box.top && r.bottom <= box.bottom; }).length;
@@ -217,7 +218,7 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   await page.locator('.chip.lens').click();
   const picker = page.getByRole('dialog');
   await expect(picker.getByRole('heading', { name: 'Where shall we eat?' })).toBeVisible();
-  await expect(picker.locator('.choice .nm')).toHaveText(['Every restaurant', 'Wide', 'One']);
+  await expect(picker.locator('.choice .nm')).toHaveText(['All places', 'Wide', 'One']);
   const free = (await page.locator('.list-head h2').innerText()).match(/^(\d+)/)![1];
   await expect(picker.locator('.choice').nth(0)).toContainText(`${free} free · ${names.length} places`);
   await expect(picker.locator('.choice').nth(0)).toHaveAttribute('aria-pressed', 'true');
@@ -252,9 +253,9 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   await expect(page.locator('.rows .nm')).toHaveCount(1);
   await expect(page).toHaveURL(/[?&]lens=one(&|$)/);
   await page.locator('.chip.lens').click();
-  await page.getByRole('dialog').locator('.choice', { hasText: 'Every restaurant' }).click();
+  await page.getByRole('dialog').locator('.choice', { hasText: 'All places' }).click();
   await expect.poll(() => listed(page)).toBe(names.length);
-  await expect(page).toHaveURL(/lens=all/); // every restaurant, kept in the link (no lens = the curated list)
+  expect(new URL(page.url()).searchParams.get('lens')).toBeNull(); // every restaurant is the default: no lens in the link
   await page.goto('/map/?lens=nobody');
   await expect.poll(() => listed(page)).toBe(names.length);
 });
@@ -262,9 +263,9 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
 test('the keyboard reaches the list past the date strip in a few steps, and arrow keys change the day', async ({ page }) => {
   await page.goto('/map/');
   await expect(page.locator('.list-head h2')).toBeVisible();
-  // The day, the next day, Today, Fri, Sat (and New Year's Eve in December), How it works, then the list.
+  // The day, the next day, Today, Fri, Sat (and New Year's Eve in December), How it works, You, the search, Showing, then the list.
   let reached = false;
-  for (let i = 0; i < 9 && !reached; i++) {
+  for (let i = 0; i < 12 && !reached; i++) {
     await page.keyboard.press('Tab');
     reached = await page.evaluate(() => !!document.activeElement?.closest('.list'));
   }
@@ -561,7 +562,7 @@ test('the panel: the list and count on one line, rarer filters under More, unrea
   });
   await page.goto('/map/?lens=all');
   const top = page.locator('.list-top');
-  await expect(top.locator('.chip.lens')).toHaveText('Every restaurant');
+  await expect(page.locator('.find .chip.lens')).toHaveText('All places');
   await expect(top.locator('h2')).toHaveText(/^\d+ free$/);
   await expect(page.locator('.list-head .sum')).toContainText('read ');
   // More opens the second row of filters, and says how many of them are on.
@@ -585,19 +586,51 @@ test('the panel: the list and count on one line, rarer filters under More, unrea
   await expect(page.locator('.rows .row')).not.toHaveCount(0);
 });
 
-test('the map opens on the Seated curated list; Every restaurant shows all and the link keeps it', async ({ page }) => {
+// Joel, 25 Nov 2026, from a first visitor: "The standard should just be showing everything", "she didn't even know which
+// version of the map she was looking at", "she wanted everything to be searched", "the profile needs to be easily changed".
+test('the map opens on every restaurant; Showing names the list, ✕ goes back to all, and the search looks everywhere', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true })));
   await page.goto('/map/');
-  const curated = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.filter((r: { g: string[] }) => r.g.includes('seated')).length);
-  expect(curated).toBeGreaterThan(50);
-  await expect(page.locator('.list-head .sum')).toContainText(`of ${curated} Seated curated picks`);
-  await expect(page.locator('.chip.lens')).toHaveText('Seated curated');
+  const all = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.length);
+  await expect(page.locator('.list-head .sum')).toContainText(`of ${all} restaurants`);
+  await expect(page.locator('.find .chip.lens')).toHaveText('All places');
+  await expect(page.locator('.find .chip.all')).toHaveCount(0);
   expect(new URL(page.url()).search).toBe(''); // the default needs no link
-  await page.locator('.chip.lens').click();
-  await page.getByRole('dialog').locator('.choice', { hasText: 'Every restaurant' }).click();
-  await expect(page.locator('.list-head .sum')).not.toContainText('Seated curated');
-  await expect(page).toHaveURL(/lens=all/);
-  await page.reload();
-  await expect(page.locator('.chip.lens')).toHaveText('Every restaurant');
+  // The curated list is one pick away, named in Showing, kept in the link, and ✕ goes back to every restaurant.
+  await page.goto('/map/?lens=seated');
+  await expect(page.locator('.find .chip.lens')).toHaveText('Seated curated');
+  await expect(page.locator('.list-head .sum')).toContainText('Seated curated picks');
+  await page.locator('.find .chip.all').click();
+  await expect(page.locator('.find .chip.lens')).toHaveText('All places');
+  await expect(page.locator('.list-head .sum')).toContainText(`of ${all} restaurants`);
+  expect(new URL(page.url()).searchParams.get('lens')).toBeNull();
+  // The search looks at every restaurant, also with a list on. On the demo server the AI is the labelled stand-in.
+  await page.goto('/map/?lens=seated');
+  const outside = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.find((r: { g: string[] }) => !r.g.includes('seated')).name);
+  await page.getByLabel('Find a restaurant').fill(outside);
+  await expect(page.locator('.rows .nm', { hasText: outside })).toHaveCount(1);
+  await expect(page.locator('.ai-line')).toContainText('keyword stand-in');
+  await settled(page);
+  await shot(page, '30-search');
+});
+
+test('the AI search: an answer lights its places on the map and in the list; a failure says the name search still works', async ({ page }) => {
+  await page.goto('/map/?lens=all');
+  const ids = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name })));
+  const [a, b] = [ids[1], ids[4]];
+  await page.route('**/api/classify?q=*', (route) =>
+    new URL(route.request().url()).searchParams.get('q') === 'sunday brunch'
+      ? route.fulfill({ json: { q: 'sunday brunch', by: 'jev', model: 'jev-1.13.0', matches: [{ id: a.id, p: 0.9 }, { id: b.id, p: 0.7 }] } })
+      : route.fulfill({ status: 502, json: { error: 'Jev answered 529: busy, try again in a moment. The name search still works.' } }),
+  );
+  await page.getByLabel('Find a restaurant').fill('Sunday  Brunch');
+  await expect(page.locator('.ai-line')).toHaveText('✦ 2 places fit “sunday brunch” · AI (Jev), it can miss one');
+  for (const n of [a.name, b.name]) await expect(page.locator('.rows .nm', { hasText: n })).toHaveCount(1);
+  await expect(page.locator('.rows .row')).toHaveCount(2);
+  const bright = () => page.evaluate(() => (window as unknown as { seatedMap: { markers: Array<{ id: string; dim: boolean }> } }).seatedMap.markers.filter((m) => !m.dim).map((m) => m.id).sort());
+  await expect.poll(bright).toEqual([a.id, b.id].sort());
+  await page.getByLabel('Find a restaurant').fill('zzqx');
+  await expect(page.locator('.ai-line')).toContainText('The name search still works.');
 });
 
 // Joel, 19 Nov 2026: "i want north to be north. like google maps". Our art, drawn north up, is the map; sezlab's

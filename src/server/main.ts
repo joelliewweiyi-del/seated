@@ -16,6 +16,9 @@ import { loadCuratedRestaurants } from './restaurants.js';
 import { addDays, localDate } from './time.js';
 import { runCensus } from './census.js';
 import { buildMapData, loadGuides, loadOptOut, loadPlaces } from './mapData.js';
+import { loadMapFacts } from './mapFacts.js';
+// @ts-expect-error: plain JS module shared with the Vercel function, typed by its JSDoc
+import { classify } from '../../deploy/map/api/classify.mjs';
 import { fetchMyPlaces, syncListWatches } from './myLists.js';
 
 const store = new Store(config.dbPath);
@@ -244,6 +247,14 @@ if (config.demo) {
 
 // The public map (dist/map, built by `npm run build`): a static page plus its data, read-only.
 app.get('/map/data.json', (c) => c.body(mapJson(), 200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }));
+// The map's AI search, as on seated.food (/api/classify): Jev with TYPESAFE_API_KEY, else the labelled keyword stand-in.
+const mapFacts = loadMapFacts();
+app.get('/map/api/classify', async (c) => {
+  // The demo server (tests) never calls Jev unless asked with SEATED_JEV=1: no test spends the key or depends on it.
+  const key = config.demo && process.env.SEATED_JEV !== '1' ? undefined : process.env.TYPESAFE_API_KEY;
+  const r = await classify(c.req.query('q'), (JSON.parse(mapJson()) as { restaurants: unknown[] }).restaurants, mapFacts, key);
+  return c.json(r.body, r.status as 200);
+});
 app.get('/map', (c) => c.redirect('/map/'));
 app.use('/map/*', serveStatic({ root: 'dist/map', rewriteRequestPath: (p) => p.replace(/^\/map/, '') || '/' }));
 
