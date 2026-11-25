@@ -2138,3 +2138,56 @@ a {
 .mini-links button[aria-pressed='true'] {
   color: #b8322a;
 }
+
+/* Glass (try-out, Joel 25 Nov 2026: "liquid glass instead of that flat ground"): the small phone card as a translucent
+   layer over the map. Text stays dark violet on a light frost; Book keeps its solid teal. */
+.card.mini {
+  background: rgba(255, 250, 240, 0.5);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border-radius: 26px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 0 0 1px rgba(43, 39, 51, 0.12),
+    0 12px 32px rgba(29, 26, 36, 0.28);
+  padding: 12px 14px 6px;
+}
+.card.mini .mini-thumb {
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(43, 39, 51, 0.2);
+}
+.card.mini .close {
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(43, 39, 51, 0.15);
+}
+.card.mini .times.strip .time {
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(43, 39, 51, 0.18);
+}
+.card.mini .times.strip .time[aria-pressed='true'] {
+  background: var(--sun);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.card.mini .book {
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(15, 118, 110, 0.35);
+}
+.card.mini .mini-links a,
+.card.mini .mini-links button {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 600;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .card.mini {
+    background: var(--panel);
+    backdrop-filter: none;
+  }
+}
