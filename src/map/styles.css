@@ -1560,25 +1560,15 @@ a {
 .choice.scene .nm {
   font-size: 22px;
 }
+/* A character is its face and name, no description line (Joel, 25 Nov 2026: "Remove descriptions of characters"). */
 .choice.archetype {
   grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
   column-gap: 14px;
   align-items: center;
   padding: 12px 14px;
 }
-.choice.archetype .avatar {
-  grid-row: span 2;
-}
 .choice.archetype .nm {
   font-size: 22px;
-  align-self: end;
-}
-.choice.archetype .by {
-  font-size: 14px;
-  line-height: 1.35;
-  color: var(--ink-2);
-  align-self: start;
 }
 .welcome-links,
 .result-actions,

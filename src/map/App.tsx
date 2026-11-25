@@ -530,7 +530,7 @@ export function App() {
     const rs = placed.filter((p) => set.has(p.r.id));
     return { picks: rs.length, free: freeOf(rs) };
   };
-  const forYou: ListChoice | null = you.profile ? { id: 'you', name: 'For you', by: you.profile.name, line: you.profile.line, ...count(picks.map((r) => r.id)) } : null;
+  const forYou: ListChoice | null = you.profile ? { id: 'you', name: 'For you', by: you.profile.name, line: '', ...count(picks.map((r) => r.id)) } : null;
   const mine = you.account
     ? you.lists.map((l) => ({ id: `l:${l.id}`, name: l.title, by: l.note || 'Your list', line: l.note, badge: l.public ? 'In Community' : 'Only you', list: l, ...count(l.places) }))
     : null;

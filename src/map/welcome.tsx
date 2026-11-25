@@ -120,7 +120,6 @@ function Characters({ scene, picked, onPick, onBack }: { scene: string; picked?:
             <button className="choice archetype" aria-pressed={picked === p.id} onClick={() => onPick(p.id)}>
               <Avatar look={p.look} size={72} />
               <span className="nm">{p.name}</span>
-              <span className="by">{p.line}</span>
             </button>
           </li>
         ))}
@@ -300,7 +299,7 @@ export function YouPanel({ you, onWelcome, onLens, onClose }: { you: You; onWelc
           <Avatar look={a ? cleanLook(a.avatar) : null} size={64} />
           <div className="bubble">
             <h2 id="you-title">{a ? a.name : 'You'}</h2>
-            <p>{you.profile ? `${you.profile.name}. ${you.profile.line}` : 'Choose your character and the map finds your tables.'}</p>
+            <p>{you.profile ? you.profile.name : 'Choose your character and the map finds your tables.'}</p>
           </div>
         </div>
         {you.problem && <Trouble you={you} />}
