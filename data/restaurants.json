@@ -207,7 +207,7 @@
     "platformUid": "471835_0896cbcdc89da39ee29534bde65e6b2f1e8afaff14973affca4876990503cda5",
     "website": "https://www.barracuda.amsterdam",
     "city": "Amsterdam",
-    "address": "Aambeeldstaat 10, 1021 KB Amsterdam"
+    "address": "Aambeeldstraat 10, 1021 KB Amsterdam"
   },
   {
     "id": "basaal-den-haag",
@@ -2127,7 +2127,7 @@
     "platformUid": "885366_3274f8ed09a02f1a4357e9a59eba04057ed2907cd1135c735ed969a2ad208035",
     "website": "https://roef-amsterdam.nl/",
     "city": "Amsterdam",
-    "address": null,
+    "address": "Middenweg 35, 1098 AB Amsterdam",
     "hot": 1,
     "hotWhy": "2025 opening; book at least a week ahead"
   },
@@ -3027,7 +3027,7 @@
     "platformUid": "290681_9ecfd5cbe5b85d0d052c9849bec8afffeede347c104846fdfe9200d7cd252567",
     "website": "https://www.carmenamsterdam.com",
     "city": "Amsterdam",
-    "address": null
+    "address": "Keizersgracht 600, 1017 EP Amsterdam"
   },
   {
     "id": "pllek",
@@ -3081,7 +3081,7 @@
     "platformUid": "964373_b20d386432db0950733460f0d33082a5e8b817650ef7075317c7d2162b717fe1",
     "website": "https://modernamsterdam.nl",
     "city": "Amsterdam",
-    "address": null
+    "address": "Meidoornweg 2, 1031 GG Amsterdam"
   },
   {
     "id": "tozi",
