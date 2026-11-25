@@ -285,11 +285,12 @@ if (REAL) {
   // Text as the apps draw it: black on a white rounded box, placed once. A touch is a soft grey dot, as with "show touches".
   await page.addStyleTag({ content: `
     #film .tt { position: absolute; left: 0; right: 0; text-align: center; font: 700 23px/1.32 -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; letter-spacing: -0.01em; }
+    #film .tt.mid { top: 44%; transform: translateY(-50%); } #film #x.mid { top: 54%; } /* the reaction under the hero sign, which the camera puts at about 40% */ /* the middle of the screen, above the card (Joel, 25 Nov 2026: "pov should be in center of screen") */
     #film .tt span { background: #fff; color: #111; padding: 3px 10px; border-radius: 8px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
     #film .dot { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(255,255,255,.55); border: 1px solid rgba(0,0,0,.22); box-shadow: 0 1px 4px rgba(0,0,0,.2); }` });
   await page.evaluate(() => {
     const f = document.getElementById('film');
-    f.insertAdjacentHTML('beforeend', '<div class="tt" id="h" style="top:60px"></div><div class="tt" id="x" style="top:60px"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div>');
+    f.insertAdjacentHTML('beforeend', '<div class="tt mid" id="h"></div><div class="tt mid" id="x"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div>');
   });
   const HOOK = 'pov: friday 19:00<br>and nobody booked anything';
   const WOW = `wait ${facts.name.toLowerCase()} has a table??`;
