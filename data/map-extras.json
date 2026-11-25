@@ -1,0 +1,1553 @@
+{
+ "how": "Researched 25 Nov 2026 for the AI search (Joel: \"add brunch hours and a price level\"): from each restaurant's own site, then press and listings (never Google Maps, Instagram, TheFork, Tripadvisor or guide.michelin.com). brunch: weekdays with brunch or breakfast, [] none, null unknown. price: dinner per person without drinks, euros. level: 1 under 30, 2 30-60, 3 60-100, 4 over 100. Every known fact has its sources. Exploration: a first build, not checked against a second source; null means not found, never no.",
+ "checked": "2026-11-25",
+ "restaurants": {
+  "alba": {
+   "brunch": [],
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "wine bar",
+    "terrace",
+    "natural wine",
+    "seasonal"
+   ],
+   "sources": [
+    "https://www.alba-amsterdam.nl",
+    "https://www.yourlittleblackbook.me/en/alba-amsterdam/",
+    "https://joinpearl.co/restaurants/amsterdam-netherlands/alba",
+    "https://wanderlog.com/place/details/1191431/alba-restaurant--wijnbar"
+   ],
+   "note": "Own site (Nov 2026): Tu-Th 18-23, Fr-Sa 18-24, dinner only; a 2020 YLBB line about weekend brunch is out of date."
+  },
+  "bacalar": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "tacos",
+    "mezcal",
+    "chef's choice"
+   ],
+   "sources": [
+    "https://bacalar.amsterdam",
+    "https://mapthemeal.com/amsterdam/centrum/bacalar",
+    "https://wanderlog.com/place/details/1441945"
+   ],
+   "note": "Home page only: no hours, no menu prices. /menu returned 404."
+  },
+  "badcuyp": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "wood-fire cooking",
+    "seafood",
+    "large wine list",
+    "smart casual"
+   ],
+   "sources": [
+    "https://badcuypamsterdam.nl",
+    "https://www.bartsboekje.com/en/restaurant-badcuyp/",
+    "https://joinpearl.co/restaurants/amsterdam-netherlands/badcuyp"
+   ],
+   "note": "Homepage hours Mo-Sa 17:30-00:00 only. No prices on site."
+  },
+  "bak": {
+   "brunch": null,
+   "lunch": true,
+   "price": {
+    "low": 50,
+    "high": 50
+   },
+   "level": 2,
+   "vibe": [
+    "fine dining",
+    "seasonal",
+    "organic",
+    "special wines"
+   ],
+   "sources": [
+    "https://www.bakrestaurant.nl",
+    "https://bakrestaurant.nl/eten/",
+    "https://opentable.ae/r/bak-restaurant-amsterdam",
+    "https://www.timeout.com/amsterdam/restaurants/bak"
+   ],
+   "note": "Homepage: lunch Sa and Su stated; no breakfast or brunch line; no per-person prices. Price: OpenTable diner: seven course taster menu was EUR 50, plus about EUR 27 wine pairing; Michelin EUR EUR EUR"
+  },
+  "bar-centraal": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "natural wine",
+    "small plates to share",
+    "fusion"
+   ],
+   "sources": [
+    "https://barcentraal.nl",
+    "https://iamsterdam.com/en/see-and-do/eating-and-drinking/bars-serving-food/bar-centraal",
+    "https://mesprestiges.com/en/amsterdam/places/bar-centraal"
+   ],
+   "note": "Site has hours only (Mo 17-24, Fr 13-01), menu as PDF links, no tags."
+  },
+  "barracuda": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "seafood",
+    "sharing plates",
+    "sharing dishes",
+    "semi-self-service"
+   ],
+   "sources": [
+    "https://www.barracuda.amsterdam",
+    "https://www.barracuda.amsterdam/menu",
+    "https://joinpearl.co/restaurants/amsterdam/barracuda",
+    "https://roadbook.com/amsterdam/city-guide/best-restaurants-bars-amsterdam-noord"
+   ],
+   "note": "Prices in a sample-menu PDF, not read. Hours on a separate contact page, not read."
+  },
+  "bisous": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "intimate",
+    "French",
+    "French restaurant-bar",
+    "DJs at weekend nights"
+   ],
+   "sources": [
+    "https://bisous-official.com",
+    "https://www.amsterdamnow.com/en/restaurants/bisous-amsterdam-de-pijp"
+   ],
+   "note": "Hours Wed-Sat 17:30-01:00 only. Menu is a PDF, not read. Vibe: 'intimate French-Zeeland restaurant and bar', 'Parisian Chic'."
+  },
+  "bistro-de-la-mer": {
+   "brunch": [],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "seafood",
+    "a la carte",
+    "oysters",
+    "classic cuisine"
+   ],
+   "sources": [
+    "https://www.bistrodelamer.com/",
+    "https://guide.michelin.com/en/noord-holland/amsterdam/restaurant/bistro-de-la-mer"
+   ],
+   "note": "Full hours stated (lunch 12:00-14:30 and dinner 17:30-22:00 Mo-Su), no breakfast or brunch. No prices or vibe text."
+  },
+  "bolenius": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 99,
+    "high": 99
+   },
+   "level": 3,
+   "vibe": [
+    "vegetarian-friendly",
+    "new Dutch cuisine",
+    "sustainable",
+    "one Michelin star"
+   ],
+   "sources": [
+    "https://bolenius-rembrandtpark.nl/",
+    "https://restaurantsforkings.com/rankings/amsterdam/tasting-under-200/2026/"
+   ],
+   "note": "Site shows Valentine menus at 125 (no currency, special menu, not typical) so price left null. Lunch on 14.02 only (Valentine). Michelin not read (search snippet only). Price: The six-course menu is just €99, which makes it the best value-to-prestige ratio on this list."
+  },
+  "bon-burger": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "smash burger",
+    "natural wine",
+    "walk-in only"
+   ],
+   "sources": [
+    "https://www.bonburger.nl",
+    "https://bestdishesat.com/amsterdam/best/smash-burger",
+    "https://www.bartsboekje.com/?p=579358"
+   ],
+   "note": "Home page only: no hours, no menu."
+  },
+  "bon-burger-noord": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "smashburger",
+    "natural wine",
+    "takes reservations"
+   ],
+   "sources": [
+    "https://bonburgernoord.nl",
+    "https://www.bartsboekje.com/?p=579358",
+    "https://www.amsterdamnow.com/en/restaurants/bon-burger-bar-restaurant-smashburger-nature-wine"
+   ],
+   "note": "Page read but restaurant name on the page was not checked; hours Wed-Sun 17:00-23:00, kitchen closes 22:00. Verify the page is the Noord branch."
+  },
+  "boon-de-koot": {
+   "brunch": [],
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "neighbourhood spot",
+    "cosy",
+    "wine list",
+    "French bistro"
+   ],
+   "sources": [
+    "https://www.boonendekoot.nl/boonendekoot",
+    "https://www.amsterdamnow.com/en/restaurants/boon-de-koot-een-nieuwe-aanwinst-in-amsterdam-west"
+   ],
+   "note": "Dinner hours only (Mo-Th 17:30-24:00, Fr-Sa 16:00-24:00, Su closed). Menu is a PDF, not read."
+  },
+  "bottleshop": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "wine bar",
+    "modern neighbourhood restaurant",
+    "natural wine",
+    "small plates"
+   ],
+   "sources": [
+    "https://www.bottleshopams.nl",
+    "https://starwinelist.com/wine-place/bottleshop-amsterdam",
+    "https://www.amsterdamnow.com/en/?p=85670"
+   ],
+   "note": "Site gives tags only, no menu prices."
+  },
+  "bougainville": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "wine",
+    "panoramic city view",
+    "one Michelin star",
+    "5-7 course tasting menu"
+   ],
+   "sources": [
+    "https://restaurantbougainville.com/",
+    "https://guide.michelin.com/en/noord-holland/amsterdam/restaurant/bougainville",
+    "https://restaurantbougainville.com/menu"
+   ],
+   "note": "Footer lists only Mo-Su 18:30-22:00. No prices on page."
+  },
+  "cafe-binnenvisser": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "weekly changing menu",
+    "vegetable-led",
+    "vegetarian weeks",
+    "bar menu with oysters and charcuterie"
+   ],
+   "sources": [
+    "https://www.bartsboekje.com/en/cafe-binnenvisser-amsterdam-2/"
+   ],
+   "note": "Site returned only the name 'binnenvisser' (no hours, no menu), also on /menu. Nothing read."
+  },
+  "cafe-caron": {
+   "brunch": [],
+   "lunch": true,
+   "price": {
+    "low": 37,
+    "high": 50
+   },
+   "level": 2,
+   "vibe": [
+    "terrace",
+    "bar",
+    "homely"
+   ],
+   "sources": [
+    "http://www.cafecaron.nl",
+    "https://cafecaron.nl/lunch/"
+   ],
+   "note": "Price = cheapest to dearest starter (10-17) plus main (26.50-33), from listed dishes; not a stated per-person price. Lunch Sa and Su (lunch menu). Hours start 12:00."
+  },
+  "cafe-de-klepel": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 54,
+    "high": 64
+   },
+   "level": 2,
+   "vibe": [
+    "wine cafe",
+    "French bistro",
+    "French wines only"
+   ],
+   "sources": [
+    "http://cafedeklepel.nl"
+   ],
+   "note": "3-course 54,50 and 4-course 64,50 menus (changing daily, no dish names)."
+  },
+  "cafe-modern": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "terrace",
+    "bar",
+    "rotating five- to seven-course menu",
+    "seasonal produce"
+   ],
+   "sources": [
+    "https://modernamsterdam.nl",
+    "https://mesprestiges.com/en/amsterdam/places/cafe-modern"
+   ],
+   "note": "Lunch only as summer terrace lunch, no days. Area on search: Meidoornweg, Noord (page not checked)."
+  },
+  "cafe-parlotte": {
+   "brunch": [],
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "cozy",
+    "wine",
+    "chef-owned wine bistro",
+    "seasonal menu"
+   ],
+   "sources": [
+    "https://www.parlotte.nl",
+    "https://mesprestiges.com/en/amsterdam/places/cafe-parlotte"
+   ],
+   "note": "Weekend opening from 13:00, weekdays drinks from 16:00 and dinner from 17:00. No prices. Brunch [] is inferred from opening hours, not stated. Vibe: 'gezelligheid', 'Mooie wijn, lekker eten'."
+  },
+  "cafe-restaurant-amsterdam": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "family-friendly",
+    "Dutch classics",
+    "spacious",
+    "industrial monument"
+   ],
+   "sources": [
+    "https://cradam.nl/",
+    "https://iamsterdam.com/en/see-and-do/eating-and-drinking/restaurant-listing/caf-restaurant-amsterdam",
+    "http://www.caferestaurantamsterdam.nl"
+   ],
+   "note": "Site redirects to cradam.nl (Cradam). Hours and lunch PDF listed; menu PDFs not readable. Daily 10:00-24:00 per Cradam page; no breakfast or brunch stated."
+  },
+  "cafe-wu": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 58,
+    "high": 66
+   },
+   "level": 3,
+   "vibe": [
+    "wine focus",
+    "bistro",
+    "a la carte"
+   ],
+   "sources": [
+    "https://www.cafewu.nl"
+   ],
+   "note": "Hours Tue-Sat from 18:00 only. Price = chef's menu 4 courses EUR 58, 5 courses EUR 66."
+  },
+  "calisto": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "Italian",
+    "rotating menu",
+    "hotel restaurant"
+   ],
+   "sources": [
+    "https://www.yourlittleblackbook.me/calisto-amsterdam/",
+    "https://calistoamsterdam.nl"
+   ],
+   "note": "Homepage returned only the title 'calisto: restaurant & hotel'; /restaurant gave the same. Nothing read."
+  },
+  "carmen": {
+   "brunch": [
+    "Mo",
+    "Tu",
+    "We",
+    "Th",
+    "Fr",
+    "Sa",
+    "Su"
+   ],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "seasonal",
+    "warm design",
+    "cafe breakfast",
+    "all-day breakfast and lunch cafe"
+   ],
+   "sources": [
+    "https://www.carmenamsterdam.com",
+    "https://joinpearl.co/restaurants/amsterdam/carmen-amsterdam",
+    "https://www.yourlittleblackbook.me/de/carmen-kitchen-amsterdam/"
+   ],
+   "note": "Page: café serves breakfast and lunch; kitchen hours Mo-Th 9:30-14:30, Fr-Su 9:30-15:00. Breakfast day split not stated per weekday, so all days assumed from the kitchen hours. Verify."
+  },
+  "choux": {
+   "brunch": [],
+   "lunch": null,
+   "price": {
+    "low": 82,
+    "high": 82
+   },
+   "level": 3,
+   "vibe": [
+    "vegetable-forward",
+    "tasting menu",
+    "converted warehouse",
+    "vegetarian-friendly"
+   ],
+   "sources": [
+    "http://choux.nl",
+    "https://restaurantsforkings.com/rankings/amsterdam/tasting-under-200/2026/",
+    "https://joinpearl.co/restaurants/amsterdam-netherlands/choux"
+   ],
+   "note": "Site is a greeting and navigation only. Search snippets (not read) mention a one-star vegetarian tasting menu; not used. Price: The five-course tasting is €82.50, with a three-course Theatre menu at €52.50 for an early seat. (list updated 20 Jun 2026)"
+  },
+  "ciel-bleu": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 225,
+    "high": 275
+   },
+   "level": 4,
+   "vibe": [
+    "smart casual",
+    "award-winning",
+    "fine dining",
+    "hotel restaurant"
+   ],
+   "sources": [
+    "https://www.cielbleu.nl/",
+    "https://restaurantsforkings.com/rankings/amsterdam/tasting-under-200/2026/",
+    "https://www.okura.nl/hotel-okura-amsterdam-introduces-ciel-bleu-events"
+   ],
+   "note": "Entry Tue-Sat 18:30-20:00 only. Menu names given, no prices. Price: about €225 to €275, excluding drinks (2026 ranking); a 2026 guide gives menus from €215"
+  },
+  "copain": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 24,
+    "high": 54
+   },
+   "level": null,
+   "vibe": [],
+   "sources": [
+    "https://www.copain.amsterdam"
+   ],
+   "note": "Hours Wo-Za 18:00-22:00 only, Zo-Di no hours. Mains EUR 24 a la carte, chef's menu 4 courses EUR 54. Level null: range spans levels 1-2."
+  },
+  "cornerstore": {
+   "brunch": [],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "walk-in drinks",
+    "reservations for dinner",
+    "vegetarian-friendly",
+    "natural wine"
+   ],
+   "sources": [
+    "https://csnoord.com",
+    "https://csnoord.com/menu/",
+    "https://mapthemeal.com/amsterdam/noord/cornerstore",
+    "https://www.bartsboekje.com/en/cornerstore-amsterdam-noord/"
+   ],
+   "note": "Dinner Wed-Sat; lunch only on the first Sunday of the month. No breakfast or brunch. Menu prices not shown. Price: roughly €8 to €15 per person (aggregator estimate, generic, not from the menu)"
+  },
+  "cue": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "listening bar",
+    "tasting menu",
+    "cocktails",
+    "walk-in"
+   ],
+   "sources": [
+    "https://www.cue-amsterdam.com",
+    "https://joinpearl.co/restaurants/amsterdam-netherlands/cue"
+   ],
+   "note": "Lunch only on Sunday ('Sunday lunch, bookings from 13:00'). Menus named without prices."
+  },
+  "dame-aan-de-kade": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "walk-in",
+    "wine bar",
+    "natural wine",
+    "craft beer"
+   ],
+   "sources": [
+    "https://www.dameaandekade.nl",
+    "https://www.dameaandekade.nl/menu",
+    "https://www.amsterdamnow.com"
+   ],
+   "note": "Opening hours start 15:00 (Fri-Sun) or 17:00. Food menu is a linked PDF/image, not read."
+  },
+  "de-kas": {
+   "brunch": [],
+   "lunch": true,
+   "price": {
+    "low": 86,
+    "high": 95
+   },
+   "level": 3,
+   "vibe": [
+    "seasonal"
+   ],
+   "sources": [
+    "https://www.restaurantdekas.com/eng/menu",
+    "https://www.restaurantdekas.com"
+   ],
+   "note": "Menu page: Lunch 3 courses EUR 55, 4 courses EUR 67, 5 courses EUR 76; Dinner 5 courses EUR 86, 6 courses EUR 95. Menu page lists lunch and dinner only, no brunch. Homepage tagline 'In de ochtend geoogst, In de middag op het bord'. Price basis (per person) not stated on page. Search snippets (not read) gave different lunch prices."
+  },
+  "elan": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "good food",
+    "good wine",
+    "impeccable service",
+    "fine wine"
+   ],
+   "sources": [
+    "https://elanamsterdam.nl",
+    "https://wanderlog.com/place/details/2717105"
+   ],
+   "note": "Home page only: no hours, no menu, no prices."
+  },
+  "entrepot": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "comfort food",
+    "former billiards hall",
+    "local seasonal",
+    "queues"
+   ],
+   "sources": [
+    "http://www.restaurantentrepot.nl",
+    "https://www.enprimeurclub.com/restaurants/entrepot-amsterdam-restaurant",
+    "https://www.iamsterdam.com/en/see-and-do/eating-and-drinking/restaurant-listing/restaurant-entrepot"
+   ],
+   "note": "Footer hours only: MA-ZA 18:00-01:00. No lunch or breakfast shown. Lunch false rests on this footer alone."
+  },
+  "euro-pizza": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "small pizza menu",
+    "local produce",
+    "wood-fired pizza",
+    "natural wine"
+   ],
+   "sources": [
+    "https://www.europizza.rest",
+    "https://www.bartsboekje.com/en/euro-pizza-in-amsterdam-noord/",
+    "https://wanderlog.com/place/details/3138815"
+   ],
+   "note": "Site has no prices; menu as PDF."
+  },
+  "europa": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 89,
+    "high": 105
+   },
+   "level": 3,
+   "vibe": [
+    "tasting menu",
+    "counter",
+    "counter seating",
+    "vegetarian menu"
+   ],
+   "sources": [
+    "https://www.europa.rest",
+    "https://www.europa.rest/menu",
+    "https://roadbook.com/amsterdam/city-guide/best-restaurants-bars-amsterdam-noord"
+   ],
+   "note": "Hours Do/Vr/Za 18:30 only. Menu page 404. Price: Choose from a five or seven course tasting menu (89 and 105 EUR). (Roadbook, guide updated 9 Jul 2026; level 3 from the 89 menu, the 105 menu is level 4)"
+  },
+  "fa-pekelhaaring": {
+   "brunch": [],
+   "lunch": true,
+   "price": {
+    "low": 33,
+    "high": 47
+   },
+   "level": 2,
+   "vibe": [],
+   "sources": [
+    "https://www.pekelhaaring.nl"
+   ],
+   "note": "Hours Tu-Su 12:00-22:00, 'voor lunch & diner'; no breakfast or brunch stated. Price: a la carte per dish, starter+main computed as lowest antipasto 15.5 + lowest primo 17.5 = 33, and highest antipasto 17.5 + highest secondo 29.5 = 47. Not a menu price."
+  },
+  "flore": {
+   "brunch": null,
+   "lunch": true,
+   "price": {
+    "low": 250,
+    "high": 250
+   },
+   "level": 4,
+   "vibe": [
+    "tasting menu",
+    "conscious fine dining",
+    "kitchen table",
+    "wine list"
+   ],
+   "sources": [
+    "https://restaurantflore.com"
+   ],
+   "note": "Lunch Fri and Sat 12:00-16:00. Price = tasting menu 250 pp (Omnivore and Herbivore; wine pairing 120 pp). Mo, Tu, Su hours not stated."
+  },
+  "franzen": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "informal",
+    "classic bistro",
+    "relaxed service",
+    "French-Mediterranean"
+   ],
+   "sources": [
+    "https://www.franzen.amsterdam",
+    "https://www.amsterdamnow.com/en/restaurants/franzen-amsterdam-bar-and-diner-old-south",
+    "https://www.amsterdamsights.com/eatdrink/restaurants-zuid.html"
+   ],
+   "note": "Lunch Wed-Sat 12.00-14.30 per site. No prices (PDF)."
+  },
+  "fuku-ramen": {
+   "brunch": [],
+   "lunch": null,
+   "price": {
+    "low": 89,
+    "high": 89
+   },
+   "level": 3,
+   "vibe": [
+    "tasting menu",
+    "sharing plates",
+    "izakaya"
+   ],
+   "sources": [
+    "https://www.fukuramenamsterdam.com",
+    "https://www.fukuramenamsterdam.com/menu"
+   ],
+   "note": "Price = 6-course seasonal tasting menu. Sat 13:00-19:30 a la carte, not labelled lunch. No morning service listed."
+  },
+  "gebr-hartering": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": 1,
+   "vibe": [
+    "market-driven",
+    "short changing menu",
+    "canal terrace",
+    "often packed"
+   ],
+   "sources": [
+    "http://www.gebr-hartering.nl",
+    "https://www.opentable.com/r/gebr-hartering-amsterdam"
+   ],
+   "note": "Site: 'open daily from 18:00', no lunch or brunch times. Address Peperstraat 10hs. No prices read. Price: OpenTable puts it at €30 and under per person. Michelin: €€. Amsterdam Foodie: €€€ (conflict)."
+  },
+  "gitane": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 40,
+    "high": 40
+   },
+   "level": 2,
+   "vibe": [
+    "cafe restaurant",
+    "Mediterranean",
+    "pavement terrace",
+    "Bib Gourmand"
+   ],
+   "sources": [
+    "https://www.restaurantgitane.nl/",
+    "https://mapstr.com/place/m2y1GDEIJH"
+   ],
+   "note": "Page says open daily from 10, no weekday or service detail, no prices. Price: one guest reports a bill of €40 per person (single review, bill may include drinks)"
+  },
+  "helling-7": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "private dining",
+    "group lunch",
+    "walking dinner",
+    "shipyard building"
+   ],
+   "sources": [
+    "https://www.helling7.nl",
+    "https://roadbook.com/amsterdam/city-guide/best-restaurants-bars-amsterdam-noord",
+    "https://bestdishesat.com/amsterdam/best/grilled-steak"
+   ],
+   "note": "Lunch Sa and Su 12-15 per site ('Lunch Zaterdag & Zondag 12:00-15:00'). Sunday hours from 12 not named as brunch."
+  },
+  "hoi-tin": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 20,
+    "high": 30
+   },
+   "level": 1,
+   "vibe": [
+    "dim sum",
+    "chinese",
+    "noodles",
+    "Chinese"
+   ],
+   "sources": [
+    "https://www.hoitin.nl",
+    "https://www.hoitin.nl/menu",
+    "https://intravel.net/amsterdam/restaurants-cafes/hoi-tin",
+    "https://www.iamsterdam.com/en/see-and-do/eating-and-drinking/best-dim-sum"
+   ],
+   "note": "Open every day 12:00-22:00, not labelled lunch. Prices in menu PDFs, not read. Price: average meal 20 - 30 EUR (directory listing); Time Out: Price: Mid-range"
+  },
+  "hotel-de-goudfazant": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 50,
+    "high": 50
+   },
+   "level": 2,
+   "vibe": [
+    "vegetarian-friendly"
+   ],
+   "sources": [
+    "https://hoteldegoudfazant.nl/menu/",
+    "https://hoteldegoudfazant.nl/"
+   ],
+   "note": "Menu page: 'We serveren drie gangen voor EUR 49,50', changes often, fish/meat/vegan/vegetarian; a la carte prices not listed. Homepage and menu page give no opening hours, so lunch and brunch unknown."
+  },
+  "ikaria-park": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 18,
+    "high": 45
+   },
+   "level": 1,
+   "vibe": [
+    "Greek",
+    "park setting",
+    "outdoor seating",
+    "kleftiko"
+   ],
+   "sources": [
+    "https://mapthemeal.com/amsterdam/oud-west/ikaria-park",
+    "https://amsterdamfoodie.nl/?p=8207"
+   ],
+   "note": "Site not readable: certificate error on https://www.ikariapark.nl and http://www.ikariapark.nl. Search snippets only (not fetched); not used. Price: €18 to €45 per person (Mapthemeal aggregator); Amsterdam Sights: €€"
+  },
+  "kaagman-kortekaas": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 70,
+    "high": 90
+   },
+   "level": 3,
+   "vibe": [
+    "wild game",
+    "seasonal set menu"
+   ],
+   "sources": [
+    "https://www.kaagmanenkortekaas.nl"
+   ],
+   "note": "Brunch [] and lunch false from site: kitchen open Tue-Sat 18-22, closed Sun and Mon. Set menus 4/5/6 courses at 69,50/79,50/89,50."
+  },
+  "kamer-bar": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "grill",
+    "shared plates",
+    "natural wine",
+    "shared dining"
+   ],
+   "sources": [
+    "https://www.kamer.bar",
+    "https://www.kamer.bar/menu/",
+    "https://www.bartsboekje.com/en/kamer-bar-amsterdam/",
+    "https://www.amsterdamnow.com/en/?p=81829"
+   ],
+   "note": "Hours not on pages read. Menu prices only in an image."
+  },
+  "ken-sushi": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 80,
+    "high": 150
+   },
+   "level": 3,
+   "vibe": [
+    "omakase",
+    "cozy",
+    "informal"
+   ],
+   "sources": [
+    "https://www.kensushi.nl"
+   ],
+   "note": "Omakase Experience EUR 80 p.p., Advanced EUR 150 p.p., drinks extra. Hours Wed-Sun 17:00-00:00, seatings 17:30 and 20:30. Reservations online only. Level 3 uses the Experience menu; Advanced would be level 4."
+  },
+  "kid-amsterdam": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "nostalgic",
+    "good vibes",
+    "fried chicken",
+    "casual"
+   ],
+   "sources": [
+    "https://kidamsterdam.com",
+    "https://joinpearl.co/restaurants/amsterdam-netherlands/kid"
+   ],
+   "note": "Coffee Fri-Su 10:00-16:30 and lunch Fri-Su 11:30-16:30 stated; page never says brunch or breakfast. Listed prices are single dishes only (plie 27, shared steak 94)."
+  },
+  "kims-so-korean-food": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "Korean fried chicken",
+    "casual",
+    "fusion"
+   ],
+   "sources": [
+    "https://www.thuisbezorgd.nl/en/menu/kims-so-korean-fusion",
+    "https://www.quandoo.nl/en/place/kims-so-korean-food-oost-106851/reviews",
+    "https://mapthemeal.com/amsterdam/centrum/kims-so"
+   ],
+   "note": "No site in batch. Search results only (snippets, pages not read), no prices or menu found. Not used."
+  },
+  "kiri": {
+   "brunch": [],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "bento",
+    "japanese-inspired",
+    "lunch",
+    "garden setting"
+   ],
+   "sources": [
+    "https://www.okura.nl/kiri",
+    "https://joinpearl.co/restaurants/amsterdam/kiri"
+   ],
+   "note": "Lunch Tue-Fri 12:00-14:00 and first Sunday of month. Only lunch service listed. Bento EUR 74 and 78 are special menus; standard price not stated."
+  },
+  "la-vallade": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 38,
+    "high": 50
+   },
+   "level": 2,
+   "vibe": [
+    "terrace",
+    "vegetarian-friendly"
+   ],
+   "sources": [
+    "https://www.lavallade.nl",
+    "https://www.lavallade.nl/menu"
+   ],
+   "note": "Hours Mo-Su 17:30-21:00 only. Menu page: 4-course vegetarian menu EUR 38.50, meat or fish supplement EUR 11.50 (high = 50). Page does not say per person. Terrace: 'Bij mooi weer serveren onze wekelijks wisselende menu's ... op het terras'."
+  },
+  "marie": {
+   "brunch": [],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "waterfront",
+    "cosy elegant",
+    "Parisian",
+    "classic cuisine"
+   ],
+   "sources": [
+    "https://marieamsterdam.com",
+    "https://www.enprimeurclub.com/restaurants/marie"
+   ],
+   "note": "Lunch Mo-Fr 12:00-14:00, Sa-Su 12:30-14:00; dinner daily 18:00-21:00. No breakfast or brunch. Menus are flippingbook PDFs, not read."
+  },
+  "meneer-de-wit-heeft-honger": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "Mediterranean",
+    "cozy",
+    "bold flavours",
+    "Mediterranean-Moroccan"
+   ],
+   "sources": [
+    "https://www.iamsterdam.com/uit/agenda/eten-en-drinken/restaurants/meneer-de-wit-heeft-honger",
+    "https://intravel.net/amsterdam/restaurants-cafes/meneer-de-wit-heeft-honger",
+    "https://www.amsterdamnow.com/en/?p=85553"
+   ],
+   "note": "Own site http://www.meneerdewitheefthonger.nl returned 404 (both http and https). iAmsterdam lists Wed-Sun 18:00-22:00 only, no brunch or lunch stated: brunch [] and lunch false rest on those hours alone. No prices found."
+  },
+  "mesa-mesa": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "tapas",
+    "walk-in at bar on weekdays",
+    "Spanish tapas",
+    "sharing plates"
+   ],
+   "sources": [
+    "https://www.mesamesa.nl",
+    "https://www.opentable.co.uk/r/mesa-mesa-amsterdam",
+    "https://www.amsterdamnow.com/en/restaurants/mesa-mesa-amsterdam-de-pijp/"
+   ],
+   "note": "Sat open 12:00, Sun 12:00; lunch not labelled. No prices. Price: price range €31 to €50 (OpenTable listing)"
+  },
+  "nikotin": {
+   "brunch": [],
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "walk-in",
+    "restobar",
+    "terrace",
+    "relaxed"
+   ],
+   "sources": [
+    "https://www.nikotin.nl/",
+    "https://www.bartsboekje.com/nikotin-amsterdam-noord/"
+   ],
+   "note": "Hours Wed-Sat from 18:00, Sun from 13:00, no morning service listed. Bar 'always open for walk-in'. Food menu is a Google Drive link, not read. Brunch [] inferred from hours."
+  },
+  "nk-thai-noodles": {
+   "brunch": [],
+   "lunch": true,
+   "price": {
+    "low": 18,
+    "high": 20
+   },
+   "level": 1,
+   "vibe": [
+    "family-owned",
+    "cosy",
+    "authentic Thai"
+   ],
+   "sources": [
+    "https://nkthainoodles.nl",
+    "https://nkthainoodles.nl/contact/"
+   ],
+   "note": "Hours Mo-Sa 12:00-22:00, Su closed. Price = main dish only (Krapao 18.50 to Pad Thai 20.50), not a full meal. Lunch from the Visit Us text."
+  },
+  "nnea": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "pizza",
+    "card only",
+    "top-notch ingredients",
+    "book months ahead"
+   ],
+   "sources": [
+    "https://www.nneapizza.com/",
+    "https://wanderlog.com/place/details/1187846/nnea-pizza"
+   ],
+   "note": "Brunch [] and lunch false rest on site hours '7 days open from 17:30' only. 'Strictly NO CASH POLICY' stated."
+  },
+  "omi": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "chef's menu",
+    "compact wine list",
+    "personal service",
+    "dinner Tue-Sat from 17:00"
+   ],
+   "sources": [
+    "https://omiamsterdam.nl"
+   ],
+   "note": "Dinner Tue-Sat from 17:00 only. No prices on page."
+  },
+  "restaurant-212": {
+   "brunch": [],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "creative",
+    "open kitchen",
+    "about 30 seats"
+   ],
+   "sources": [
+    "https://www.212.amsterdam/restaurant-212",
+    "https://elizabethonfood.com/content/1653/2/index.html",
+    "https://guide.michelin.com/en/noord-holland/amsterdam/restaurant/restaurant-212"
+   ],
+   "note": "Lunch Wed-Sat 12:00-13:30, dinner Tu-Sat 18:30-21:00. No brunch or breakfast listed. No menu prices read."
+  },
+  "restaurant-kyo": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 29,
+    "high": 43
+   },
+   "level": 1,
+   "vibe": [
+    "gastropub",
+    "casual",
+    "sake",
+    "izakaya"
+   ],
+   "sources": [
+    "https://www.restaurantkyo.nl",
+    "https://intravel.net/amsterdam/restaurants-cafes/restaurant-kyo",
+    "https://www.amsterdamfoodie.nl/amsterdam-food-guide/japanese-restaurants-in-amsterdam/"
+   ],
+   "note": "Contact hours 17:00-00:00 daily and dinner-only wording, but the COVID notice on the page is dated 2020, so hours may be stale. Per-dish prices only (3.55-33.95). Price: average price for a meal 29 - 43 EUR (Intravel directory)"
+  },
+  "restobar-massalia": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "restobar",
+    "brasserie level",
+    "Greek influences",
+    "Greek-leaning"
+   ],
+   "sources": [
+    "https://www.restobarmassalia.nl/",
+    "https://foodle.pro/restaurants/amsterdam/massalia-restobar",
+    "https://www.amsterdamnow.com/en/restaurants/massalia-restaurant-french-greek-east-terrace/"
+   ],
+   "note": "Hours Mo-Th 16-00, Fr 16-01, Sa-Su 12-00/01; no lunch or brunch stated."
+  },
+  "rijsel": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 49,
+    "high": 58
+   },
+   "level": 2,
+   "vibe": [
+    "relaxed atmosphere"
+   ],
+   "sources": [
+    "http://www.rijsel.com"
+   ],
+   "note": "Hours Mon-Fri 18:00-22:00 only. Price = starter 17.50 + main 31.50 (from) to 3-course a la carte 58.50, wine excluded."
+  },
+  "roef": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "neighbourhood bistro",
+    "seasonal",
+    "a la carte or 3-5 course menu",
+    "international"
+   ],
+   "sources": [
+    "https://roef-amsterdam.nl/",
+    "https://www.amsterdamnow.com/en/?p=76599"
+   ],
+   "note": "Open Tu-Sa from 11:00, Su-Mo closed. Text: 'een goeie koffie, een lekkere lunch of een avond tafelen'. Morning service not clear, so brunch null. No prices."
+  },
+  "roux": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 50,
+    "high": 85
+   },
+   "level": 3,
+   "vibe": [
+    "a la carte",
+    "classic and modern",
+    "no tasting menu obligation",
+    "French bistronomy"
+   ],
+   "sources": [
+    "https://www.restaurantroux.nl",
+    "https://www.restaurantroux.nl/diner",
+    "https://www.amsterdamnow.com/en/restaurants/roux-combines-french-finesse-with-innovative-wine-list-in-the-jordan"
+   ],
+   "note": "Hours not on the page. Menu page content truncated; no prices read. Price: 3 courses EUR 50,- / 4 courses EUR 70,- / 5 courses EUR 85,- (chef's menu, per person)"
+  },
+  "salmuera": {
+   "brunch": null,
+   "lunch": null,
+   "price": {
+    "low": 12,
+    "high": 35
+   },
+   "level": 1,
+   "vibe": [
+    "Latin cooking",
+    "mezcal",
+    "grill (asado)",
+    "sharing menu"
+   ],
+   "sources": [
+    "https://www.sal-amsterdam.nl/",
+    "https://en.eet.nu/amsterdam/salmuera"
+   ],
+   "note": "Site: 'Casa del asado y mezcal', 'From Argentina to Mexico'. No prices on site. Price: One aggregator puts the cost at roughly €12 to €35 per person, depending on what you order."
+  },
+  "scheepskameel": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 52,
+    "high": 52
+   },
+   "level": 2,
+   "vibe": [
+    "German wines",
+    "Bib Gourmand",
+    "seasonal",
+    "converted warehouse"
+   ],
+   "sources": [
+    "http://www.scheepskameel.nl",
+    "https://www.amsterdamnow.com/en/?p=81314"
+   ],
+   "note": "Hours Tue-Sat from 18:00 only. No prices. Price: AmsterdamNow estimates a four-course menu at about €52 per person (article undated)."
+  },
+  "september": {
+   "brunch": [],
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "seasonal menu",
+    "natural wine (at least 30%)",
+    "local ingredients",
+    "neighbourhood"
+   ],
+   "sources": [
+    "https://septemberamsterdam.nl",
+    "https://wanderlog.com/place/details/10140819/september-amsterdam"
+   ],
+   "note": "Hours Wed-Thu 17:00-23:00, Fri 17:00-00:00, Sat 13:00-22:00; Sun-Tue not listed. No lunch or brunch stated. Menu not read."
+  },
+  "showw": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "high-end comfort food",
+    "contemporary",
+    "waterfront",
+    "tasting menu"
+   ],
+   "sources": [
+    "https://www.restaurantshoww.com",
+    "https://www.enprimeurclub.com/restaurants/restaurant-showw-amsterdam-restaurant"
+   ],
+   "note": "Lunch Mo 12:00-13:30 and Su; dinner Mo and Th-Su 18:00-20:30. Sat and Tue/Wed hours not stated. No breakfast line."
+  },
+  "sinck": {
+   "brunch": null,
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "wine bar",
+    "relaxed dinner",
+    "special sauces",
+    "wine list"
+   ],
+   "sources": [
+    "https://www.sinckamsterdam.nl",
+    "https://wanderlog.com/place/details/4525264"
+   ],
+   "note": "Sunday lunch ('op zondag ... lunch of vroeg diner'). Mo-Sa lunch 'op aanvraag' (on request), so lunch true is for Sunday only."
+  },
+  "sinne": {
+   "brunch": null,
+   "lunch": true,
+   "price": {
+    "low": 85,
+    "high": 125
+   },
+   "level": 3,
+   "vibe": [
+    "informal luxury",
+    "multi-course dinner",
+    "compact menu",
+    "four to six courses"
+   ],
+   "sources": [
+    "http://www.restaurantsinne.nl",
+    "https://stefangourmet.com/2026/02/07/restaurant-sinne-amsterdam-review/"
+   ],
+   "note": "Lunch Sat and Sun 12:00-16:00. Menu prices not on page. Price: four courses €85, five courses €105, six courses €125 (review dated 7 Feb 2026)"
+  },
+  "tannay": {
+   "brunch": [],
+   "lunch": true,
+   "price": {
+    "low": 74,
+    "high": 89
+   },
+   "level": 3,
+   "vibe": [
+    "classic French"
+   ],
+   "sources": [
+    "https://tannay.nl"
+   ],
+   "note": "Chef's menu EUR 74 or EUR 89 p.p. (9 Oct to 29 Nov). Lunch Sat and Sun 12:30-14:00 per page. Dinner Wed-Sun. Menu from 2 Dec has no price."
+  },
+  "taste-of-culture": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "Chinese",
+    "budget",
+    "no-frills"
+   ],
+   "sources": [
+    "https://mapthemeal.com/amsterdam/centrum/taste-of-culture",
+    "https://www.airbnb.com/things-to-do/places/565661"
+   ],
+   "note": "No site on record. Search results (not fetched) put it at Korte Leidsedwarsstraat, not De Weteringschans; address and hours unconfirmed. Not used. Price: prices range from €12 to €25 per person (one guide estimate; not verified, the restaurant's page returned 403)"
+  },
+  "thai-thai-poppetje": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "Thai street food",
+    "authentic",
+    "bar",
+    "khao soi"
+   ],
+   "sources": [
+    "https://thaithaipoppetje.nl",
+    "https://mapthemeal.com/amsterdam/oud-west/thai-thai-poppetje",
+    "https://www.timeout.com/amsterdam/restaurants/best-restaurants-in-amsterdam"
+   ],
+   "note": "Dishes named without prices."
+  },
+  "toet": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "Mediterranean",
+    "modern",
+    "open kitchen",
+    "casual"
+   ],
+   "sources": [
+    "https://www.toetamsterdam.nl",
+    "https://guide.michelin.com/be/nl/noord-holland/amsterdam/restaurant/toet-amsterdam",
+    "https://www.bartsboekje.com/en/restaurant-toet-amsterdam/"
+   ],
+   "note": "Hours Mon-Sun 17:30-22:00 only. Menu PDF not read. Search says Toet is at Europaplein (Zuid), not Scheldebuurt: area to check."
+  },
+  "toscanini": {
+   "brunch": [],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "regional Italian",
+    "casual",
+    "busy"
+   ],
+   "sources": [
+    "http://www.restauranttoscanini.nl",
+    "https://wanderlog.com/place/details/1187847/toscanini",
+    "https://www.belvicci.com/restaurant/netherlands/amsterdam-centrum-amsterdam-jordaan/toscanini"
+   ],
+   "note": "Mo-Th 18:00-21:30, Fr-Sa 12:00-14:00 and 18:00-21:30, Su closed. No brunch stated. Price list not read on homepage."
+  },
+  "troef": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "modern French bistro",
+    "open kitchen",
+    "Michelin Plate",
+    "neighbourhood bistro"
+   ],
+   "sources": [
+    "https://troefamsterdam.nl",
+    "https://guide.michelin.com/en/noord-holland/amsterdam/restaurant/troef",
+    "https://joinpearl.co/restaurants/troef-amsterdam-restaurant"
+   ],
+   "note": "Only dinner hours stated: Mo-Su 17:30-23:00. No prices. Wine and dinner menus are pages, read as links only."
+  },
+  "twee-prinsen": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "no reservations",
+    "open 7 days",
+    "natural wine",
+    "small plates"
+   ],
+   "sources": [
+    "https://tweeprinsen.nl",
+    "https://www.novacircle.com/spots/europe/netherlands/noord-holland/amsterdam-municipality/amsterdam/cafe-twee-prinsen-0e42da/about",
+    "https://www.yourlittleblackbook.me/en/cafe-twee-prinsen-amsterdam/",
+    "https://www.theinfatuation.com/amsterdam/reviews/cafe-twee-prinsen"
+   ],
+   "note": "Site gives hours and door policy only, no menu."
+  },
+  "utage-sake-bar": {
+   "brunch": [],
+   "lunch": false,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "sake bar",
+    "Japanese bites",
+    "handcrafted cocktails",
+    "sake pairings"
+   ],
+   "sources": [
+    "https://www.utage-sakebar.nl/",
+    "https://www.eventbrite.nl/e/tickets-sake-for-wine-people-guided-tasting-bites-amsterdam-1645535574199"
+   ],
+   "note": "Brunch [] and lunch false rest on site hours Mo-Sa 17:30-23:00, Su closed. No prices."
+  },
+  "vin-fou": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "walk-in",
+    "snacks",
+    "extended wine list",
+    "curated wine"
+   ],
+   "sources": [
+    "https://www.vinfou.nl",
+    "https://www.bartsboekje.com/en/vin-fou-amsterdam/",
+    "https://joinpearl.co/restaurants/amsterdam/vin-fou"
+   ],
+   "note": "Sat/Sun open 12:00, Mon-Thu 15:30. No prices. Walk-in stated."
+  },
+  "vinkeles": {
+   "brunch": [],
+   "lunch": false,
+   "price": {
+    "low": 220,
+    "high": 220
+   },
+   "level": 4,
+   "vibe": [
+    "refined",
+    "two Michelin stars",
+    "tasting menu",
+    "dinner only"
+   ],
+   "sources": [
+    "https://www.vinkeles.com",
+    "https://stefangourmet.com/2025/03/01/dining-in-amsterdam-vinkeles-2025/"
+   ],
+   "note": "Dinner Tu-Sa 18:30-21:00 only. Breakfast only as part of a hotel package at OCCO (another venue). Tagline 'exciting, modest and refined'. No menu prices (menu page not read). Price: the price of the chef's menu has been increased from 185 to 220 euros (article dated 1 Mar 2025)"
+  },
+  "vrr": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "reinvented classics",
+    "historic 1895 building",
+    "festive programme",
+    "restaurant with bar"
+   ],
+   "sources": [
+    "https://vrr.rest",
+    "https://smaak.substack.com/p/double-dutch-vrr-and-stadsbakkerij"
+   ],
+   "note": "Dinner Tu-Sa from 18:00; Sun and Mo not stated. Lunch only as special events (Sun 29 Nov, 1 Jan). Diner de Quartier 29.50 for main, bread, salad and dessert, per person not stated, so price left null."
+  },
+  "watergang": {
+   "brunch": null,
+   "lunch": true,
+   "price": {
+    "low": 74,
+    "high": 74
+   },
+   "level": 3,
+   "vibe": [
+    "changing surprise menu",
+    "four-course lunch"
+   ],
+   "sources": [
+    "https://restaurantwatergang.nl"
+   ],
+   "note": "Lunch Fr, Sa, Su from 12.30. Five-course surprise menu 74 (dinner). Four-course lunch 62 on Fr-Su (not used for price range)."
+  },
+  "weinlokal-stern": {
+   "brunch": [],
+   "lunch": true,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "german wine",
+    "wine bar",
+    "bistro",
+    "German wine"
+   ],
+   "sources": [
+    "https://www.weinlokalstern.nl",
+    "https://www.bartsboekje.com/en/weinlokal-stern-amsterdam/",
+    "https://www.amsterdamnow.com/en/restaurants/weinlokal-stern-restaurant-german-cuisine/"
+   ],
+   "note": "Lunch Sunday only, 12:30-14:00. Wine card EUR 38-75 is drinks; dish prices not stated."
+  },
+  "wils": {
+   "brunch": null,
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "cooking over fire",
+    "plant-forward",
+    "cocktail bar",
+    "roof terrace"
+   ],
+   "sources": [
+    "https://restaurantwils.nl/",
+    "https://www.theworlds50best.com/discovery/Establishments/Netherlands/Amsterdam/Restaurant-Wils.html"
+   ],
+   "note": "Page shows only the name 'Wils Restaurant & Wils Bakery Café' and navigation. No hours, menu or prices. Nothing read."
+  },
+  "xiang": {
+   "brunch": [],
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "Hunan",
+    "by the canal",
+    "bold and vibrant"
+   ],
+   "sources": [
+    "https://www.xiangamsterdam.com"
+   ],
+   "note": "Hours Su-Th 12:00-22:30, Fr-Sa 12:00-23:30; no lunch stated. Dishes are shared-style plates (18.90-25.90 main, 9.90 egg), so no per-person figure."
+  },
+  "zoldering": {
+   "brunch": [],
+   "lunch": null,
+   "price": null,
+   "level": null,
+   "vibe": [
+    "wine-led",
+    "modern French",
+    "walk-in bar seats"
+   ],
+   "sources": [
+    "https://www.zoldering.nl/",
+    "https://wanderlog.com/place/details/1395609",
+    "https://www.openingstijden.nl/Zoldering/Amsterdam/Utrechtsestraat-141H/"
+   ],
+   "note": "Fetched page mixed with content for Lof, de Wijnwinkel and Boon & de Koot; cannot tell which is Zoldering. Only 'keuken tot 22:00' Fri-Sat found; not read as lunch. Needs a second look."
+  }
+ }
+}

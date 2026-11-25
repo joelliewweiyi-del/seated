@@ -16,6 +16,8 @@ export const MATCH = 0.5;
 export const MAX_QUERY = 80;
 const DAYS = { Mo: 'Monday', Tu: 'Tuesday', We: 'Wednesday', Th: 'Thursday', Fr: 'Friday', Sa: 'Saturday', Su: 'Sunday' };
 const KIND = { wine: 'wine bar', fine: 'fine dining', bistro: 'bistro', brasserie: 'brasserie', japanese: 'Japanese', pizza: 'Italian', cafe: 'café', greenhouse: 'greenhouse restaurant', island: 'island restaurant' };
+const LEVEL = { 1: 'cheap, under €30 a person', 2: 'mid-priced, €30 to €60 a person', 3: 'pricey, €60 to €100 a person', 4: 'expensive, over €100 a person' };
+const days = (d) => d.map((x) => DAYS[x] ?? x).join(', ');
 const MICHELIN = { 3: 'three Michelin stars', 2: 'two Michelin stars', 1: 'one Michelin star', bib: 'Michelin Bib Gourmand' };
 
 /** The search as it is asked and cached: lower case, single spaces, at most MAX_QUERY characters. */
@@ -24,10 +26,11 @@ export const normalise = (q) => String(q ?? '').toLowerCase().replace(/\s+/g, ' 
 /**
  * One restaurant as the classifier reads it.
  * @param {{ id: string, name: string, area?: string, kind?: string, michelin?: string|null, g?: string[], hot?: number, why?: string, platform?: string }} r a data.json restaurant
- * @param {{ about?: Record<string, { text: string }>, hours?: Record<string, { open: string[] }>, guides?: Record<string, string> }} facts
+ * @param {{ about?: Record<string, { text: string }>, hours?: Record<string, { open: string[] }>, guides?: Record<string, string>, extras?: Record<string, Extra> }} facts
  */
 export function describe(r, facts) {
   const open = facts.hours?.[r.id]?.open;
+  const x = facts.extras?.[r.id];
   const guides = (r.g ?? []).map((g) => facts.guides?.[g]).filter(Boolean);
   return [
     `${r.name}: ${KIND[r.kind] ?? r.kind ?? 'restaurant'} in ${r.area ?? 'Amsterdam'}.`,
@@ -35,7 +38,13 @@ export function describe(r, facts) {
     r.hot && 'Hard to book.',
     r.why && `${r.why}`,
     guides.length && `On the lists: ${guides.join(', ')}.`,
-    open?.length && `Open on ${open.map((d) => DAYS[d] ?? d).join(', ')}.`,
+    open?.length && `Open on ${days(open)}.`,
+    x && Array.isArray(x.brunch) && (x.brunch.length ? `Serves brunch or breakfast on ${days(x.brunch)}.` : 'No brunch or breakfast.'),
+    x && x.lunch === true && 'Serves lunch.',
+    x && x.lunch === false && 'No lunch.',
+    x?.price && `Dinner costs about €${x.price.low}${x.price.high !== x.price.low ? ` to €${x.price.high}` : ''} a person, without drinks.`,
+    x?.level && `Price: ${LEVEL[x.level]}.`,
+    x?.vibe?.length && `Known for: ${x.vibe.join(', ')}.`,
     r.platform === 'walk-in' && 'Walk-in only, no reservations.',
     facts.about?.[r.id]?.text && `From its own website: ${facts.about[r.id].text}`,
   ]
@@ -109,6 +118,11 @@ export async function classify(rawQ, restaurants, facts, key, doFetch = fetch) {
     return { status: 502, body: { error: `${err instanceof Error ? err.message : err}. The name search still works.` } };
   }
 }
+
+/**
+ * Researched facts per restaurant (data/map-extras.json): null is unknown, never no.
+ * @typedef {{ brunch: string[] | null, lunch: boolean | null, price: { low: number, high: number } | null, level: 1|2|3|4|null, vibe: string[], sources: string[] }} Extra
+ */
 
 // ---- the Vercel function ----
 const DATA_URL = 'https://frbsdcwab8vdcurw.public.blob.vercel-storage.com/map/data.json';
