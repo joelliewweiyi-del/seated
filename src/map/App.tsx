@@ -393,8 +393,8 @@ export function App() {
       const view = viewRef.current;
       setSelected(id);
       if (p && view) {
-        // On a phone the card covers up to half the height once it opens (CARD_SHEET), so plan for that.
-        const c = centred(view, p.ax, p.ay, Math.max(view.cam.z, 1), matchMedia('(max-width: 900px)').matches ? innerHeight * CARD_SHEET + 44 : null);
+        // On a phone the small card covers about a fifth of the height (MINI_SHEET), so plan for that; More opens it to half.
+        const c = centred(view, p.ax, p.ay, Math.max(view.cam.z, 1), matchMedia('(max-width: 900px)').matches ? innerHeight * MINI_SHEET + 44 : null);
         view.flyTo(c.x, c.y, c.z);
       }
     },
@@ -722,7 +722,8 @@ export function App() {
  *  (Joel, 19 Nov 2026: the full list hid both). Keep in step with `.side.near` in styles.css. */
 const NEAR_SHEET = 0.46;
 /** A card on a phone: half the screen (`.side.has-card`), so the place stays in sight above it (Joel, 19 Nov 2026). */
-const CARD_SHEET = 0.5;
+/** The small phone card's share of the screen (Joel, 25 Nov 2026: "40% ... too much"); e2e keeps it under 25%. */
+const MINI_SHEET = 0.22;
 
 function centred(view: MapView, x: number, y: number, z: number, bottom: number | null): { x: number; y: number; z: number } {
   const s = view.safe;
@@ -1340,6 +1341,9 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
               {KIND_WORD[r.kind] ?? 'Restaurant'} · {r.area}
             </p>
           </div>
+          <button className="btn small more" onClick={() => setFull(true)} aria-label="More: site, route, share, save, calendar">
+            ···
+          </button>
           <button className="btn small close" onClick={onClose} aria-label="Close">
             ✕
           </button>
@@ -1365,30 +1369,13 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
         )}
         {book && !walkIn(r) && (
           <a className={`btn book${status === 'open' ? ' primary' : ''}`} href={book} target="_blank" rel="noopener">
-            {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
+            <span>
+              {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
+            </span>
+            {/* Their page can't be told the date: say which one to pick, inside the button, so it costs no line. */}
+            {status === 'open' && NO_DATE_LINK.has(r.platform) && <small>pick {dayLabel(day)} there</small>}
           </a>
         )}
-        {book && !walkIn(r) && status === 'open' && NO_DATE_LINK.has(r.platform) && (
-          <p className="mini-hint">
-            {r.platform} opens on its own date: pick {dayLabel(day)}
-            {pick ? `, ${pick}` : ''}.
-          </p>
-        )}
-        <nav className="mini-links">
-          {r.site && (walkIn(r) || r.site !== book) && (
-            <a href={r.site} target="_blank" rel="noopener">
-              Site
-            </a>
-          )}
-          <a href={route} target="_blank" rel="noopener">
-            Route
-          </a>
-          <button onClick={() => share(r, day).then(setShared)}>{shared || 'Share'}</button>
-          <button aria-pressed={saved} onClick={onSave}>
-            {saved ? '♥ Saved' : '♡ Save'}
-          </button>
-          <button onClick={() => setFull(true)}>More</button>
-        </nav>
       </section>
     );
   return (

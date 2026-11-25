@@ -149,16 +149,16 @@ test('on a phone the map, the day bar and the list sheet all fit, and the chrome
   await page.locator('.rows .row').first().click();
   await expect(page.locator('.card h2')).toBeVisible();
   await expect(page.locator('.card').getByRole('link', { name: /Book|Booking page/ })).toBeInViewport();
-  // The small card: who, the times, Book and one line of links, well under half the screen (Joel, 25 Nov 2026:
-  // "it takes up too much screen real estate"). Book stays whole in sight.
-  expect((await page.locator('.side').boundingBox())!.height).toBeLessThanOrEqual(844 * 0.42);
+  // The small card: who, the times and Book, about a fifth of the screen (Joel, 25 Nov 2026: "it still takes up too
+  // much real estate ... 40%"). Book stays whole in sight.
+  expect((await page.locator('.side').boundingBox())!.height).toBeLessThanOrEqual(844 * 0.25);
   const book = (await page.locator('.card').getByRole('link', { name: /Book|Booking page/ }).boundingBox())!;
   expect(book.y + book.height).toBeLessThanOrEqual(844);
   await expect(page.locator('.card .cal')).toHaveCount(0);
   await settled(page);
   await shot(page, '06-phone-card');
   // More opens the whole card (calendar and all), half the screen as before.
-  await page.locator('.mini-links').getByRole('button', { name: 'More' }).click();
+  await page.locator('.card.mini .more').click();
   await expect(page.locator('.card .cal, .card .meta').first()).toBeAttached();
   expect((await page.locator('.side').boundingBox())!.height).toBeLessThanOrEqual(844 * 0.51);
   await shot(page, '06c-phone-card-more');

@@ -2112,32 +2112,6 @@ a {
 .card.mini .book {
   justify-content: center;
 }
-.mini-hint {
-  margin: -2px 0 0;
-  font-size: 12px;
-  color: var(--muted);
-  text-align: center;
-}
-.mini-links {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-}
-.mini-links a,
-.mini-links button {
-  padding: 8px 4px;
-  min-height: 36px;
-  border: 0;
-  background: none;
-  color: var(--ink-2);
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-.mini-links button[aria-pressed='true'] {
-  color: #b8322a;
-}
 
 /* Glass everywhere (Joel, 25 Nov 2026: "liquid glass instead of that flat ground", then "glass everywhere"): every panel
    is a translucent, blurred layer over the map with rounded corners and a light top edge; controls are glass pills with
@@ -2244,7 +2218,42 @@ a {
   box-shadow: 0 0 0 2px var(--ink);
 }
 .card.mini {
-  padding: 12px 14px 6px;
+  padding: 10px 12px 10px;
+  gap: 8px;
+}
+.card.mini .mini-thumb {
+  width: 40px;
+  height: 40px;
+}
+.card.mini h2 {
+  font-size: 17px;
+}
+.card.mini .where {
+  margin-top: 1px;
+  font-size: 12px;
+}
+.card.mini .more,
+.card.mini .close {
+  align-self: center;
+}
+.times.strip {
+  padding: 2px;
+}
+.times.strip .time {
+  min-height: 34px;
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.card.mini .book {
+  min-height: 44px;
+  padding: 6px 14px;
+  flex-direction: column;
+  gap: 2px;
+}
+.card.mini .book small {
+  font: 500 11px/1 var(--text);
+  opacity: 0.85;
 }
 /* Inner boxes are a lighter frost, never solid cream on the glass. */
 .state {
@@ -2266,22 +2275,17 @@ a {
   box-shadow: 0 0 0 1px rgba(43, 39, 51, 0.2);
 }
 .card.mini .close,
+.card.mini .more,
 .card .room .close {
-  width: 34px;
-  min-height: 34px;
-  height: 34px;
+  width: 40px;
+  min-height: 40px;
+  height: 40px;
   padding: 0;
   justify-content: center;
   border-radius: 999px;
 }
 .card.mini .book {
   border-radius: 16px;
-}
-.mini-links a,
-.mini-links button {
-  text-decoration: none;
-  color: var(--ink);
-  font-weight: 600;
 }
 .more-bar {
   background: rgba(255, 207, 74, 0.85);

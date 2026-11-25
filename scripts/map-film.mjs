@@ -329,8 +329,8 @@ if (REAL) {
   const flight = () => page.evaluate(() => { const v = window.seatedMap; return v.target ? { ...v.target } : null; });
   const fly = async (a, b, s, o) => { for (let i = 0; i < secs(s); i++) await real(camAt(a, b, ease(Math.min(1, i / FPS / (s * 0.9)))), o); };
 
-  // 1. Friday, the whole city; the hook. (0 to 1.8 s)
-  await hold(C0, 1.8, { hook: true });
+  // 1. Friday, the whole city; the hook, long enough to read (Joel, 25 Nov 2026: "I didn't even see the pov text"). (0 to 3 s)
+  await hold(C0, 3.0, { hook: true });
   // 2. A tap on You: choose your character. (1.8 to 3.4 s)
   let p = await tapOn(C0, '.you-btn', null, { hook: true });
   for (let i = 0; i < secs(1.4); i++) await real(C0, { dots: tapDot(p, i / FPS + 0.12, 0.12) });
