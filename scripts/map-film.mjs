@@ -302,8 +302,8 @@ if (REAL) {
       $('h').innerHTML = hook ? hook.split('<br>').map((l) => `<span>${l}</span>`).join('<br>') : '';
       $('x').innerHTML = wow ? `<span>${wow}</span>` : '';
       ['d1', 'd2'].forEach((id, i) => { const d = $(id), p = dots[i]; d.style.display = p ? '' : 'none'; if (p) { d.style.left = `${p.x}px`; d.style.top = `${p.y}px`; d.style.transform = `scale(${p.s ?? 1})`; } });
-    }, { hook: o.hook ? HOOK : null, wow: o.wow ? WOW : null, dots: o.dots ?? [] });
-    await shoot({ cam, ui: UI({ top: 1, side: o.side ?? 0 }) });
+    }, { hook: o.hook ? HOOK : null, wow: o.say ?? (o.wow ? WOW : null), dots: o.dots ?? [] });
+    await shoot({ cam, ui: UI({ top: o.top ?? 1, side: o.side ?? 0, ...o.ui }) });
   };
   const tapDot = (p, t, t0) => (p && t >= t0 - 0.12 && t < t0 + 0.1 ? [{ x: p.x, y: p.y, s: t < t0 ? 0.85 : 1 }] : []);
   const hold = async (cam, s, o) => { for (let i = 0; i < secs(s); i++) await real(cam, o); };
@@ -400,7 +400,20 @@ if (REAL) {
   const label = await page.evaluate(() => [...document.querySelectorAll('.side a, .side button')].find((x) => /^Book/.test(x.textContent.trim())).textContent.trim());
   if (DINNER && !label.includes(DINNER)) throw new Error(`Book does not follow the picked time: "${label}"`);
   for (let i = 0; i < secs(0.12); i++) await real(CS, { side: 1, wow: true, dots: tapDot(bk, i / FPS, 0.12) });
-  for (let i = 0; i < secs(1.3); i++) await real(CS, { side: 1, wow: true, dots: tapDot(bk, i / FPS + 0.12, 0.12) });
+  for (let i = 0; i < secs(0.6); i++) await real(CS, { side: 1, wow: true, dots: tapDot(bk, i / FPS + 0.12, 0.12) });
+  // The ending (Joel, 25 Nov 2026: "Film doesn't show an ending? Show booked or something"): booked, the card goes,
+  // then the seated.food end card. Our own words over our own map; the booking page itself is never shown. (about 4 s)
+  const SAID = `booked ✓ ${facts.name.toLowerCase()} · fri ${label.match(/\d\d:\d\d/)?.[0] ?? ''}`.trim();
+  const icon = await page.evaluate(() => document.querySelector('link[rel=icon]').href);
+  const END = `<img src="${icon}" alt=""><b>seated.food</b><span>friday night, sorted.</span>`;
+  let shut = false;
+  for (let i = 0; i < secs(3.4); i++) {
+    const t = i / FPS;
+    if (!shut && t >= 1.1) { shut = true; await page.evaluate(() => { const v = window.seatedMap; v.onSelect(null); v.target = null; }); }
+    const k = clamp01((t - 1.5) / 0.5);
+    await real(CS, { say: t < 1.5 ? SAID : null, side: shut ? 0 : 1, top: clamp01(1 - (t - 1.1) / 0.4), ui: { e: END, ea: Math.min(1, k * 2), veil: k * 0.6 } });
+    await page.evaluate((sc) => { const e = document.getElementById('e'); if (e) e.style.transform = `translate(-50%, -50%) scale(${sc})`; }, t < 1.5 ? 0.3 : 0.3 + 0.7 * backOut(clamp01((t - 1.5) / 0.45)));
+  }
 } else {
 // The cut (Joel, 24 Nov 2026: "GEN Z VIBES"; then "transitions a bit slower"): about 22 s. Captions pop word by word; stickers pop in tilted.
 const TOPCAP = PHONE ? '22%' : '20%';
