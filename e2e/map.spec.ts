@@ -62,7 +62,7 @@ test('Esra never appears on the map (CLAUDE.md hard rule 2), and the data holds 
 test('picking a restaurant flies to it and opens its card with a link to its own booking page', async ({ page }) => {
   await page.goto('/map/');
   await page.getByLabel('Find a restaurant').fill('Bacalar');
-  await page.locator('.rows .row').filter({ hasText: 'Bacalar' }).click();
+  await page.locator('.hits .row').filter({ hasText: 'Bacalar' }).click(); // the answers under the box; the list is away meanwhile
   const card = page.locator('.card');
   await expect(card.getByRole('heading', { name: 'Bacalar' })).toBeVisible();
   await expect(card.locator('.state b')).toContainText(/:/);
@@ -706,6 +706,22 @@ for (const [name, size] of [['a wide screen', { width: 1440, height: 900 }], ['a
     // On a phone a list's chips leave the box about nine letters, so the hint is one word there (it read "Search: b").
     await page.goto('/map/?lens=seated');
     await expect(search).toHaveAttribute('placeholder', size.width < 900 ? 'Search…' : 'Search: brunch, natural wine…');
+    // Without a card, a wide screen showed the same rows twice: under the box and in the list at the right (Joel,
+    // 27 Nov 2026: yes to hiding the list meanwhile). The list comes back, still searched, when the answers close.
+    // A phone keeps its one-line list sheet.
+    const side = page.locator('.side');
+    await expect(side).toBeVisible();
+    await search.fill(other);
+    await expect(hits.locator('.row .nm', { hasText: other }).first()).toBeVisible();
+    if (size.width < 900) await expect(side).toBeVisible();
+    else {
+      await expect(side).toBeHidden();
+      await settled(page);
+      await shot(page, '31c-search-answers-no-list');
+      await search.press('Escape');
+      await expect(side).toBeVisible();
+      await expect(side.locator('.rows .nm', { hasText: other }).first()).toBeVisible();
+    }
     await page.close();
   });
 }
@@ -783,7 +799,7 @@ test('the map is north up: due north of the Dam stands straight above it, and th
 test("?art=sez shows sezlab's art and stays in the link; an old ?art=ours link opens the default", async ({ page }) => {
   await page.goto('/map/?art=sez');
   await page.getByLabel('Find a restaurant').fill('Bacalar');
-  await page.locator('.rows .row').filter({ hasText: 'Bacalar' }).click();
+  await page.locator('.hits .row').filter({ hasText: 'Bacalar' }).click(); // the answers under the box; the list is away meanwhile
   await expect(page).toHaveURL(/[?&]r=bacalar/);
   await expect(page).toHaveURL(/[?&]art=sez/);
   await expect(page.locator('footer.foot')).toContainText('sezlab');

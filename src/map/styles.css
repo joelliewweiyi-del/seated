@@ -2323,6 +2323,10 @@ a {
 }
 /* The search and "Showing", under the top bar on every screen (Joel, 25 Nov 2026: a first visitor could not search and
    did not know which list the map showed). One row: the search, then the list or character the map is seen through. */
+/* While the search answers show under the box, the list that would repeat them is away (wide screens only; App.tsx). */
+.side.answering {
+  display: none;
+}
 .find-wrap {
   position: relative;
   width: min(560px, 100%);

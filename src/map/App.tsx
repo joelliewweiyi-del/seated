@@ -169,6 +169,9 @@ export function App() {
   const you = useYou(data?.restaurants ?? NO_RESTAURANTS);
   const narrow = useNarrow();
   const [collapsed, setCollapsed] = useState(() => matchMedia('(max-width: 900px)').matches);
+  // The search answers are open under the box: on a wide screen the list, which would repeat them, steps aside
+  // (Joel, 27 Nov 2026: yes to hiding it).
+  const [answers, setAnswers] = useState(false);
   const [, tick] = useState(0);
 
   // Load the world and the data.
@@ -584,6 +587,7 @@ export function App() {
               query={query}
               onQuery={setQuery}
               hits={hits}
+              onShown={setAnswers}
               busy={!!ai?.busy}
               data={data}
               day={day}
@@ -597,7 +601,7 @@ export function App() {
             />
           </TopBar>
 
-          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}${rowsFor !== null && rowsFor === lensId && !filters.near && !sel ? ' near rows' : ''}${sel ? ' has-card' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
+          <aside className={`side${collapsed && !sel ? ' collapsed' : ''}${filters.near && !sel ? ' near' : ''}${rowsFor !== null && rowsFor === lensId && !filters.near && !sel ? ' near rows' : ''}${sel ? ' has-card' : ''}${answers && !sel && !narrow ? ' answering' : ''}`} aria-label={sel ? sel.name : 'Restaurants'}>
             {sel ? (
               <Card
                 r={sel}
@@ -927,6 +931,8 @@ function Find(p: {
   onQuery: (v: string) => void;
   /** The restaurants that answer the search, or null without one. */
   hits: Array<{ r: MapRestaurant; s: Status }> | null;
+  /** Told when the answers open or close: a wide screen hides the list meanwhile. */
+  onShown: (shown: boolean) => void;
   /** The AI answer is still on its way. */
   busy: boolean;
   data: MapData;
@@ -943,6 +949,8 @@ function Find(p: {
   const wrap = useRef<HTMLDivElement>(null);
   const narrow = useNarrow();
   const shown = open && p.hits !== null;
+  const { onShown } = p;
+  useEffect(() => onShown(shown), [shown, onShown]);
   useEffect(() => {
     if (!shown) return;
     const away = (e: PointerEvent) => {

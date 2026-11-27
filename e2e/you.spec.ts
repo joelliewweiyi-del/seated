@@ -145,7 +145,7 @@ test('lists: add places from their cards, see the list as a lens, share it in Co
   const title = `Dates ${run}`;
   for (const [i, n] of names.entries()) {
     await maker.getByLabel('Find a restaurant').fill(n);
-    await maker.locator('.rows .row', { hasText: n }).first().click();
+    await maker.locator('.hits .row', { hasText: n }).first().click(); // the answers under the box; the list is away meanwhile
     await maker.locator('.card').getByRole('button', { name: '+ List' }).click();
     const pop = maker.getByRole('group', { name: 'Add to a list' });
     if (i === 0) {
