@@ -604,17 +604,16 @@ test('the map opens on every restaurant; Showing names the list, ✕ goes back t
   await expect(page.locator('.find .chip.lens')).toHaveText('All places');
   await expect(page.locator('.list-head .sum')).toContainText(`of ${all} restaurants`);
   expect(new URL(page.url()).searchParams.get('lens')).toBeNull();
-  // The search looks at every restaurant, also with a list on. On the demo server the AI is the labelled stand-in.
+  // The search looks at every restaurant, also with a list on.
   await page.goto('/map/?lens=seated');
   const outside = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.find((r: { g: string[] }) => !r.g.includes('seated')).name);
   await page.getByLabel('Find a restaurant').fill(outside);
   await expect(page.locator('.rows .nm', { hasText: outside })).toHaveCount(1);
-  await expect(page.locator('.ai-line')).toContainText('keyword stand-in');
   await settled(page);
   await shot(page, '30-search');
 });
 
-test('the AI search: an answer lights its places on the map and in the list; a failure says the name search still works', async ({ page }) => {
+test('the AI search: an answer lights its places on the map and in the list, with no status line under the search; a failure keeps the name search', async ({ page }) => {
   await page.goto('/map/?lens=all');
   const ids = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name })));
   const [a, b] = [ids[1], ids[4]];
@@ -624,13 +623,15 @@ test('the AI search: an answer lights its places on the map and in the list; a f
       : route.fulfill({ status: 502, json: { error: 'Jev answered 529: busy, try again in a moment. The name search still works.' } }),
   );
   await page.getByLabel('Find a restaurant').fill('Sunday  Brunch');
-  await expect(page.locator('.ai-line')).toHaveText('✦ 2 places fit “sunday brunch” · AI (Jev), it can miss one');
   for (const n of [a.name, b.name]) await expect(page.locator('.rows .nm', { hasText: n })).toHaveCount(1);
   await expect(page.locator('.rows .row')).toHaveCount(2);
   const bright = () => page.evaluate(() => (window as unknown as { seatedMap: { markers: Array<{ id: string; dim: boolean }> } }).seatedMap.markers.filter((m) => !m.dim).map((m) => m.id).sort());
   await expect.poll(bright).toEqual([a.id, b.id].sort());
-  await page.getByLabel('Find a restaurant').fill('zzqx');
-  await expect(page.locator('.ai-line')).toContainText('The name search still works.');
+  await expect(page.locator('.find p')).toHaveCount(0); // Joel, 27 Nov 2026: "remove all subtext"
+  // A failed AI answer leaves the name search: a restaurant's own name still finds it.
+  await page.getByLabel('Find a restaurant').fill(a.name);
+  await expect(page.locator('.rows .nm', { hasText: a.name })).toHaveCount(1);
+  await expect(page.locator('.find p')).toHaveCount(0);
 });
 
 // Joel, 19 Nov 2026: "i want north to be north. like google maps". Our art, drawn north up, is the map; sezlab's

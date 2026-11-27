@@ -2336,14 +2336,6 @@ a {
   min-height: 38px;
   white-space: nowrap;
 }
-.find .ai-line {
-  margin: 6px 8px 2px;
-  font-size: 13px;
-  color: var(--ink-2);
-}
-.find .ai-mark {
-  color: var(--primary);
-}
 @media (max-width: 900px) {
   .find {
     width: 100%;

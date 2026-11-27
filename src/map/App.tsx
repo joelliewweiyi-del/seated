@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { AI_MIN, useAiSearch, type AiSearch } from './aiSearch';
+import { useAiSearch, type AiSearch } from './aiSearch';
 import { ago, badgeStyle, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, timeSpan, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, ZOOMS, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
@@ -578,7 +578,6 @@ export function App() {
                 setQuery(v);
                 if (narrow && v.trim()) setCollapsed(false); // on a phone the answers show as the list
               }}
-              ai={ai}
               lens={lens}
               look={you.account ? cleanLook(you.account.avatar) : (you.profile?.look ?? null)}
               onLists={() => setDialog('lists')}
@@ -906,19 +905,17 @@ function TopBar({ data, day, onPick, onAbout, you, onYou, children }: { data: Ma
  * The search and what the map shows, under the top bar on every screen (Joel, 25 Nov 2026, from a first visitor: "she
  * didn't even know which version of the map she was looking at", "she wanted everything to be searched", "the profile
  * needs to be easily changed"). The search looks at every restaurant: names at once, and Jev's AI answer half a second
- * after the typing stops. "Showing" names the list or character the map is seen through, with Change and ✕ All.
+ * after the typing stops, with no status line under it (Joel, 27 Nov 2026: "remove all subtext"). "Showing" names the list or character the map is seen through, with Change and ✕ All.
  */
 function Find(p: {
   query: string;
   onQuery: (v: string) => void;
-  ai: AiSearch | null;
   lens: Lens | null;
   look: Look | null;
   onLists: () => void;
   onAll: () => void;
   onCharacter: () => void;
 }) {
-  const q = p.query.trim();
   return (
     <div className="px find">
       <div className="find-row">
@@ -947,18 +944,6 @@ function Find(p: {
           </button>
         )}
       </div>
-      {q.length >= AI_MIN && (
-        <p className="ai-line" role="status">
-          <span className="ai-mark" aria-hidden="true">
-            ✦
-          </span>{' '}
-          {!p.ai || p.ai.busy
-            ? 'Asking the AI which places fit…'
-            : p.ai.error
-              ? p.ai.error
-              : `${p.ai.ids?.size ?? 0} ${p.ai.ids?.size === 1 ? 'place fits' : 'places fit'} “${p.ai.q}”${p.ai.by === 'stand-in' ? ' (keyword stand-in, no AI here)' : ' · AI (Jev), it can miss one'}`}
-        </p>
-      )}
     </div>
   );
 }
