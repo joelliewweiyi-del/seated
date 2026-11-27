@@ -658,6 +658,36 @@ for (const [name, size] of [['a wide screen', { width: 1440, height: 900 }], ['a
   });
 }
 
+// Joel, 27 Nov 2026: "Show an interesting loading UI component, no?" While the AI answer is on its way the host walks
+// to a table under the box; "No restaurant matches" waits for the answer, so it is never said too early.
+test('while the AI answer is on its way the answers show the host walking to a table; it goes when the answer lands', async ({ page }) => {
+  await page.goto('/map/?lens=all');
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await page.route('**/api/classify?q=*', async (route) => {
+    await held;
+    await route.fulfill({ json: { q: 'date night', by: 'jev', model: 'jev-1.13.0', matches: [] } });
+  });
+  await page.getByLabel('Find a restaurant').fill('date night');
+  const wait = page.locator('.hits .seeking');
+  await expect(wait).toBeVisible();
+  await expect(wait).toHaveAttribute('role', 'status');
+  await expect(wait.locator('.host')).toBeVisible();
+  await expect(page.locator('.hits .empty')).toHaveCount(0); // not known yet
+  // It moves: the host stands somewhere else a moment later.
+  const x = () => wait.locator('.walk').evaluate((e) => e.getBoundingClientRect().left);
+  const first = await x();
+  await expect.poll(x).not.toBe(first);
+  await shot(page, '32-search-wait');
+  release();
+  await expect(wait).toHaveCount(0);
+  await expect(page.locator('.hits .empty')).toHaveText('No restaurant matches that.');
+  // Two letters ask no AI: no wait.
+  await page.getByLabel('Find a restaurant').fill('q9');
+  await expect(page.locator('.hits .empty')).toBeVisible();
+  await expect(wait).toHaveCount(0);
+});
+
 test('the AI search: an answer lights its places on the map and in the list, with no status line under the search; a failure keeps the name search', async ({ page }) => {
   await page.goto('/map/?lens=all');
   const ids = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name })));

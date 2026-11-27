@@ -1905,6 +1905,8 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .hello .host,
+  .seeking .walk,
+  .seeking .host,
   .nudge {
     animation: none;
   }
@@ -2314,6 +2316,34 @@ a {
   list-style: none;
   max-height: min(520px, calc(100vh - var(--top-h, 130px) - 240px)); /* ends above the zoom buttons */
   overflow-y: auto;
+}
+/* The wait for the AI answer (Joel, 27 Nov 2026: "Show an interesting loading UI component, no?"): the host walks along
+   a dotted floor to a candle-lit table, in whole pixel steps, and starts again until the answer lands. */
+.seeking {
+  position: relative;
+  height: 46px;
+  margin: 4px 16px 6px;
+  border-bottom: 2px dotted rgba(43, 39, 51, 0.3);
+}
+.seeking .walk {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  animation: seek-walk 2.4s steps(40) infinite;
+}
+.seeking .host {
+  display: block;
+  animation: host-bob 0.24s steps(1) infinite;
+}
+.seeking .brand-mark {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+}
+@keyframes seek-walk {
+  to {
+    left: calc(100% - 58px);
+  }
 }
 .find-row {
   display: flex;

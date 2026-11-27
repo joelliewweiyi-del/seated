@@ -4,7 +4,7 @@ import { ago, badgeStyle, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt,
 import { MapView, ZOOMS, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, bike } from './marks';
-import { Nudge, Picker, type ListChoice } from './picker';
+import { Host, Nudge, Picker, type ListChoice } from './picker';
 import type { SeatedList } from './api';
 import { Avatar, cleanLook, type Look } from './avatar';
 import { profileById } from './taste';
@@ -1002,12 +1002,22 @@ function Find(p: {
       </div>
       {shown && (
         <ul className="px pop hits" id="hits" aria-label="Search results">
-          {p.hits!.length === 0 && <li className="empty">{p.busy ? 'Searching…' : 'No restaurant matches that.'}</li>}
+          {p.hits!.length === 0 && !p.busy && <li className="empty">No restaurant matches that.</li>}
           {p.hits!.map(({ r, s }) => (
             <li key={r.id}>
               <PlaceRow r={r} s={s} data={p.data} day={p.day} fav={p.favs.has(r.id)} onPick={pick} />
             </li>
           ))}
+          {/* The wait for the AI answer, under any names found so far (Joel, 27 Nov 2026: "Show an interesting loading
+              UI component, no?"): the host walks to a table. No words: the walk says it. */}
+          {p.busy && (
+            <li className="seeking" role="status" aria-label="Searching">
+              <span className="walk">
+                <Host size={22} />
+              </span>
+              <Mark />
+            </li>
+          )}
         </ul>
       )}
     </div>
@@ -1235,7 +1245,7 @@ function List(p: ListProps) {
         {p.me?.note && <p className="note">{p.me.note}</p>}
       </div>
       <ul className="rows" ref={narrow ? undefined : (scroller as RefObject<HTMLUListElement | null>)} onScroll={narrow ? undefined : check}>
-        {rows.length === 0 && (
+        {rows.length === 0 && !(q && p.ai?.busy) && (
           <li className="empty">
             {f.open ? `Nothing free on ${dayLabel(p.day)}${anyKind ? ' among these' : ''}.` : q ? 'No restaurant matches that.' : 'None of these yet.'}
             {f.fav && !p.favs.size && <div>Save a restaurant from its card with ♥ and it shows here.</div>}
