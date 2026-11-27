@@ -70,6 +70,11 @@ test('picking a restaurant flies to it and opens its card with a link to its own
   await expect(page).toHaveURL(/[?&]r=bacalar/);
   await settled(page);
   await shot(page, '02-card');
+  // The guides' line is plain text, no accent bar at its left (Joel, 27 Nov 2026: "hate this Claude ui giveaway").
+  await page.goto('/map/?r=gitane');
+  expect(await card.locator('.why').evaluate((e) => getComputedStyle(e).borderLeftWidth)).toBe('0px');
+  await settled(page);
+  await shot(page, '02b-card-why');
 });
 
 test('the card calendar changes the day for the whole map, and the link keeps it', async ({ page }) => {
@@ -716,6 +721,9 @@ for (const [name, size] of [['a wide screen', { width: 1440, height: 900 }], ['a
     if (size.width < 900) await expect(side).toBeVisible();
     else {
       await expect(side).toBeHidden();
+      // The hidden list is no panel: the signs keep the whole width (27 Nov 2026: measured as a panel across the whole
+      // screen, it took every sign off the map during a search).
+      await expect.poll(() => page.evaluate(() => (window as unknown as { seatedMap: { safe: { right: number } } }).seatedMap.safe.right)).toBe(0);
       await settled(page);
       await shot(page, '31c-search-answers-no-list');
       await search.press('Escape');

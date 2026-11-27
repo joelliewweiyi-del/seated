@@ -343,7 +343,10 @@ export function App() {
     if (!view) return;
     const measure = () => {
       const top = document.querySelector('.top')?.getBoundingClientRect();
-      const side = document.querySelector('.side > *')?.getBoundingClientRect();
+      // A list put away while the search answers show (display: none) measures 0 x 0 at the left edge: that is no panel,
+      // not one across the whole screen (27 Nov 2026: every sign went missing during a search).
+      const sideBox = document.querySelector('.side > *')?.getBoundingClientRect();
+      const side = sideBox?.width ? sideBox : undefined;
       const foot = document.querySelector('.foot')?.getBoundingClientRect();
       const narrow = innerWidth <= 900;
       const bar = document.querySelector('.top .topbar')?.getBoundingClientRect();

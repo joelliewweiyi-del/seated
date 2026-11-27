@@ -768,10 +768,9 @@ a {
   color: var(--muted);
   font-size: 13px;
 }
+/* No accent bar at its left (Joel, 27 Nov 2026: "hate this Claude ui giveaway"): a plain line of text. */
 .why {
   margin: 10px 0 0;
-  padding-left: 10px;
-  border-left: 3px solid var(--sun);
   font-size: 13px;
   color: var(--ink-2);
 }
