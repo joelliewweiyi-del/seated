@@ -518,6 +518,14 @@ export function App() {
   }
 
   const sel = placed.find((p) => p.r.id === selected)?.r ?? null;
+  // The answers under the search box: every restaurant that matches, whatever list, filter or card is on; free first.
+  const asked = query.trim().toLowerCase();
+  const hits = asked
+    ? placed
+        .map((p) => ({ r: p.r, s: statusOfR(p.r) }))
+        .filter(({ r }) => matches(r, asked) || !!ai?.ids?.has(r.id))
+        .sort((a, b) => STATUS_RANK[b.s] - STATUS_RANK[a.s] || a.r.name.localeCompare(b.r.name))
+    : null;
   const freeOf = (rs: Placed[]) => rs.filter((p) => statusOfR(p.r) === 'open').length;
   const lists: ListChoice[] = data
     ? [
@@ -574,10 +582,13 @@ export function App() {
           >
             <Find
               query={query}
-              onQuery={(v) => {
-                setQuery(v);
-                if (narrow && v.trim()) setCollapsed(false); // on a phone the answers show as the list
-              }}
+              onQuery={setQuery}
+              hits={hits}
+              busy={!!ai?.busy}
+              data={data}
+              day={day}
+              favs={favs}
+              onPick={focus}
               lens={lens}
               look={you.account ? cleanLook(you.account.avatar) : (you.profile?.look ?? null)}
               onLists={() => setDialog('lists')}
@@ -906,45 +917,124 @@ function TopBar({ data, day, onPick, onAbout, you, onYou, children }: { data: Ma
  * didn't even know which version of the map she was looking at", "she wanted everything to be searched", "the profile
  * needs to be easily changed"). The search looks at every restaurant: names at once, and Jev's AI answer half a second
  * after the typing stops, with no status line under it (Joel, 27 Nov 2026: "remove all subtext"). "Showing" names the list or character the map is seen through, with Change and ✕ All.
+ *
+ * The answers open under the box (Joel, 27 Nov 2026: with a card open a search showed nothing, and without one the
+ * answers were in the list at the other side of the screen: "It should be more intuitive below the search box, no?").
+ * A pick opens the card and closes them; so does a click elsewhere or Escape. The words stay, and the box opens them again.
  */
 function Find(p: {
   query: string;
   onQuery: (v: string) => void;
+  /** The restaurants that answer the search, or null without one. */
+  hits: Array<{ r: MapRestaurant; s: Status }> | null;
+  /** The AI answer is still on its way. */
+  busy: boolean;
+  data: MapData;
+  day: string;
+  favs: Set<string>;
+  onPick: (id: string) => void;
   lens: Lens | null;
   look: Look | null;
   onLists: () => void;
   onAll: () => void;
   onCharacter: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const shown = open && p.hits !== null;
+  useEffect(() => {
+    if (!shown) return;
+    const away = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    addEventListener('pointerdown', away, true);
+    return () => removeEventListener('pointerdown', away, true);
+  }, [shown]);
+  const pick = (id: string) => {
+    setOpen(false);
+    wrap.current?.querySelector<HTMLInputElement>('.search')?.blur(); // a phone puts its keyboard away
+    p.onPick(id);
+  };
   return (
-    <div className="px find">
-      <div className="find-row">
-        <input
-          className="search"
-          type="search"
-          enterKeyHint="search"
-          placeholder="Search: brunch, natural wine…"
-          value={p.query}
-          onChange={(e) => p.onQuery(e.target.value)}
-          aria-label="Find a restaurant"
-        />
-        <span className="showing-label">Showing</span>
-        <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists} title="What the map shows: pick a list or every restaurant">
-          {p.lens?.kind === 'you' && <Avatar look={p.look} size={18} />}
-          {p.lens ? p.lens.title : 'All places'}
-        </button>
-        {p.lens?.kind === 'you' && (
-          <button className="chip change" onClick={p.onCharacter}>
-            Change
+    <div className="find-wrap" ref={wrap}>
+      <div className="px find">
+        <div className="find-row">
+          <input
+            className="search"
+            type="search"
+            enterKeyHint="search"
+            placeholder="Search: brunch, natural wine…"
+            value={p.query}
+            onChange={(e) => {
+              p.onQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={(e) => {
+              if (!shown) return;
+              if (e.key === 'Escape') {
+                e.stopPropagation(); // the answers close; the card behind them stays
+                setOpen(false);
+              } else if (e.key === 'Enter' && p.hits?.[0]) pick(p.hits[0].r.id);
+            }}
+            aria-label="Find a restaurant"
+            aria-expanded={shown}
+            aria-controls="hits"
+          />
+          <span className="showing-label">Showing</span>
+          <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists} title="What the map shows: pick a list or every restaurant">
+            {p.lens?.kind === 'you' && <Avatar look={p.look} size={18} />}
+            {p.lens ? p.lens.title : 'All places'}
           </button>
-        )}
-        {p.lens && (
-          <button className="chip all" onClick={p.onAll} aria-label="Show every restaurant" title="Show every restaurant">
-            ✕
-          </button>
-        )}
+          {p.lens?.kind === 'you' && (
+            <button className="chip change" onClick={p.onCharacter}>
+              Change
+            </button>
+          )}
+          {p.lens && (
+            <button className="chip all" onClick={p.onAll} aria-label="Show every restaurant" title="Show every restaurant">
+              ✕
+            </button>
+          )}
+        </div>
       </div>
+      {shown && (
+        <ul className="px pop hits" id="hits" aria-label="Search results">
+          {p.hits!.length === 0 && <li className="empty">{p.busy ? 'Searching…' : 'No restaurant matches that.'}</li>}
+          {p.hits!.map(({ r, s }) => (
+            <li key={r.id}>
+              <PlaceRow r={r} s={s} data={p.data} day={p.day} fav={p.favs.has(r.id)} onPick={pick} />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
+  );
+}
+
+/** One restaurant as a row, in the list and under the search: status, name, marks, area and the day's badge. */
+function PlaceRow({ r, s, data, day, fav, lead = '', onPick }: { r: MapRestaurant; s: Status; data: MapData; day: string; fav: boolean; lead?: string; onPick: (id: string) => void }) {
+  const next = s !== 'open' && r.readable ? firstFree(r, data, day) : null;
+  return (
+    <button className="row" onClick={() => onPick(r.id)}>
+      <span className="stud" style={{ background: STATUS_COLOUR[s] }} />
+      <span className="who">
+        <span className="nm">
+          {r.name}
+          {fav && <span className="fav-dot" aria-label="saved"> ♥</span>}
+        </span>
+        <Marks r={r} />
+        <span className="ar">
+          {lead}
+          {KIND_WORD[r.kind] ? `${KIND_WORD[r.kind]} · ` : ''}
+          {r.area}
+          {next ? ` · free ${dayLabel(next).slice(0, 10)}` : ''}
+        </span>
+      </span>
+      <span className="badge" style={badgeStyle(s)}>
+        {badgeFor(r, s, day)}
+      </span>
+    </button>
   );
 }
 
@@ -1159,29 +1249,10 @@ function List(p: ListProps) {
         {shown.map(({ r, s, m }) => {
           const head = !p.me && s !== last;
           last = s;
-          const next = s !== 'open' && r.readable ? firstFree(r, p.data, p.day) : null;
           return (
             <li key={r.id}>
               {head && (s === 'unknown' && !q ? <RestFold n={rest} open onToggle={() => setRestOpen(false)} /> : <div className="group label">{GROUP_WORD[s]}</div>)}
-              <button className="row" onClick={() => p.onPick(r.id)}>
-                <span className="stud" style={{ background: STATUS_COLOUR[s] }} />
-                <span className="who">
-                  <span className="nm">
-                    {r.name}
-                    {p.favs.has(r.id) && <span className="fav-dot" aria-label="saved"> ♥</span>}
-                  </span>
-                  <Marks r={r} />
-                  <span className="ar">
-                    {p.me ? `${bike(m)} · ` : ''}
-                    {KIND_WORD[r.kind] ? `${KIND_WORD[r.kind]} · ` : ''}
-                    {r.area}
-                    {next ? ` · free ${dayLabel(next).slice(0, 10)}` : ''}
-                  </span>
-                </span>
-                <span className="badge" style={badgeStyle(s)}>
-                  {badgeFor(r, s, p.day)}
-                </span>
-              </button>
+              <PlaceRow r={r} s={s} data={p.data} day={p.day} fav={p.favs.has(r.id)} lead={p.me ? `${bike(m)} · ` : ''} onPick={p.onPick} />
             </li>
           );
         })}

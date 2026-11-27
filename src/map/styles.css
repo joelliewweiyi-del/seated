@@ -2294,11 +2294,26 @@ a {
 }
 /* The search and "Showing", under the top bar on every screen (Joel, 25 Nov 2026: a first visitor could not search and
    did not know which list the map showed). One row: the search, then the list or character the map is seen through. */
-.find {
-  pointer-events: auto;
+.find-wrap {
+  position: relative;
   width: min(560px, 100%);
+}
+.find {
   padding: 6px;
   border-radius: 20px;
+}
+/* The answers, right under the box (Joel, 27 Nov 2026: "It should be more intuitive below the search box, no?"). Laid
+   over the map, so the top bar keeps its height and no sign moves while you type. */
+.hits {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  max-height: min(520px, calc(100vh - var(--top-h, 130px) - 240px)); /* ends above the zoom buttons */
+  overflow-y: auto;
 }
 .find-row {
   display: flex;
@@ -2337,8 +2352,11 @@ a {
   white-space: nowrap;
 }
 @media (max-width: 900px) {
-  .find {
+  .find-wrap {
     width: 100%;
+  }
+  .hits {
+    max-height: 44vh; /* the keyboard has the lower half */
   }
   .find .showing-label {
     display: none;

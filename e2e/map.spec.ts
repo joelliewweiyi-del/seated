@@ -55,7 +55,8 @@ test('Esra never appears on the map (CLAUDE.md hard rule 2), and the data holds 
   for (const secret of ['demo@example.com', '+31600000000', 'Demo Guest']) expect(text).not.toContain(secret);
   await page.goto('/map/');
   await page.getByLabel('Find a restaurant').fill('esra');
-  await expect(page.getByText('No restaurant matches that.')).toBeVisible();
+  await expect(page.locator('.hits')).toHaveText('No restaurant matches that.');
+  await expect(page.locator('.rows .empty')).toHaveText('No restaurant matches that.');
 });
 
 test('picking a restaurant flies to it and opens its card with a link to its own booking page', async ({ page }) => {
@@ -612,6 +613,47 @@ test('the map opens on every restaurant; Showing names the list, ✕ goes back t
   await settled(page);
   await shot(page, '30-search');
 });
+
+// Joel, 27 Nov 2026: "when I click into a restaurant and I search for something, it doesn't show anything. When it does
+// show something, it shows on the other side of the screen ... It should be more intuitive below the search box, no?"
+for (const [name, size] of [['a wide screen', { width: 1440, height: 900 }], ['a phone', { width: 390, height: 844 }]] as const) {
+  test(`the search answers open right under the search box, also with a card open, on ${name}`, async ({ browser }) => {
+    const page = await browser.newPage({ viewport: size, ...(size.width < 900 ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}) });
+    await page.addInitScript(() => localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true })));
+    await page.goto('/map/?r=bacalar');
+    const card = page.locator('.card');
+    await expect(card.getByRole('heading', { name: 'Bacalar' })).toBeVisible();
+    await expect(page.locator('.hits')).toHaveCount(0);
+    // With Bacalar's card open, a search still answers.
+    const other = await page.evaluate(async () => (await (await fetch('/map/data.json')).json()).restaurants.find((r: { id: string }) => r.id !== 'bacalar').name);
+    const search = page.getByLabel('Find a restaurant');
+    const topBefore = (await page.locator('.top').boundingBox())!.height;
+    await search.fill(other);
+    const hits = page.locator('.hits');
+    await expect(hits.locator('.row .nm', { hasText: other }).first()).toBeVisible();
+    // Under the box: starts within 12 px of its bottom, at its left edge, and the top bar keeps its height.
+    const [box, list] = [(await page.locator('.find').boundingBox())!, (await hits.boundingBox())!];
+    expect(list.y - (box.y + box.height)).toBeGreaterThanOrEqual(0);
+    expect(list.y - (box.y + box.height)).toBeLessThan(12);
+    expect(Math.abs(list.x - box.x)).toBeLessThan(2);
+    expect(list.y + list.height).toBeLessThanOrEqual(size.height);
+    expect((await page.locator('.top').boundingBox())!.height).toBe(topBefore);
+    await settled(page);
+    await shot(page, size.width < 900 ? '31b-phone-search-answers' : '31-search-answers');
+    // A pick opens that card and puts the answers away; the words stay, and the box opens them again.
+    await hits.locator('.row', { hasText: other }).first().click();
+    await expect(card.getByRole('heading', { name: other })).toBeVisible();
+    await expect(hits).toHaveCount(0);
+    await expect(search).toHaveValue(other);
+    await search.focus();
+    await expect(hits).toBeVisible();
+    // Escape closes the answers and leaves the card; a click on the map closes them too.
+    await search.press('Escape');
+    await expect(hits).toHaveCount(0);
+    await expect(card).toBeVisible();
+    await page.close();
+  });
+}
 
 test('the AI search: an answer lights its places on the map and in the list, with no status line under the search; a failure keeps the name search', async ({ page }) => {
   await page.goto('/map/?lens=all');
