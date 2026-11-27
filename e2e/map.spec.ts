@@ -651,6 +651,9 @@ for (const [name, size] of [['a wide screen', { width: 1440, height: 900 }], ['a
     await search.press('Escape');
     await expect(hits).toHaveCount(0);
     await expect(card).toBeVisible();
+    // On a phone a list's chips leave the box about nine letters, so the hint is one word there (it read "Search: b").
+    await page.goto('/map/?lens=seated');
+    await expect(search).toHaveAttribute('placeholder', size.width < 900 ? 'Search…' : 'Search: brunch, natural wine…');
     await page.close();
   });
 }

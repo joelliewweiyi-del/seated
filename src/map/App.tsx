@@ -941,6 +941,7 @@ function Find(p: {
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const narrow = useNarrow();
   const shown = open && p.hits !== null;
   useEffect(() => {
     if (!shown) return;
@@ -963,7 +964,8 @@ function Find(p: {
             className="search"
             type="search"
             enterKeyHint="search"
-            placeholder="Search: brunch, natural wine…"
+            // On a phone a list's chips leave the box about nine letters: the long hint was cut off ("Search: b").
+            placeholder={narrow && p.lens ? 'Search…' : 'Search: brunch, natural wine…'}
             value={p.query}
             onChange={(e) => {
               p.onQuery(e.target.value);

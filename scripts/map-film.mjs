@@ -146,7 +146,7 @@ await page.evaluate(() => {
 // Hide the chrome we bring in later.
 const set = (fn, arg) => page.evaluate(fn, arg);
 await set(() => {
-  for (const s of ['.side', '.topbar', '.zoom, .controls, .map-controls']) document.querySelectorAll(s).forEach((n) => (n.style.opacity = '0'));
+  for (const s of ['.side', '.topbar, .find-wrap', '.zoom, .controls, .map-controls']) document.querySelectorAll(s).forEach((n) => (n.style.opacity = '0'));
 });
 const zoomCtl = await page.evaluate(() => {
   // The zoom buttons: hidden for the film (the credit stays).
@@ -227,7 +227,7 @@ async function shoot(state) {
     const r = $('r');
     r.style.display = ui.ring ? '' : 'none';
     if (ui.ring) { r.style.left = `${ui.ring.x}px`; r.style.top = `${ui.ring.y}px`; r.style.width = r.style.height = `${ui.ring.s}px`; r.style.opacity = String(ui.ring.a); }
-    document.querySelectorAll('.topbar').forEach((n) => (n.style.opacity = String(ui.top)));
+    document.querySelectorAll('.topbar, .find-wrap').forEach((n) => (n.style.opacity = String(ui.top)));
     document.querySelectorAll('.side').forEach((n) => (n.style.opacity = String(ui.side)));
     window.__film.step(1000 / 60);
   }, { cam: state.cam, manual, ui: state.ui });
