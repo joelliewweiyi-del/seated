@@ -107,6 +107,12 @@ export async function loadData(url = './data.json'): Promise<MapData> {
   return (await res.json()) as MapData;
 }
 
+/** A number as people say it: "+31203379680" reads "020 337 9680", a mobile "06 1234 5678". */
+export function phoneWords(phone: string): string {
+  const n = `0${phone.slice(3)}`;
+  return n.startsWith('06') ? `06 ${n.slice(2, 6)} ${n.slice(6)}` : `${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
+}
+
 /**
  * The day's booking link set to another free time. Formitable's link carries the time as `time` (minutes after
  * midnight), SevenRooms' as `start_time` (HH:mm); other links carry no time and stay as they are.

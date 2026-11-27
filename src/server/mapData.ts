@@ -27,6 +27,8 @@ export interface Place {
   /** Its Instagram handle and its own site's share photo, from data/map-social.json (scripts/map-social.ts). */
   ig?: string | null;
   photo?: string | null;
+  /** Its phone number, +31 and nine digits, from data/map-phones.json (scripts/map-phones.ts). */
+  phone?: string | null;
 }
 
 /** A restaurant guide (press or creator) whose picks the map can show as a lens. */
@@ -83,6 +85,8 @@ export interface MapRestaurant {
   ig: string | null;
   /** The share photo on the restaurant's own site (og:image), linked from there, never copied. */
   photo: string | null;
+  /** The number guests call, +31 and nine digits, as the restaurant's own site gives it; null when we have none. */
+  phone: string | null;
 }
 
 export interface MapData {
@@ -103,6 +107,7 @@ const MICHELIN_URL = new URL('../../data/map-michelin.json', import.meta.url);
 const GUIDES_URL = new URL('../../data/map-guides.json', import.meta.url);
 const HOURS_URL = new URL('../../data/map-hours.json', import.meta.url);
 const SOCIAL_URL = new URL('../../data/map-social.json', import.meta.url);
+const PHONES_URL = new URL('../../data/map-phones.json', import.meta.url);
 /** Two-letter weekdays as in OpenStreetMap's opening_hours, indexed like Date.getUTCDay(). */
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 /** The guide in data/map-guides.json whose picks are every restaurant in data/map-michelin.json. */
@@ -136,6 +141,8 @@ export function loadPlaces(): Record<string, Place> {
   for (const [id, { open }] of Object.entries(hours.restaurants)) if (places[id]) places[id].openDays = open.map((d) => WEEKDAYS.indexOf(d));
   const social = JSON.parse(readFileSync(SOCIAL_URL, 'utf8')) as Record<string, { ig: string | null; photo: string | null }>;
   for (const [id, { ig, photo }] of Object.entries(social)) if (places[id]) Object.assign(places[id], { ig, photo });
+  const phones = JSON.parse(readFileSync(PHONES_URL, 'utf8')) as { restaurants: Record<string, { phone: string | null }> };
+  for (const [id, { phone }] of Object.entries(phones.restaurants)) if (places[id]) places[id].phone = phone;
   return places;
 }
 
@@ -277,6 +284,7 @@ export function buildMapData({ store, platforms, places, optOut, guides = [], ci
       readAt: reads.get(r.id)?.readAt ?? null,
       ig: place.ig ?? null,
       photo: place.photo ?? null,
+      phone: place.phone ?? null,
     });
   }
   // Only guides with enough picks on the map are listed; a restaurant names only listed guides.

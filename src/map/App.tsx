@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useAiSearch, type AiSearch } from './aiSearch';
-import { ago, badgeStyle, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, STATUS_COLOUR, STATUS_WORD, statusOf, timeSpan, weekday, type MapData, type MapRestaurant, type Status } from './data';
+import { ago, badgeStyle, codeOn, dateAt, dayIndex, dayLabel, freeTimes, linkAt, loadData, opensOn, phoneWords, STATUS_COLOUR, STATUS_WORD, statusOf, timeSpan, weekday, type MapData, type MapRestaurant, type Status } from './data';
 import { MapView, ZOOMS, type Marker } from './render';
 import { drawRoom, ROOM_H, ROOM_W } from './room';
 import { KIND_WORD, Marks, metres, michelinWords, useRemembered, bike } from './marks';
@@ -1510,14 +1510,25 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
             )}
           </p>
         )}
-        {book && !walkIn(r) && (
-          <a className={`btn book${status === 'open' ? ' primary' : ''}`} href={book} target="_blank" rel="noopener">
-            <span>
-              {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
-            </span>
-            {/* Their page can't be told the date: say which one to pick, inside the button, so it costs no line. */}
-            {status === 'open' && NO_DATE_LINK.has(r.platform) && <small>pick {dayLabel(day)} there</small>}
-          </a>
+        {/* Call sits next to Book (Canberk through Joel, 27 Nov 2026: "add a call option next to reserve, they might not
+            see the request so close"): a table booked online an hour ahead may go unseen. */}
+        {((book && !walkIn(r)) || r.phone) && (
+          <div className="mini-actions">
+            {book && !walkIn(r) && (
+              <a className={`btn book${status === 'open' ? ' primary' : ''}`} href={book} target="_blank" rel="noopener">
+                <span>
+                  {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
+                </span>
+                {/* Their page can't be told the date: say which one to pick, inside the button, so it costs no line. */}
+                {status === 'open' && NO_DATE_LINK.has(r.platform) && <small>pick {dayLabel(day)} there</small>}
+              </a>
+            )}
+            {r.phone && (
+              <a className="btn call" href={`tel:${r.phone}`} aria-label={`Call ${r.name}: ${phoneWords(r.phone)}`}>
+                Call
+              </a>
+            )}
+          </div>
         )}
       </section>
     );
@@ -1641,10 +1652,17 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
               there.
             </p>
           )}
-          <div className="actions">
+          <div className={`actions${r.phone ? ' has-call' : ''}`}>
             {book && !walkIn(r) && (
               <a className={`btn${status === 'open' ? ' primary' : ''}`} href={book} target="_blank" rel="noopener">
                 {status === 'open' ? `Book${pick ? ` ${pick}` : ''}` : 'Booking page'} on {r.readable ? r.platform : 'their site'}
+              </a>
+            )}
+            {/* The number is written out: on a computer you read it and dial on your phone. */}
+            {r.phone && (
+              <a className="btn call" href={`tel:${r.phone}`}>
+                <span>Call</span>
+                <small>{phoneWords(r.phone)}</small>
               </a>
             )}
             {r.site && (walkIn(r) || r.site !== book) && (

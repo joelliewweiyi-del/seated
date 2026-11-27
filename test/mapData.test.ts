@@ -270,8 +270,8 @@ describe('census and map data', () => {
     for (const secret of ['Secret', 'joel@private.example', '+31611112222', 'private-topic']) expect(text).not.toContain(secret);
     expect(data.restaurants.map((r) => r.id).sort()).toEqual(['bistro-a', 'phone-e', 'wine-b']);
     expect(Object.keys(data.restaurants[0]!).sort()).toEqual(
-      // ig and photo: the restaurant's own public Instagram and share image (24 Nov 2026), not personal data.
-      ['area', 'book', 'd', 'g', 'hot', 'id', 'ig', 'kind', 'lat', 'link', 'lng', 'michelin', 'name', 'photo', 'platform', 'readAt', 'readable', 'roof', 'site', 't', 'why', 'win'].sort(),
+      // ig, photo and phone: the restaurant's own public Instagram, share image (24 Nov 2026) and number (27 Nov 2026), not personal data.
+      ['area', 'book', 'd', 'g', 'hot', 'id', 'ig', 'kind', 'lat', 'link', 'lng', 'michelin', 'name', 'phone', 'photo', 'platform', 'readAt', 'readable', 'roof', 'site', 't', 'why', 'win'].sort(),
     );
     const phone = data.restaurants.find((r) => r.id === 'phone-e')!;
     expect(phone).toMatchObject({ readable: false, link: 'https://phone-e.example' });

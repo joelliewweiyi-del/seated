@@ -167,6 +167,58 @@ test('on a phone the map, the day bar and the list sheet all fit, and the chrome
   await page.close();
 });
 
+test('Call sits next to Book with the number from the restaurant own site; without a number there is no Call', async ({ page, browser }) => {
+  // Canberk through Joel, 27 Nov 2026: "add a call option next to reserve, they might not see the request so close".
+  // One place with a number and one without, whatever the data file holds today.
+  await page.route('**/map/data.json', async (route) => {
+    const data = await (await route.fetch()).json();
+    data.restaurants.find((r: { id: string }) => r.id === 'scheepskameel').phone = '+31203379680';
+    data.restaurants.find((r: { id: string }) => r.id === 'bacalar').phone = null;
+    route.fulfill({ json: data });
+  });
+  // Wide: the number is written out, to read and dial; Call is in Book's row, to its right.
+  await page.goto('/map/?r=scheepskameel');
+  const call = page.locator('.card .actions .call');
+  await expect(call).toHaveAttribute('href', 'tel:+31203379680');
+  await expect(call).toContainText('020 337 9680');
+  const [bookBox, callBox] = [(await page.locator('.card .actions .btn').first().boundingBox())!, (await call.boundingBox())!];
+  expect(Math.abs(bookBox.y - callBox.y)).toBeLessThanOrEqual(2);
+  expect(callBox.x).toBeGreaterThanOrEqual(bookBox.x + bookBox.width);
+  expect(await call.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true); // the number is not cut off
+  await settled(page);
+  await shot(page, '33-card-call');
+  await page.goto('/map/?r=bacalar');
+  await expect(page.locator('.card').getByRole('link', { name: /Book|Booking page/ })).toBeVisible();
+  await expect(page.locator('.card .call')).toHaveCount(0);
+
+  // Phone: the small card keeps its height; Book and Call share the row, both whole and big enough for a thumb.
+  const phone = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await phone.addInitScript(() => {
+    localStorage.setItem('seated.map.you', JSON.stringify({ answers: {}, key: null, welcomed: true }));
+    localStorage.setItem('seated.map.hello', JSON.stringify({ seen: true }));
+    localStorage.setItem('seated.map.where', JSON.stringify({ asked: true }));
+  });
+  await phone.route('**/map/data.json', async (route) => {
+    const data = await (await route.fetch()).json();
+    data.restaurants.find((r: { id: string }) => r.id === 'scheepskameel').phone = '+31203379680';
+    route.fulfill({ json: data });
+  });
+  await phone.goto('/map/?r=scheepskameel');
+  const mini = phone.locator('.card.mini');
+  const tap = mini.getByRole('link', { name: 'Call Scheepskameel: 020 337 9680' });
+  await expect(tap).toHaveAttribute('href', 'tel:+31203379680');
+  const [b, c] = [(await mini.locator('.book').boundingBox())!, (await tap.boundingBox())!];
+  expect(Math.abs(b.y - c.y)).toBeLessThanOrEqual(2);
+  expect(c.x).toBeGreaterThanOrEqual(b.x + b.width);
+  expect(c.x + c.width).toBeLessThanOrEqual(390);
+  expect(c.height).toBeGreaterThanOrEqual(44);
+  expect(await mini.locator('.book span').evaluate((e) => e.scrollWidth <= e.clientWidth + 1)).toBe(true); // Book's words stay whole
+  expect((await phone.locator('.side').boundingBox())!.height).toBeLessThanOrEqual(844 * 0.25);
+  await settled(phone);
+  await phone.screenshot({ path: 'test-results/screens/map-33b-phone-card-call.png' });
+  await phone.close();
+});
+
 test('picking a free time makes it the one to book: the Book button and its link follow it', async ({ page }) => {
   // One restaurant with two free times today and a Formitable link, which carries the time in minutes.
   await page.route('**/map/data.json', async (route) => {

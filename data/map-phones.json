@@ -1,0 +1,451 @@
+{
+  "how": "scripts/map-phones.ts: the number on the restaurant's own site (tel: links, schema.org telephone, else a number in its text); osm = what OpenStreetMap's phone tag says of it. Check of 27 Nov 2026: every number is the same in OpenStreetMap or was found again by a separate web lookup that did not see ours; where the two disagreed or the site says not to call for a table, phone is null with the reason in note (fixed entries are set by hand).",
+  "restaurants": {
+    "alba": {
+      "phone": "+31202390895",
+      "from": "https://www.alba-amsterdam.nl/",
+      "osm": "same"
+    },
+    "bacalar": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "badcuyp": {
+      "phone": "+31642902310",
+      "from": "https://badcuypamsterdam.nl/",
+      "osm": null
+    },
+    "bak": {
+      "phone": "+31207372553",
+      "from": "https://bakrestaurant.nl/",
+      "osm": null
+    },
+    "bar-centraal": {
+      "phone": "+31207799094",
+      "from": "https://barcentraal.nl/",
+      "osm": "same"
+    },
+    "barracuda": {
+      "phone": "+31645212782",
+      "from": "https://www.barracuda.amsterdam/",
+      "osm": "same"
+    },
+    "bisous": {
+      "phone": null,
+      "from": null,
+      "osm": null,
+      "fixed": true,
+      "note": "Its own site gives a number for enquiries only, not for tables."
+    },
+    "bistro-de-la-mer": {
+      "phone": "+31202374790",
+      "from": "openstreetmap",
+      "osm": "only"
+    },
+    "bolenius": {
+      "phone": "+31202386985",
+      "from": "https://bolenius-rembrandtpark.nl/",
+      "osm": null
+    },
+    "bon-burger": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "bon-burger-noord": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "boon-de-koot": {
+      "phone": "+31202246425",
+      "from": "https://www.boonendekoot.nl/boonendekoot",
+      "osm": null
+    },
+    "bottleshop": {
+      "phone": "+31202339511",
+      "from": "https://www.bottleshopams.nl/",
+      "osm": null
+    },
+    "bougainville": {
+      "phone": "+31202182182",
+      "from": "https://www.restaurantbougainville.com/",
+      "osm": null
+    },
+    "cafe-binnenvisser": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "cafe-caron": {
+      "phone": "+31206758668",
+      "from": "https://cafecaron.nl/",
+      "osm": "same"
+    },
+    "cafe-de-klepel": {
+      "phone": "+31206238244",
+      "from": "https://cafedeklepel.nl/",
+      "osm": null
+    },
+    "cafe-modern": {
+      "phone": "+31204940684",
+      "from": "https://modernamsterdam.nl/",
+      "osm": "same"
+    },
+    "cafe-parlotte": {
+      "phone": "+31625305030",
+      "from": "https://www.parlotte.nl/",
+      "osm": null
+    },
+    "cafe-restaurant-amsterdam": {
+      "phone": "+31206822666",
+      "from": "https://cradam.nl/",
+      "osm": "same"
+    },
+    "cafe-wu": {
+      "phone": "+31202246196",
+      "from": "https://cafewu.nl/",
+      "osm": null
+    },
+    "calisto": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "carmen": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "choux": {
+      "phone": "+31202103090",
+      "from": "https://choux.nl/",
+      "osm": "same"
+    },
+    "ciel-bleu": {
+      "phone": "+31206788300",
+      "from": "https://www.cielbleu.nl/",
+      "osm": "differs: +31206787450"
+    },
+    "copain": {
+      "phone": "+31624956358",
+      "from": "https://www.copain.amsterdam/",
+      "osm": null
+    },
+    "cornerstore": {
+      "phone": "+31202390062",
+      "from": "https://csnoord.com/",
+      "osm": "same"
+    },
+    "cue": {
+      "phone": "+31202051332",
+      "from": "https://www.cue-amsterdam.com/contact",
+      "osm": null
+    },
+    "dame-aan-de-kade": {
+      "phone": "+31630115120",
+      "from": "https://www.dameaandekade.nl/",
+      "osm": null
+    },
+    "de-kas": {
+      "phone": "+31204624562",
+      "from": "https://restaurantdekas.com/",
+      "osm": "same"
+    },
+    "elan": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "entrepot": {
+      "phone": "+31203415722",
+      "from": "https://restaurantentrepot.nl/contact/",
+      "osm": null
+    },
+    "euro-pizza": {
+      "phone": "+31208950843",
+      "from": "https://www.europizza.rest/",
+      "osm": null
+    },
+    "europa": {
+      "phone": "+31202111221",
+      "from": "https://www.europa.rest/",
+      "osm": null
+    },
+    "fa-pekelhaaring": {
+      "phone": "+31206790460",
+      "from": "https://pekelhaaring.nl/",
+      "osm": null
+    },
+    "flore": {
+      "phone": "+31205311619",
+      "from": "https://restaurantflore.com/",
+      "osm": "same",
+      "fixed": true,
+      "note": "The reservations line on its page; its schema.org number 020 531 1777 is Hotel De L'Europe's front desk."
+    },
+    "franzen": {
+      "phone": "+31647664072",
+      "from": "https://www.franzen.amsterdam/",
+      "osm": null
+    },
+    "fuku-ramen": {
+      "phone": null,
+      "from": null,
+      "osm": null,
+      "fixed": true,
+      "note": "Its site gave 06 11047801, OpenStreetMap and two listings 06 42608596: not settled."
+    },
+    "gebr-hartering": {
+      "phone": "+31204210699",
+      "from": "https://www.gebr-hartering.nl/",
+      "osm": "same"
+    },
+    "gitane": {
+      "phone": "+31202358740",
+      "from": "https://www.restaurantgitane.nl/",
+      "osm": null
+    },
+    "helling-7": {
+      "phone": "+31202279850",
+      "from": "https://www.helling7.nl/",
+      "osm": null
+    },
+    "hoi-tin": {
+      "phone": "+31206256451",
+      "from": "https://www.hoitin.nl/",
+      "osm": null
+    },
+    "hotel-de-goudfazant": {
+      "phone": "+31206365170",
+      "from": "https://hoteldegoudfazant.nl/",
+      "osm": null
+    },
+    "ikaria-park": {
+      "phone": "+31683456887",
+      "from": "https://www.ikariapark.nl/",
+      "osm": null,
+      "fixed": true,
+      "note": "Read by hand from its own site (the script could not reach it)."
+    },
+    "kaagman-kortekaas": {
+      "phone": "+31202336544",
+      "from": "https://kaagmanenkortekaas.nl/",
+      "osm": "same"
+    },
+    "kamer-bar": {
+      "phone": "+31203620876",
+      "from": "https://www.kamer.bar/contact/",
+      "osm": null
+    },
+    "ken-sushi": {
+      "phone": "+31624267713",
+      "from": "https://www.kensushi.nl/",
+      "osm": null
+    },
+    "kid-amsterdam": {
+      "phone": "+31202217869",
+      "from": "openstreetmap",
+      "osm": "only"
+    },
+    "kims-so-korean-food": {
+      "phone": null,
+      "from": null,
+      "osm": null,
+      "fixed": true,
+      "note": "No own site; OpenStreetMap and the listings give two different numbers."
+    },
+    "kiri": {
+      "phone": "+31206787450",
+      "from": "https://www.okura.nl/kiri",
+      "osm": null
+    },
+    "la-vallade": {
+      "phone": "+31206652025",
+      "from": "https://www.lavallade.nl/",
+      "osm": null
+    },
+    "marie": {
+      "phone": "+31205311619",
+      "from": "https://marieamsterdam.com/",
+      "osm": null
+    },
+    "meneer-de-wit-heeft-honger": {
+      "phone": "+31207373184",
+      "from": "https://wanderlog.com/place/details/1178481",
+      "osm": null,
+      "fixed": true,
+      "note": "Its own site answers 404; Wanderlog and En Primeur Club give the same number."
+    },
+    "mesa-mesa": {
+      "phone": "+31207220392",
+      "from": "https://www.mesamesa.nl/",
+      "osm": "differs: +31850871479"
+    },
+    "nikotin": {
+      "phone": "+31620346130",
+      "from": "openstreetmap",
+      "osm": "only"
+    },
+    "nk-thai-noodles": {
+      "phone": "+31207770154",
+      "from": "https://nkthainoodles.nl/",
+      "osm": "same"
+    },
+    "nnea": {
+      "phone": null,
+      "from": null,
+      "osm": null,
+      "fixed": true,
+      "note": "Its own site says it takes no reservations by phone."
+    },
+    "omi": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "restaurant-212": {
+      "phone": "+31203348685",
+      "from": "https://www.212.amsterdam/restaurant-212",
+      "osm": "same"
+    },
+    "restaurant-kyo": {
+      "phone": "+31203541219",
+      "from": "https://restaurantkyo.nl/",
+      "osm": "same"
+    },
+    "restobar-massalia": {
+      "phone": "+31202358780",
+      "from": "https://www.restobarmassalia.nl/",
+      "osm": null
+    },
+    "rijsel": {
+      "phone": "+31204632142",
+      "from": "https://rijsel.com/",
+      "osm": null
+    },
+    "roef": {
+      "phone": "+31202101683",
+      "from": "https://roef-amsterdam.nl/",
+      "osm": null
+    },
+    "roux": {
+      "phone": "+31202613572",
+      "from": "https://www.restaurantroux.nl/",
+      "osm": null
+    },
+    "salmuera": {
+      "phone": "+31206245752",
+      "from": "https://www.sal-amsterdam.nl/",
+      "osm": "same"
+    },
+    "scheepskameel": {
+      "phone": "+31203379680",
+      "from": "https://scheepskameel.nl/",
+      "osm": null
+    },
+    "september": {
+      "phone": "+31208543475",
+      "from": "https://septemberamsterdam.nl/",
+      "osm": null
+    },
+    "showw": {
+      "phone": "+31202800816",
+      "from": "https://www.restaurantshoww.com/en",
+      "osm": null
+    },
+    "sinck": {
+      "phone": "+31619601556",
+      "from": "https://www.sinckamsterdam.nl/",
+      "osm": null
+    },
+    "sinne": {
+      "phone": "+31206827290",
+      "from": "https://restaurantsinne.nl/",
+      "osm": "same"
+    },
+    "tannay": {
+      "phone": "+31207726743",
+      "from": "https://tannay.nl/",
+      "osm": null
+    },
+    "taste-of-culture": {
+      "phone": null,
+      "from": null,
+      "osm": null,
+      "fixed": true,
+      "note": "No own site; OpenStreetMap is the only source, not confirmed."
+    },
+    "thai-thai-poppetje": {
+      "phone": "+31203374722",
+      "from": "https://thaithaipoppetje.nl/",
+      "osm": null
+    },
+    "toet": {
+      "phone": "+31625453120",
+      "from": "https://www.toetamsterdam.nl/",
+      "osm": null
+    },
+    "toscanini": {
+      "phone": "+31206232813",
+      "from": "https://restauranttoscanini.nl/contact/",
+      "osm": null
+    },
+    "troef": {
+      "phone": "+31629827120",
+      "from": "https://troefamsterdam.nl/",
+      "osm": "same"
+    },
+    "twee-prinsen": {
+      "phone": null,
+      "from": null,
+      "osm": null
+    },
+    "utage-sake-bar": {
+      "phone": "+31203704510",
+      "from": "https://www.utage-sakebar.nl/",
+      "osm": null
+    },
+    "vin-fou": {
+      "phone": "+31202357179",
+      "from": "https://www.vinfou.nl/",
+      "osm": null
+    },
+    "vinkeles": {
+      "phone": "+31205302010",
+      "from": "openstreetmap",
+      "osm": "only"
+    },
+    "vrr": {
+      "phone": "+31202445743",
+      "from": "https://vrr.rest/",
+      "osm": "differs: +31611122373"
+    },
+    "watergang": {
+      "phone": "+31638678170",
+      "from": "https://restaurantwatergang.nl/",
+      "osm": null
+    },
+    "weinlokal-stern": {
+      "phone": "+31203374381",
+      "from": "https://www.weinlokalstern.nl/",
+      "osm": "same"
+    },
+    "wils": {
+      "phone": "+31202366522",
+      "from": "https://restaurantwils.nl/contact",
+      "osm": "same"
+    },
+    "xiang": {
+      "phone": "+31206207040",
+      "from": "https://www.xiangamsterdam.com/",
+      "osm": "same"
+    },
+    "zoldering": {
+      "phone": "+31207651212",
+      "from": "https://www.zoldering.nl/",
+      "osm": "same"
+    }
+  }
+}
