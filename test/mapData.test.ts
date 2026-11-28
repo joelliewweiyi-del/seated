@@ -362,17 +362,19 @@ describe('guides', () => {
     for (const id of picked) expect(places[id]!.michelin, id).toBeTruthy();
   });
 
-  it("Seated curated holds every pick of Mara Grimm's list, and her list comes first in the picker (Joel, 17 Nov 2026)", () => {
-    const file = JSON.parse(readFileSync('data/map-guides.json', 'utf8')) as { guides: Array<{ id: string }>; picks: Record<string, string[]> };
-    // Joel took these two off the map in his checklist (17 Nov 2026); every other pick of hers stays, and stays curated.
-    const removedByJoel = ['cafe-beurre', 'vuurtoreneiland'];
-    const grimm = file.picks['mara-grimm']!.filter((id) => !removedByJoel.includes(id));
+  it("a critic's list is off until the critic says yes; its places stay on the map and curated (Joel, 28 Nov 2026)", () => {
+    const file = JSON.parse(readFileSync('data/map-guides.json', 'utf8')) as { guides: Array<{ id: string; url: string; notes?: unknown }>; picks: Record<string, string[]> };
+    // The Het Parool critic was never asked (Joel, 28 Nov 2026): no list, no name, no scores. Her list is in git at d35151f.
+    expect(file.guides.map((g) => g.id)).not.toContain('mara-grimm');
+    expect(Object.keys(file.picks)).not.toContain('mara-grimm');
+    expect(JSON.stringify(file).toLowerCase()).not.toMatch(/mara|grimm|parool/);
+    expect(file.guides.filter((g) => g.notes)).toEqual([]);
+    // "Keep the restaurants in": the 16 places that were on the map through that list stay, and stay curated.
+    const stay = ['barracuda', 'bistro-de-la-mer', 'cafe-wu', 'choux', 'cornerstore', 'de-kas', 'gebr-hartering', 'kaagman-kortekaas', 'kamer-bar', 'nikotin', 'showw', 'tannay', 'thai-thai-poppetje', 'troef', 'vrr', 'weinlokal-stern'];
     const curated = new Set(file.picks['seated']);
-    expect(grimm.filter((id) => !curated.has(id))).toEqual([]);
-    expect(file.guides[0]!.id).toBe('mara-grimm');
     const optOut = new Set((JSON.parse(readFileSync('data/map-optout.json', 'utf8')) as Array<{ id: string }>).map((x) => x.id));
-    expect(grimm.filter((id) => optOut.has(id))).toEqual([]);
-    expect(removedByJoel.every((id) => optOut.has(id))).toBe(true);
+    const places = loadPlaces();
+    expect(stay.filter((id) => !curated.has(id) || optOut.has(id) || !places[id])).toEqual([]);
   });
 
   it('opening days in data/map-hours.json name real places with weekday codes, each with its source, and never Esra', () => {
@@ -393,7 +395,7 @@ describe('guides', () => {
     expect(new Set(file.guides.map((g) => g.id)).size).toBe(file.guides.length);
     for (const g of file.guides) {
       expect(g.short.length, g.id).toBeGreaterThan(0);
-      expect(g.short.length, g.id).toBeLessThanOrEqual(17); // "Amsterdam critics" fits the picker at 390 px (Joel, 23 Nov 2026)
+      expect(g.short.length, g.id).toBeLessThanOrEqual(17); // the longest name that fits the picker at 390 px (Joel, 23 Nov 2026)
       expect(g.line.length, g.id).toBeGreaterThan(10);
       expect(g.line.length, g.id).toBeLessThanOrEqual(100);
       expect(g.line.toLowerCase(), g.id).not.toContain(g.name.toLowerCase());

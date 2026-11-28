@@ -500,18 +500,17 @@ test('restaurants that stood on fog (15 Nov 2026) stand on drawn city, at mid an
   expect(failed).toEqual([]);
 });
 
-test("a critic's list: the card shows the score and year and links to the review", async ({ page }) => {
+test("a critic's list is off until the critic says yes: no list, no score on the card, and an old link shows every place (Joel, 28 Nov 2026)", async ({ page }) => {
   await page.goto('/map/?r=choux');
-  const guides = page.locator('.card .guides');
-  await expect(guides).toContainText('Amsterdam critics');
-  const note = guides.locator('a.note');
-  await expect(note).toHaveText('10 (2025) ↗');
-  await expect(note).toHaveAttribute('href', /^https:\/\/www\.parool\.nl\//);
-  const [n, card] = await Promise.all([note.boundingBox(), page.locator('.card').boundingBox()]);
-  expect(n!.x + n!.width).toBeLessThanOrEqual(card!.x + card!.width); // the score never runs out of the card
-  await page.screenshot({ path: 'test-results/screens/map-critic-card.png' });
-  await guides.getByRole('button', { name: 'Amsterdam critics' }).click();
-  await expect(page).toHaveURL(/lens=mara-grimm/);
+  const card = page.locator('.card');
+  await expect(card).toContainText('Choux'); // the restaurant itself stays
+  await expect(card).not.toContainText('critics');
+  await expect(card.locator('a.note')).toHaveCount(0);
+  await expect(card.locator('a[href*="parool"]')).toHaveCount(0);
+  await page.goto('/map/?lens=mara-grimm');
+  await expect(page.locator('.chip.lens')).toContainText('All places');
+  await page.locator('.chip.lens').click();
+  await expect(page.getByRole('list', { name: 'Lists', exact: true })).not.toContainText(/critics|Parool/);
 });
 
 test('far out, the art below a cut-off overview still draws, not fog (Joel, 17 Nov 2026: a straight line, fog below)', async ({ page, browser }) => {
