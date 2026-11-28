@@ -276,7 +276,9 @@ test('a guide lens: the list keeps its picks, the link keeps the lens, a card na
   await page.locator('.chip.lens').click();
   const picker = page.getByRole('dialog');
   await expect(picker.getByRole('heading', { name: 'Where shall we eat?' })).toBeVisible();
-  await expect(picker.locator('.choice .nm')).toHaveText(['All places', 'Wide', 'One']);
+  await expect(picker.getByRole('list', { name: 'Lists', exact: true }).locator('.choice .nm')).toHaveText(['All places', 'Wide', 'One']);
+  // Your own list comes after the guides, under "Your lists".
+  await expect(picker.locator('.mine .choice .nm').first()).toHaveText('My list');
   const free = (await page.locator('.list-head h2').innerText()).match(/^(\d+)/)![1];
   await expect(picker.locator('.choice').nth(0)).toContainText(`${free} free · ${names.length} places`);
   await expect(picker.locator('.choice').nth(0)).toHaveAttribute('aria-pressed', 'true');

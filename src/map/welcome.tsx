@@ -1,20 +1,32 @@
-// The welcome: choose your character (a scene, then a character in it) and the map shows its places.
+// The welcome: choose your character (a scene, then a character in it), then your list: its places to start with,
+// and a field to add your own (mylist.tsx). The map shows the list.
 // A character with a name and a key keeps your lists; that is made later, from You or a list.
 // Also "You" (your character, its key, sign out, delete). Every screen can be left: the map is always one tap away.
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, cleanLook, EXTRAS, HAIR_COLOURS, HAIRS, LOCALS, localOf, PARTS, randomLook, SKINS, TOPS, type Look } from './avatar';
 import { CURATED, type MapRestaurant, type Status } from './data';
 import { Host } from './picker';
+import { MyList } from './mylist';
 import { PROFILES, SCENES, suggest } from './taste';
 import type { Account } from './api';
 import type { You } from './you';
 
-export type WelcomeStep = 'scene' | `scene:${string}` | 'character' | 'key' | 'restore';
+export type WelcomeStep = 'scene' | `scene:${string}` | 'list' | 'character' | 'key' | 'restore';
+
+/** Your list (mylist.tsx): the restaurants on the map, your character's picks, and the list kept on this device. */
+export interface ListOnDevice {
+  restaurants: MapRestaurant[];
+  picks: MapRestaurant[];
+  ids: string[];
+  statusOf: (r: MapRestaurant) => Status;
+  onIds: (ids: string[]) => void;
+}
 
 interface WelcomeProps {
   you: You;
   start: WelcomeStep;
-  /** Show the map through a lens ('you', a guide or a list) and close. */
+  list: ListOnDevice;
+  /** Show the map through a lens ('you', 'mine', a guide or a list) and close. */
   onLens: (id: string) => void;
   onClose: () => void;
 }
@@ -35,8 +47,10 @@ function useFocus<T extends HTMLElement>(dep: unknown) {
   return ref;
 }
 
-export function Welcome({ you, start, onLens, onClose }: WelcomeProps) {
+export function Welcome({ you, start, list, onLens, onClose }: WelcomeProps) {
   const [step, setStep] = useState<WelcomeStep>(start);
+  // A character chosen here starts an empty list with its picks.
+  const [seed, setSeed] = useState(false);
   const ref = useFocus<HTMLDivElement>(step);
   const close = () => {
     you.setWelcomed();
@@ -53,9 +67,22 @@ export function Welcome({ you, start, onLens, onClose }: WelcomeProps) {
             picked={you.answers.type}
             onPick={(id) => {
               you.answer({ type: id });
-              onLens('you');
+              setSeed(true);
+              setStep('list');
             }}
             onBack={() => setStep('scene')}
+          />
+        )}
+        {step === 'list' && (
+          <MyList
+            look={you.account ? cleanLook(you.account.avatar) : (you.profile?.look ?? null)}
+            restaurants={list.restaurants}
+            suggested={list.picks}
+            ids={list.ids}
+            seed={seed}
+            statusOf={list.statusOf}
+            onIds={list.onIds}
+            onShow={() => onLens('mine')}
           />
         )}
         {step === 'character' && <Character you={you} onDone={(made) => (made ? setStep('key') : close())} />}
@@ -304,8 +331,11 @@ export function YouPanel({ you, onWelcome, onLens, onClose }: { you: You; onWelc
         </div>
         {you.problem && <Trouble you={you} />}
         <div className="you-actions">
+          <button className="btn primary" onClick={() => onWelcome('list')}>
+            My list
+          </button>
           {you.profile && (
-            <button className="btn primary" onClick={() => onLens('you')}>
+            <button className="btn" onClick={() => onLens('you')}>
               Show my picks
             </button>
           )}

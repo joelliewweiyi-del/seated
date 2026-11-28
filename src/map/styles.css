@@ -2437,3 +2437,88 @@ a {
     font-size: 16px; /* under 16 px an iPhone zooms the page on focus */
   }
 }
+
+/* Your list (mylist.tsx; Joel, 28 Nov 2026: "a suggested list and then a field where they can add a restaurant"):
+   the add field, the rows with one action each, and the way to the map kept in reach at the bottom. */
+.mylist .welcome-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px !important;
+}
+.welcome .mylist-add input {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 16px; /* under 16 px an iPhone zooms the page on focus */
+  border-radius: 14px;
+  box-shadow: var(--hair);
+}
+.mylist-rows {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.mylist-rows li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 2px;
+}
+.mylist-rows .stud {
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.mylist-rows .who {
+  display: grid;
+  min-width: 0;
+}
+.mylist-rows .nm {
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mylist-rows .ar {
+  color: var(--muted);
+  font-size: 12px;
+}
+.dialog .mylist-rows .btn {
+  margin: 0;
+  min-width: 44px;
+  justify-content: center;
+}
+.mylist-rows.found {
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 14px;
+  background: var(--glass-ctl);
+  box-shadow: var(--hair);
+}
+.mylist .none,
+.mylist-rows li.none {
+  display: block;
+  margin: 8px 2px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.mylist .result-actions {
+  position: sticky;
+  bottom: -20px; /* sticky measures from inside the dialog's padding: this reaches its edge, so no row shows under it */
+  z-index: 1;
+  margin: 8px -20px 0;
+  padding: 10px 20px;
+  background: rgba(255, 250, 240, 0.9);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(43, 39, 51, 0.12);
+}
+.dialog .mylist .result-actions .btn {
+  width: 100%;
+  margin: 0;
+  justify-content: center;
+}

@@ -26,12 +26,13 @@ async function visitor(browser: Browser, opts: { phone?: boolean } = {}): Promis
 
 const welcome = (page: Page) => page.getByRole('dialog');
 
-/** Choose your character: the scene, then the character in it. The welcome closes on the map. */
+/** Choose your character: the scene, then the character in it, then its list as it comes. The welcome closes on the map. */
 async function choose(page: Page, scene: string, character: string) {
   await expect(welcome(page).getByRole('heading', { name: 'Choose your character' })).toBeVisible();
   await welcome(page).getByRole('button', { name: scene, exact: true }).click();
   await expect(welcome(page).getByRole('heading', { name: 'Who are you?' })).toBeVisible();
   await welcome(page).locator('.choice', { hasText: character }).click();
+  await welcome(page).getByRole('button', { name: 'Show my list on the map' }).click();
   await expect(welcome(page)).toHaveCount(0);
 }
 
@@ -48,7 +49,9 @@ async function makeCharacter(page: Page, name: string): Promise<string> {
   return (await key.innerText()).trim();
 }
 
-test('a first visit: choose your character, a scene then a character, and the map shows its picks as a lens', async ({ browser }) => {
+// Joel, 28 Nov 2026: "make it very easy for the user to keep their own list ... a screen with a suggested list and then
+// a field where they can add a restaurant to that list and then have that be an ongoing process".
+test('a first visit: choose your character, and your list starts as its picks; a field adds any restaurant, a card adds one in a tap, and the map shows the list', async ({ browser }) => {
   const page = await visitor(browser);
   await page.goto('/map/');
   await expect(welcome(page).getByRole('heading', { name: 'Choose your character' })).toBeVisible();
@@ -56,17 +59,94 @@ test('a first visit: choose your character, a scene then a character, and the ma
   await welcome(page).getByRole('button', { name: 'Fashion', exact: true }).click();
   await shot(page, '12-characters');
   await welcome(page).locator('.choice', { hasText: 'Fashion Baddie' }).click();
+
+  // Your list: her hand-picked places (taste.ts), without a character, a name or a key.
+  await expect(welcome(page).getByRole('heading', { name: 'Your list' })).toBeVisible();
+  const list = welcome(page).getByRole('list', { name: 'Your list', exact: true });
+  await expect(list.locator('li')).toHaveCount(11);
+  await expect(list.locator('li').first()).toContainText('Kamer');
+  // The field finds any restaurant on the map by its name, accents or not; the new place leads the list.
+  const field = welcome(page).getByLabel('Add a restaurant');
+  await field.fill('elan');
+  await welcome(page).getByRole('button', { name: 'Add Élan' }).click();
+  await expect(list.locator('li').first()).toContainText('Élan');
+  await expect(field).toHaveValue('');
+  await expect(field).toBeFocused();
+  await field.fill('bacal');
+  await field.press('Enter'); // Enter takes the first name found
+  await expect(list.locator('li').first()).toContainText('Bacalar');
+  await field.fill('zzzz');
+  await expect(welcome(page).locator('.mylist-rows.found')).toContainText('No restaurant with that name');
+  await field.fill('');
+  // A pick taken off stays on offer, and comes back in a tap.
+  await list.getByRole('button', { name: 'Take Gitane off' }).click();
+  await expect(list.locator('li')).toHaveCount(12);
+  const offers = welcome(page).getByRole('list', { name: 'Suggested' });
+  await expect(offers.locator('li')).toHaveText(/Gitane/);
+  await shot(page, '12b-your-list');
+  await offers.getByRole('button', { name: 'Add Gitane' }).click();
+  await expect(offers).toHaveCount(0);
+  await list.getByRole('button', { name: 'Take Gitane off' }).click();
+
+  await welcome(page).getByRole('button', { name: 'Show my list on the map' }).click();
   await expect(welcome(page)).toHaveCount(0);
-  await expect(page.locator('.chip.lens')).toHaveText('Fashion Baddie');
-  await expect(page.locator('.lens-line')).toContainText('Fashion Baddie');
-  // The You button wears the character's face.
+  await expect(page.locator('.chip.lens')).toHaveText('My list');
+  // The You button and the chip wear the character's face.
   await expect(page.locator('.you-btn svg')).not.toHaveClass(/no-character/);
-  await expect(page).toHaveURL(/[?&]lens=you(&|$)/);
-  await expect.poll(() => listed(page)).toBe(11); // her hand-picked list (taste.ts)
-  // The answers stay on this device: no welcome again, and the picks come back from the link.
+  await expect(page.locator('.chip.lens svg')).toBeVisible();
+  await expect(page).toHaveURL(/[?&]lens=mine(&|$)/);
+  await expect.poll(() => listed(page)).toBe(12);
+  await shot(page, '12c-my-list-on-the-map');
+
+  // It goes on: one tap on any card adds the place, and the list on the map follows.
+  await page.getByLabel('Find a restaurant').fill('Zoldering');
+  await page.locator('.hits .row', { hasText: 'Zoldering' }).first().click();
+  const heart = page.locator('.card').getByRole('button', { name: 'My list' });
+  await expect(heart).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('.card').getByRole('button', { name: '+ List' })).toHaveCount(0); // named lists come with a character
+  await heart.click();
+  await expect(heart).toHaveAttribute('aria-pressed', 'true');
+  await shot(page, '12d-card-my-list');
+  await page.locator('.card').getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByLabel('Find a restaurant').fill('');
+  await expect.poll(() => listed(page)).toBe(13);
+
+  // The list stays on this device: no welcome again, and it comes back from the link.
   await page.reload();
-  await expect(page.locator('.chip.lens')).toHaveText('Fashion Baddie');
+  await expect(page.locator('.chip.lens')).toHaveText('My list');
   await expect(welcome(page)).toHaveCount(0);
+  await expect.poll(() => listed(page)).toBe(13);
+  // Edit opens it again, with the place from the card on top; taking the last place off leaves every restaurant.
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(list.locator('li')).toHaveCount(13);
+  await expect(list.locator('li').first()).toContainText('Zoldering');
+  await page.keyboard.press('Escape');
+  // The picker has it under "Your lists", with what is free today.
+  await page.locator('.chip.lens').click();
+  await expect(page.getByRole('dialog').getByRole('list', { name: 'My list', exact: true }).locator('.choice')).toContainText(/My list.*13 picks/s);
+  await page.context().close();
+});
+
+test('your list without a character: empty, the picker opens it to be filled, and an empty list shows every restaurant', async ({ browser }) => {
+  const page = await visitor(browser);
+  await page.goto('/map/?lens=mine'); // somebody else's link to "my list": nothing on this device, so every restaurant
+  await expect(page.locator('.chip.lens')).toHaveText('All places');
+  await expect(welcome(page)).toHaveCount(0);
+  await page.locator('.chip.lens').click();
+  await page.getByRole('dialog').locator('.choice', { hasText: 'My list' }).click();
+  await expect(welcome(page).getByRole('heading', { name: 'Your list' })).toBeVisible();
+  await expect(welcome(page).getByText('Nothing on it yet.')).toBeVisible();
+  await expect(welcome(page).getByRole('button', { name: 'Show my list on the map' })).toBeDisabled();
+  await welcome(page).getByLabel('Add a restaurant').fill('scheeps');
+  await welcome(page).getByRole('button', { name: 'Add Scheepskameel' }).click();
+  await welcome(page).getByRole('button', { name: 'Show my list on the map' }).click();
+  await expect(page.locator('.chip.lens')).toHaveText('My list');
+  await expect.poll(() => listed(page)).toBe(1);
+  // The last place off: the map is back to every restaurant.
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await welcome(page).getByRole('button', { name: 'Take Scheepskameel off' }).click();
+  await welcome(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.locator('.chip.lens')).toHaveText('All places');
   await page.context().close();
 });
 
@@ -243,6 +323,13 @@ test('on a phone the welcome and the character builder fit the screen, and the p
   expect(await wide()).toBeLessThanOrEqual(390);
   expect(await tall()).toEqual([]);
   await welcome(page).locator('.choice', { hasText: 'Fashion Baddie' }).click();
+  // Your list fits too, its way to the map in reach without scrolling.
+  await expect(welcome(page).getByRole('heading', { name: 'Your list' })).toBeVisible();
+  expect(await wide()).toBeLessThanOrEqual(390);
+  expect(await tall()).toEqual([]);
+  await expect(welcome(page).getByRole('button', { name: 'Show my list on the map' })).toBeInViewport({ ratio: 1 });
+  await shot(page, '17c-phone-your-list');
+  await welcome(page).getByRole('button', { name: 'Show my list on the map' }).click();
   // Her places as a half-height list of rows: no sum line, search or chips over the map.
   await expect(page.locator('.side.rows')).toBeVisible();
   await expect(page.locator('.side.rows .sum')).toBeHidden();

@@ -69,9 +69,9 @@ function readUrl(): { date: string | null; r: string | null; lens: string | null
 
 /** What the map is seen through: a guide's picks, your picks, or a list (yours or someone else's). */
 interface Lens {
-  /** As in the link: a guide id, 'you', or 'l:<list id>'. */
+  /** As in the link: a guide id, 'you', 'mine' (your list on this device), or 'l:<list id>'. */
   id: string;
-  kind: 'guide' | 'you' | 'list';
+  kind: 'guide' | 'you' | 'mine' | 'list';
   title: string;
   line: string;
   url: string | null;
@@ -153,7 +153,8 @@ export function App() {
   const [filters, setFilters] = useRemembered<Filters>('seated.map.filters', NO_FILTERS);
   const [saved, setSaved] = useRemembered<{ ids: string[] }>('seated.map.saved', { ids: [] });
   const favs = useMemo(() => new Set(saved.ids), [saved]);
-  const toggleFav = useCallback((id: string) => setSaved((o) => ({ ids: o.ids.includes(id) ? o.ids.filter((x) => x !== id) : [...o.ids, id] })), [setSaved]);
+  // Your list on this device (mylist.tsx), newest first; the ♥ on a card puts a place on it or takes it off.
+  const toggleFav = useCallback((id: string) => setSaved((o) => ({ ids: o.ids.includes(id) ? o.ids.filter((x) => x !== id) : [id, ...o.ids] })), [setSaved]);
   const [me, setMe] = useState<{ lat: number; lng: number; note?: string } | null>(null);
   const [query, setQuery] = useState('');
   const ai = useAiSearch(query);
@@ -239,6 +240,8 @@ export function App() {
     if (g) return { id: g.id, kind: 'guide', title: g.short, line: g.line, url: g.url, by: null, ids: new Set(data.restaurants.filter((r) => r.g.includes(g.id)).map((r) => r.id)) };
     if (lensId === 'you')
       return you.profile ? { id: 'you', kind: 'you', title: you.profile.name, line: `Your picks as a ${you.profile.name}.`, url: null, by: null, ids: new Set(picks.map((r) => r.id)), rank: new Map(picks.map((r, i) => [r.id, i])) } : null;
+    // Your list on this device; empty, the map shows every restaurant.
+    if (lensId === 'mine') return favs.size ? { id: 'mine', kind: 'mine', title: 'My list', line: '', url: null, by: null, ids: favs, rank: new Map(saved.ids.map((id, i) => [id, i])) } : null;
     if (listId) {
       const own = you.lists.find((l) => l.id === listId);
       const l = own ?? you.community?.find((x) => x.id === listId) ?? you.opened[listId];
@@ -246,7 +249,7 @@ export function App() {
       return { id: lensId, kind: 'list', title: l.title, line: l.note, url: null, by: own ? null : l.by, ids: new Set(l.places) };
     }
     return null;
-  }, [data, lensId, listId, you.profile, you.lists, you.community, you.opened, picks]);
+  }, [data, lensId, listId, you.profile, you.lists, you.community, you.opened, picks, favs, saved]);
 
   // Signs for the day.
   useEffect(() => {
@@ -601,6 +604,7 @@ export function App() {
               onLists={() => setDialog('lists')}
               onAll={() => setLens(null)}
               onCharacter={() => openWelcome('scene')}
+              onMine={() => openWelcome('list')}
             />
           </TopBar>
 
@@ -619,7 +623,6 @@ export function App() {
                 saved={favs.has(sel.id)}
                 onSave={() => toggleFav(sel.id)}
                 you={you}
-                onCharacter={() => openWelcome('character')}
                 onClose={() => setSelected(null)}
                 onDay={setDate}
               />
@@ -693,6 +696,7 @@ export function App() {
         <Picker
           lists={lists}
           forYou={forYou}
+          own={{ id: 'mine', name: 'My list', by: 'On this device', line: '', ...count(saved.ids) }}
           mine={mine}
           community={community}
           current={lens?.id ?? 'all'}
@@ -709,6 +713,8 @@ export function App() {
           }}
           onReport={you.report}
           onPick={(id) => {
+            // An empty list opens to be filled; the map has nothing to show through it yet.
+            if (id === 'mine' && !favs.size) return openWelcome('list');
             setLens(id);
             setSelected(null);
             setDialog(null);
@@ -723,6 +729,7 @@ export function App() {
           key={welcomeAt}
           you={you}
           start={welcomeAt}
+          list={{ restaurants: data.restaurants, picks, ids: saved.ids, statusOf: statusOfR, onIds: (ids) => setSaved({ ids }) }}
           onLens={(id) => {
             frameLens.current = true;
             setRowsFor(id);
@@ -947,6 +954,8 @@ function Find(p: {
   onLists: () => void;
   onAll: () => void;
   onCharacter: () => void;
+  /** Open your list, to add or take off places. */
+  onMine: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -996,9 +1005,14 @@ function Find(p: {
           />
           <span className="showing-label">Showing</span>
           <button className="chip lens" data-on={p.lens ? '' : undefined} aria-haspopup="dialog" onClick={p.onLists} title="What the map shows: pick a list or every restaurant">
-            {p.lens?.kind === 'you' && <Avatar look={p.look} size={18} />}
+            {(p.lens?.kind === 'you' || p.lens?.kind === 'mine') && <Avatar look={p.look} size={18} />}
             {p.lens ? p.lens.title : 'All places'}
           </button>
+          {p.lens?.kind === 'mine' && (
+            <button className="chip change" onClick={p.onMine}>
+              Edit
+            </button>
+          )}
           {p.lens?.kind === 'you' && (
             <button className="chip change" onClick={p.onCharacter}>
               Change
@@ -1151,7 +1165,7 @@ const MORE_CHIPS: Array<[keyof Filters, string]> = [
   ['stars', '★ Stars'],
   ['bib', 'Bib Gourmand'],
   ['hot', 'Hard to get'],
-  ['fav', 'Saved'],
+  ['fav', 'My list'],
 ];
 
 function List(p: ListProps) {
@@ -1259,7 +1273,7 @@ function List(p: ListProps) {
         {rows.length === 0 && !(q && p.ai?.busy) && (
           <li className="empty">
             {f.open ? `Nothing free on ${dayLabel(p.day)}${anyKind ? ' among these' : ''}.` : q ? 'No restaurant matches that.' : 'None of these yet.'}
-            {f.fav && !p.favs.size && <div>Save a restaurant from its card with ♥ and it shows here.</div>}
+            {f.fav && !p.favs.size && <div>Add a restaurant from its card with ♥ and it shows here.</div>}
             {f.open && p.nextOpen && (
               <div>
                 <button className="btn small" onClick={() => p.onDay(p.nextOpen!)}>
@@ -1275,7 +1289,7 @@ function List(p: ListProps) {
           return (
             <li key={r.id}>
               {head && (s === 'unknown' && !q ? <RestFold n={rest} open onToggle={() => setRestOpen(false)} /> : <div className="group label">{GROUP_WORD[s]}</div>)}
-              <PlaceRow r={r} s={s} data={p.data} day={p.day} fav={p.favs.has(r.id)} lead={p.me ? `${bike(m)} · ` : ''} onPick={p.onPick} />
+              <PlaceRow r={r} s={s} data={p.data} day={p.day} fav={p.lens?.kind !== 'mine' && p.favs.has(r.id)} lead={p.me ? `${bike(m)} · ` : ''} onPick={p.onPick} />
             </li>
           );
         })}
@@ -1344,8 +1358,6 @@ interface CardProps {
   /** Show the map through one of the guides that pick this restaurant. */
   onLens: (id: string) => void;
   you: You;
-  /** Open the welcome at "make a character" (lists belong to a character). */
-  onCharacter: () => void;
 }
 
 /** True while a scrolling box has more below its fold (then a MoreBar shows under it). */
@@ -1390,8 +1402,8 @@ async function share(r: MapRestaurant, day: string): Promise<string> {
   }
 }
 
-/** "+ List": put this restaurant in one of your lists, or start one with it. */
-function AddToList({ r, you, onCharacter }: { r: MapRestaurant; you: You; onCharacter: () => void }) {
+/** "+ List", for a character (named lists that can be shared): put this restaurant in one, or start one with it. */
+function AddToList({ r, you }: { r: MapRestaurant; you: You }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   return (
@@ -1402,41 +1414,30 @@ function AddToList({ r, you, onCharacter }: { r: MapRestaurant; you: You; onChar
       {open && (
         <div className="px pop" role="group" aria-label="Add to a list">
           <h4>Add to a list</h4>
-          {!you.account ? (
-            <p>
-              Lists belong to a character.{' '}
-              <button className="link" onClick={onCharacter}>
-                Make my character
-              </button>
-            </p>
-          ) : (
-            <>
-              {you.lists.map((l) => (
-                <label className="check" key={l.id}>
-                  <input
-                    type="checkbox"
-                    checked={l.places.includes(r.id)}
-                    disabled={you.busy}
-                    onChange={(e) => void you.saveList({ ...l, places: e.target.checked ? [...l.places, r.id] : l.places.filter((x) => x !== r.id) })}
-                  />{' '}
-                  {l.title}
-                </label>
-              ))}
-              <form
-                className="newlist"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (await you.saveList({ title, places: [r.id], public: false })) setTitle('');
-                }}
-              >
-                <input aria-label="New list name" placeholder="New list" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={60} />
-                <button className="btn small" type="submit" disabled={!title.trim() || you.busy}>
-                  Add
-                </button>
-              </form>
-              <Trouble you={you} />
-            </>
-          )}
+          {you.lists.map((l) => (
+            <label className="check" key={l.id}>
+              <input
+                type="checkbox"
+                checked={l.places.includes(r.id)}
+                disabled={you.busy}
+                onChange={(e) => void you.saveList({ ...l, places: e.target.checked ? [...l.places, r.id] : l.places.filter((x) => x !== r.id) })}
+              />{' '}
+              {l.title}
+            </label>
+          ))}
+          <form
+            className="newlist"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (await you.saveList({ title, places: [r.id], public: false })) setTitle('');
+            }}
+          >
+            <input aria-label="New list name" placeholder="New list" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={60} />
+            <button className="btn small" type="submit" disabled={!title.trim() || you.busy}>
+              Add
+            </button>
+          </form>
+          <Trouble you={you} />
         </div>
       )}
     </div>
@@ -1452,7 +1453,7 @@ function IgSticker({ ig }: { ig: string }) {
   );
 }
 
-function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onLens, you, onCharacter }: CardProps) {
+function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onLens, you }: CardProps) {
   const times = freeTimes(r, day);
   const lunch = times.filter((t) => t < '16:00');
   const dinner = times.filter((t) => t >= '16:00');
@@ -1575,10 +1576,10 @@ function Card({ r, offMap, data, day, status, saved, onSave, onClose, onDay, onL
           <div className="title-row">
             <h2>{r.name}</h2>
             <div className="title-actions">
-              <button className={`btn small save${saved ? ' on' : ''}`} aria-pressed={saved} onClick={onSave} title={saved ? 'Saved on this device' : 'Save on this device'}>
-                {saved ? '♥ Saved' : '♡ Save'}
+              <button className={`btn small save${saved ? ' on' : ''}`} aria-pressed={saved} onClick={onSave} title={saved ? 'On your list, on this device' : 'Add to your list, on this device'}>
+                {saved ? '♥ My list' : '♡ My list'}
               </button>
-              <AddToList r={r} you={you} onCharacter={onCharacter} />
+              {you.account && <AddToList r={r} you={you} />}
             </div>
           </div>
           <p className="where">

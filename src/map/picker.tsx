@@ -58,7 +58,7 @@ export function Host({ size = 56 }: { size?: number }) {
 }
 
 export interface ListChoice {
-  /** null is every restaurant; 'you' your picks; a guide id; 'l:<uuid>' a list. */
+  /** null is every restaurant; 'mine' your list on this device; 'you' your picks; a guide id; 'l:<uuid>' a list. */
   id: string | null;
   name: string;
   by: string;
@@ -73,6 +73,8 @@ export interface ListChoice {
 
 interface PickerProps {
   lists: ListChoice[];
+  /** Your list on this device (mylist.tsx). */
+  own: ListChoice;
   /** Your picks, when you chose a character. */
   forYou: ListChoice | null;
   /** Your own lists; null when you have no character yet. */
@@ -224,6 +226,9 @@ export function Picker(p: PickerProps) {
 
         <section className="mine" aria-labelledby="mine-title">
           <h3 id="mine-title">Your lists</h3>
+          <ul className="choices" aria-label="My list">
+            <Choice l={p.own} current={current} onPick={onPick} />
+          </ul>
           {p.mine === null ? (
             <p>
               Make a character to keep your own lists and share them.{' '}
